@@ -149,7 +149,7 @@
 				AdditionalIncludeDirectories="../SDK,../../../sidplay-libs-2.1.0/libsidplay/include,../../../sidplay-libs-2.1.0/builders/resid-builder/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Debug/foo_sid.pch"
 				AssemblerListingLocation=".\Debug/"
@@ -240,7 +240,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../SDK,../../../sidplay-libs-2.1.0/libsidplay/include,../../../sidplay-libs-2.1.0/builders/resid-builder/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;STATIC_CPPLIB"

@@ -208,8 +208,6 @@ public:
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
 
-		if ( ! db.loaded() ) db_load( p_abort );
-
 		return io_result_success;
 	}
 
@@ -252,7 +250,9 @@ public:
 		if (sidinfo.clockSpeed) p_info.info_set("clock_speed", sidinfo.clockSpeed == 2 ? "NTSC" : "PAL");
 		p_info.info_set("sid_model", sidinfo.sidModel == SIDTUNE_SIDMODEL_8580 ? "8580" : "6581");
 
-		length = cfg_deflength;
+		unsigned length = cfg_deflength;
+
+		if ( ! db.loaded() ) db_load( p_abort );
 
 		if ( db.loaded() )
 		{
@@ -278,6 +278,8 @@ public:
 		dNch = pTune->isStereo() ? 2 : 1;
 
 		length = cfg_deflength;
+
+		if ( ! db.loaded() ) db_load( p_abort );
 
 		if ( db.loaded() )
 		{
@@ -397,7 +399,7 @@ public:
 
 	bool decode_can_seek()
 	{
-		return true;
+		return false;
 	}
 
 	bool decode_get_dynamic_info(file_info & p_out, double & p_timestamp_delta,bool & p_track_change)
@@ -426,7 +428,7 @@ public:
 
 	static bool g_is_our_path( const char * p_path, const char * p_extension )
 	{
-		return ! stricmp( p_extension, "SID" ) || ! stricmp( p_extension, "MUS" );
+		return ! stricmp( p_extension, "sid" ) || ! stricmp( p_extension, "mus" );
 	}
 };
 
