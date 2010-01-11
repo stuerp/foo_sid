@@ -106,6 +106,8 @@ class input_sid
 
 	unsigned length, played, fade;
 
+	bool eof;
+
 	mem_block_t<short> sample_buffer;
 
 	SidTuneMod * pTune;
@@ -304,6 +306,7 @@ public:
 		pResid = new ReSIDBuilder("buoy");
 		pResid->create(pSidplay2->info().maxsids);
 		pResid->filter(true);
+		pResid->sampling(dSrate);
 
 		sid2_config_t conf;
 		conf = pSidplay2->config();
@@ -311,10 +314,13 @@ public:
 		conf.precision = 16 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
 		conf.sidEmulation = pResid;
+		conf.optimisation = 0;
 		pSidplay2->config(conf);
 		pSidplay2->load(pTune);
 
 		played = 0;
+
+		eof = false;
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
@@ -331,16 +337,25 @@ public:
 
 	t_io_result decode_run(audio_chunk & p_chunk,abort_callback & p_abort)
 	{
-		if ( length && played >= length ) return io_result_eof;
+		if ( eof || ( length && played >= length ) ) return io_result_eof;
 
-		int samples = 576 * dNch, written; //(stereo)
-		
-		if ( ! sample_buffer.check_size( samples ) )
+		int samples = length - played, written; //(stereo)
+
+		if ( !length || ( samples > 512 * dNch * 2 ) ) samples = 512 * dNch * 2;
+
+		if ( ! sample_buffer.check_size( samples / 2 ) )
 			return io_result_error_out_of_memory;
 
-		written = pSidplay2->play( sample_buffer.get_ptr(), samples * 2 );
+		written = pSidplay2->play( sample_buffer.get_ptr(), samples );
 
-		if ( ! written ) return io_result_eof;
+		if ( written < samples )
+		{
+			if ( pSidplay2->state() != sid2_stopped )
+			{
+				return io_result_error_generic;
+			}
+			if ( length ) eof = true;
+		}
 
 		unsigned d_start, d_end;
 		d_start = played;
@@ -387,19 +402,47 @@ public:
 			}
 		}
 
-		p_chunk.set_data_fixedpoint( sample_buffer.get_ptr(), written, dSrate, dNch, 16, audio_chunk::g_guess_channel_config( dNch ) );
+		if ( ! p_chunk.set_data_fixedpoint( sample_buffer.get_ptr(), written, dSrate, dNch, 16, audio_chunk::g_guess_channel_config( dNch ) ) )
+			return io_result_error_out_of_memory;
 
 		return io_result_success;
 	}
 
 	t_io_result decode_seek( double p_seconds, abort_callback & p_abort )
 	{
-		return io_result_error_data;
+		unsigned samples = unsigned( p_seconds * double( dSrate ) + .5 );
+		samples *= 2 * dNch;
+		if ( samples < played )
+		{
+			t_io_result status = decode_initialize( pTune->getInfo().currentSong - 1, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
+			if ( io_result_failed( status ) ) return status;
+		}
+		if ( ! sample_buffer.check_size( 1024 * dNch ) )
+			return io_result_error_out_of_memory;
+		eof = false;
+		while ( played < samples && !p_abort.is_aborting() )
+		{
+			unsigned todo = samples - played;
+			if ( todo > 1024 * dNch ) todo = 1024 * dNch;
+			unsigned done = pSidplay2->play( sample_buffer.get_ptr(), todo );
+			if ( done < todo )
+			{
+				if ( pSidplay2->state() != sid2_stopped )
+					return io_result_error_generic;
+				if ( length )
+				{
+					eof = true;
+					break;
+				}
+			}
+			played += todo;
+		}
+		return p_abort.is_aborting() ? io_result_aborted : io_result_success;
 	}
 
 	bool decode_can_seek()
 	{
-		return false;
+		return true;
 	}
 
 	bool decode_get_dynamic_info(file_info & p_out, double & p_timestamp_delta,bool & p_track_change)
@@ -612,4 +655,4 @@ DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 static input_factory_t           <input_sid>            g_input_sid_factory;
 static preferences_page_factory_t<preferences_page_sid> g_config_sid_factory;
 
-DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on libsidplay-200307171229 and ReSID 0.14-p1.\n\nLicensed under the GNU GPL, see COPYING.txt.");
+DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on libsidplay-2.1.1 and ReSID 0.16-p2.\n\nLicensed under the GNU GPL, see COPYING.txt.");
