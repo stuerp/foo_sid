@@ -1,7 +1,11 @@
-#define MYVERSION "1.13"
+#define MYVERSION "1.14"
 
 /*
 	changelog
+
+2009-04-16 22:30 UTC - kode54
+- Updated libsidplay to latest CVS code
+- Version is now 1.14
 
 2005-01-12 20:28 UTC - kode54
 - Changed subsong behavior, for great irrelevance
@@ -52,11 +56,16 @@
 
 */
 
+#define HAVE_SID2_COM 1
+
 #include <foobar2000.h>
 #include <../helpers/dropdown_helper.h>
 
 #include "SidTuneMod.h"
 #include <sidplay/sidplay2.h>
+#ifdef HAVE_SID2_COM
+#include <sidplay/sidlazyiptr.h>
+#endif
 #include <sidplay/builders/resid.h>
 
 #include "sldb.h"
@@ -110,12 +119,12 @@ class input_sid
 
 	bool first_block;
 
-	pfc::array_t<t_int16> sample_buffer;
+	pfc::array_t<t_int16>    sample_buffer;
 
-	SidTuneMod          * pTune;
+	SidTuneMod             * pTune;
 
-	sidplay2            * m_engine;
-    IfLazyPtr<IInterface> m_sidBuilder;
+	sidplay2               * m_engine;
+    SidLazyIPtr<ISidUnknown> m_sidBuilder;
 
 	t_filestats m_stats;
 
@@ -239,7 +248,7 @@ public:
 		m_engine->load( pTune );
 
 		m_sidBuilder = ReSIDBuilderCreate ("");
-		IfLazyPtr<ReSIDBuilder> rs(m_sidBuilder);
+		SidLazyIPtr<IReSIDBuilder> rs(m_sidBuilder);
 		if (rs)
 		{
             rs->create ((m_engine->info ()).maxsids);
@@ -253,7 +262,7 @@ public:
 		conf.frequency = dSrate;
 		conf.precision = 16 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
-		conf.sidEmulation = rs->aggregate();
+		conf.sidEmulation = rs->iaggregate();
 		conf.optimisation = 0;
 		m_engine->config(conf);
 
