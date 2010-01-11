@@ -380,6 +380,10 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath=".\SidTuneMod.h"
+			>
+		</File>
+		<File
 			RelativePath="sldb.cpp"
 			>
 			<FileConfiguration
