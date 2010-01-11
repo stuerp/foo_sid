@@ -108,6 +108,8 @@ class input_sid
 
 	bool eof;
 
+	bool first_block;
+
 	pfc::array_t<t_int16> sample_buffer;
 
 	SidTuneMod * pTune;
@@ -215,7 +217,7 @@ public:
 	{
 		if ( ! p_subsong ) throw exception_io_data();
 
-		p_info.info_set_int("samplerate", dSrate);
+		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
 		p_info.info_set_int("bitspersample", 16 /*dBps*/);
 
@@ -263,6 +265,8 @@ public:
 	void decode_initialize( t_uint32 p_subsong, unsigned p_flags, abort_callback & p_abort )
 	{
 		if ( ! p_subsong ) throw exception_io_data();
+
+		first_block = true;
 
 		pTune->selectSong(p_subsong);
 
@@ -428,6 +432,14 @@ public:
 
 	bool decode_get_dynamic_info(file_info & p_out, double & p_timestamp_delta)
 	{
+		if ( first_block )
+		{
+			p_out.info_set_int( "samplerate", dSrate );
+			p_timestamp_delta = 0.0;
+			first_block = false;
+			return true;
+		}
+
 		return false;
 	}
 
