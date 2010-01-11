@@ -115,7 +115,7 @@ class input_sid
 	SidTuneMod          * pTune;
 
 	sidplay2            * m_engine;
-    ReSIDBuilder        * m_sidbuilder;
+    IfLazyPtr<IInterface> m_sidBuilder;
 
 	t_filestats m_stats;
 
@@ -124,14 +124,12 @@ public:
 	{
 		pTune = NULL;
 		m_engine = NULL;
-		m_sidbuilder = NULL;
 	}
 
 	~input_sid()
 	{
 		delete pTune;
 		delete m_engine;
-		delete m_sidbuilder;
 	}
 
 	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
@@ -169,6 +167,7 @@ public:
 		if ( ! p_subsong ) throw exception_io_data();
 
 		//p_info.info_set_int("samplerate", dSrate);
+		p_info.info_set( "encoding", "synthesized" );
 		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
 		p_info.info_set_int("bitspersample", 16 /*dBps*/);
 
@@ -233,27 +232,29 @@ public:
 			if (len) length = len;
 		}
 
-		delete m_sidbuilder;
-		m_sidbuilder = 0;
-
 		delete m_engine;
-		m_engine = 0;
 
-		m_engine = new sidplay2;
+		m_engine = ( sidplay2 * ) sidplay2::create ();
 
 		m_engine->load( pTune );
 
-		m_sidbuilder = new ReSIDBuilder("buoy");
-		m_sidbuilder->create(m_engine->info().maxsids);
-		m_sidbuilder->filter(true);
+		m_sidBuilder = ReSIDBuilderCreate ("");
+		IfLazyPtr<ReSIDBuilder> rs(m_sidBuilder);
+		if (rs)
+		{
+            rs->create ((m_engine->info ()).maxsids);
+            if (*rs) rs->filter (true);
+            if (*rs) rs->sampling (dSrate);
+			if (!(*rs)) throw exception_io_data();
+		}
 
 		sid2_config_t conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
 		conf.precision = 16 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
-		conf.sidEmulation = m_sidbuilder;
-		//conf.optimisation = 0;
+		conf.sidEmulation = rs->aggregate();
+		conf.optimisation = 0;
 		m_engine->config(conf);
 
 		played = 0;
