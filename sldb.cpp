@@ -258,7 +258,16 @@ unsigned sldb::find(SidTuneMod * tune, unsigned index)
 		if (sums[i]->check_digest(digest.m_data)) break;
 	}
 
-	if (i == n) return NULL;
+	if (i == n)
+	{
+		pfc::string8 sum;
+		for (i = 0; i < 16; i++)
+		{
+			sum += pfc::format_int( digest.m_data [i] & 0xFF, 2, 16 );
+		}
+		console::formatter() << "Unknown hash: " << sum;
+		return NULL;
+	}
 
 	return sums[i]->get_length(index);
 }

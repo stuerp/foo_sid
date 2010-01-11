@@ -114,7 +114,7 @@ class input_sid
 
 	SidTuneMod          * pTune;
 
-	IfLazyPtr<sidplay2>   m_engine;
+	sidplay2            * m_engine;
     IfLazyPtr<IInterface> m_sidBuilder;
 
 	t_filestats m_stats;
@@ -123,11 +123,13 @@ public:
 	input_sid()
 	{
 		pTune = NULL;
+		m_engine = NULL;
 	}
 
 	~input_sid()
 	{
-		if (pTune) delete pTune;
+		delete pTune;
+		delete m_engine;
 	}
 
 	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
@@ -229,7 +231,9 @@ public:
 			if (len) length = len;
 		}
 
-		m_engine = sidplay2::create ();
+		delete m_engine;
+
+		m_engine = ( sidplay2 * ) sidplay2::create ();
 
 		m_engine->load( pTune );
 
@@ -337,6 +341,7 @@ public:
 
 	void decode_seek( double p_seconds, abort_callback & p_abort )
 	{
+		first_block = true;
 		unsigned samples = unsigned( audio_math::time_to_samples( p_seconds, dSrate ) );
 		samples *= 2 * dNch;
 		if ( samples < played )
