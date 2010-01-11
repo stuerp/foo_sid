@@ -235,18 +235,18 @@ public:
 
 		int i = sidinfo.numberOfInfoStrings;
 
-		if (i >= 1 && sidinfo.infoString[0] && sidinfo.infoString[0][0]) p_info.meta_add(sidinfo.songs > 1 ? "album" : "title", string_utf8_from_ansi(sidinfo.infoString[0]));
-		if (i >= 2 && sidinfo.infoString[1] && sidinfo.infoString[1][0]) p_info.meta_add("artist", string_utf8_from_ansi(sidinfo.infoString[1]));
-		if (i >= 3 && sidinfo.infoString[2] && sidinfo.infoString[2][0]) p_info.meta_add("copyright", string_utf8_from_ansi(sidinfo.infoString[2]));
+		if (i >= 1 && sidinfo.infoString[0] && sidinfo.infoString[0][0]) p_info.meta_add(sidinfo.songs > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[0]));
+		if (i >= 2 && sidinfo.infoString[1] && sidinfo.infoString[1][0]) p_info.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[1]));
+		if (i >= 3 && sidinfo.infoString[2] && sidinfo.infoString[2][0]) p_info.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[2]));
 
 		for (int j = 3; j < i; j++)
 		{
-			if (sidinfo.infoString[j] && sidinfo.infoString[j][0]) p_info.meta_add("info", string_utf8_from_ansi(sidinfo.infoString[j]));
+			if (sidinfo.infoString[j] && sidinfo.infoString[j][0]) p_info.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[j]));
 		}
 
 		for (int i = 0, j = sidinfo.numberOfCommentStrings; i < j; i++)
 		{
-			if (sidinfo.commentString[i] && sidinfo.commentString[i][0] && strcmp(sidinfo.commentString[i], "--- SAVED WITH SIDPLAY ---")) p_info.meta_add("comment", string_utf8_from_ansi(sidinfo.commentString[i]));
+			if (sidinfo.commentString[i] && sidinfo.commentString[i][0] && strcmp(sidinfo.commentString[i], "--- SAVED WITH SIDPLAY ---")) p_info.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(sidinfo.commentString[i]));
 		}
 
 		if (sidinfo.clockSpeed) p_info.info_set("clock_speed", sidinfo.clockSpeed == 2 ? "NTSC" : "PAL");
