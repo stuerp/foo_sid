@@ -20,7 +20,7 @@ class sldb
 {
 private:
 	critical_section sync;
-	ptr_list_t<sldb_sum> sums;
+	pfc::ptr_list_t<sldb_sum> sums;
 public:
 	sldb() {}
 	~sldb() { unload(); }

@@ -94,7 +94,7 @@ static sldb db;
 
 static void db_load(abort_callback & p_abort)
 {
-	string8 path("file://");
+	pfc::string8 path("file://");
 	path += cfg_db_path;
 	if (path.length() == 7) return;
 	db.load(path, p_abort);
@@ -133,7 +133,7 @@ public:
 
 	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
 	{
-		if ( p_reason == input_open_info_write ) throw exception_io_data();
+		if ( p_reason == input_open_info_write ) throw exception_io_unsupported_format();
 
 		if ( p_file.is_empty() )
 		{
@@ -152,11 +152,11 @@ public:
 		p_file->read_object( sid_file.get_ptr(), size, p_abort );
 
 		{
-			string_extension ext( p_path );
+			pfc::string_extension ext( p_path );
 
 			if ( ! stricmp( ext, "MUS" ) )
 			{
-				string8 filename = p_path;
+				pfc::string8 filename = p_path;
 				const char * start = filename + filename.scan_filename();
 				const char * end = start + strlen(start);
 				char * ptr = (char*) end-1;
@@ -208,11 +208,13 @@ public:
 
 	t_uint32 get_subsong(unsigned p_index)
 	{
-		return p_index;
+		return p_index + 1;
 	}
 
 	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
 	{
+		if ( ! p_subsong ) throw exception_io_data();
+
 		p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
 		p_info.info_set_int("bitspersample", 16 /*dBps*/);
@@ -246,7 +248,7 @@ public:
 
 		if ( db.loaded() )
 		{
-			unsigned len = db.find( pTune, p_subsong );
+			unsigned len = db.find( pTune, p_subsong - 1 );
 			if (len) length = len;
 		}
 
@@ -260,7 +262,9 @@ public:
 
 	void decode_initialize( t_uint32 p_subsong, unsigned p_flags, abort_callback & p_abort )
 	{
-		pTune->selectSong(p_subsong + 1);
+		if ( ! p_subsong ) throw exception_io_data();
+
+		pTune->selectSong(p_subsong);
 
 		dNch = pTune->isStereo() ? 2 : 1;
 
@@ -270,7 +274,7 @@ public:
 
 		if ( db.loaded() )
 		{
-			unsigned len = db.find( pTune, p_subsong );
+			unsigned len = db.find( pTune, p_subsong - 1 );
 			if (len) length = len;
 		}
 
@@ -388,7 +392,7 @@ public:
 
 	void decode_seek( double p_seconds, abort_callback & p_abort )
 	{
-		unsigned samples = unsigned( p_seconds * double( dSrate ) + .5 );
+		unsigned samples = unsigned( audio_math::time_to_samples( p_seconds, dSrate ) );
 		samples *= 2 * dNch;
 		if ( samples < played )
 		{
@@ -438,12 +442,12 @@ public:
 
 	void retag_set_info( t_uint32 p_subsong, const file_info & p_info, abort_callback & p_abort )
 	{
-		throw exception_io_data();
+		throw exception_io_unsupported_format();
 	}
 
 	void retag_commit( abort_callback & p_abort )
 	{
-		throw exception_io_data();
+		throw exception_io_unsupported_format();
 	}
 
 	static bool g_is_our_content_type( const char * p_content_type )
@@ -463,7 +467,7 @@ static const int srate_tab[]={8000,11025,16000,22050,24000,32000,44100,48000,640
 
 static void update_db_status(HWND wnd)
 {
-	string8 status;
+	pfc::string8 status;
 	if (db.loaded())
 	{
 		status << db.get_count() << " entries loaded.";
@@ -483,7 +487,7 @@ static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 	{
 	case WM_INITDIALOG:
 		uSendDlgItemMessage(wnd, IDC_INFINITE, BM_SETCHECK, cfg_infinite, 0);
-		uSetDlgItemText(wnd, IDC_DLENGTH, format_time( cfg_deflength ) );
+		uSetDlgItemText(wnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
 		uSetDlgItemText(wnd, IDC_DB_PATH, cfg_db_path);
 		update_db_status(wnd);
 		{
@@ -518,7 +522,7 @@ static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 			break;
 		case IDC_DB_PATH_SET:
 			{
-				string8 path(cfg_db_path);
+				pfc::string8 path(cfg_db_path);
 				if (uGetOpenFileName(core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
 					1, 0, "Choose SidPlay Song-Lengths Database...", 0, path, false))
 				{
@@ -550,7 +554,7 @@ static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 			break;
 		case (EN_KILLFOCUS<<16)|IDC_DLENGTH:
 			{
-				uSetWindowText((HWND)lp, format_time(cfg_deflength));
+				uSetWindowText((HWND)lp, pfc::format_time(cfg_deflength));
 			}
 			break;
 		case (EN_CHANGE<<16)|IDC_FADE:
