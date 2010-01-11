@@ -34,7 +34,7 @@ bool sldb_sum::check_digest(const void * song_digest)
 
 void sldb_sum::add_length(unsigned length)
 {
-	lengths.append(length);
+	lengths.append_single(length);
 }
 
 unsigned sldb_sum::get_length(unsigned index)
@@ -136,25 +136,31 @@ bool sldb::load(const char * path, abort_callback & p_abort)
 {
 	insync(sync);
 
-	service_ptr_t<file> r;
-	if (io_result_failed(filesystem::g_open(r, path, filesystem::open_mode_read, p_abort))) return false;
+	char * ptr;
+	pfc::array_t<t_uint8> buf;
 
-	t_filesize len64;
-	if (io_result_failed(r->get_size(len64, p_abort))) return false;
-	if (len64 > (1 << 30)) return false;
+	try
+	{
+		service_ptr_t<file> r;
+		filesystem::g_open(r, path, filesystem::open_mode_read, p_abort);
 
-	unsigned len = (unsigned) len64;
+		t_filesize len64 = r->get_size_ex( p_abort );
+		if (len64 > (1 << 30)) throw exception_io_data();
 
-	mem_block_t<char> buf;
-	if ( ! buf.set_size( len + 1 ) )
+		unsigned len = (unsigned) len64;
+
+		buf.set_size( len + 1 );
+
+		ptr = ( char * ) buf.get_ptr();
+
+		r->read_object( ptr, len, p_abort );
+
+		ptr[ len ] = 0;
+	}
+	catch ( ... )
+	{
 		return false;
-	char * ptr = buf.get_ptr();
-
-	if (io_result_failed(r->read_object(ptr, len, p_abort))) return false;
-
-	r.release();
-
-	ptr[len] = 0;
+	}
 
 	bool found = false;
 

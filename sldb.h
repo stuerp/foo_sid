@@ -6,8 +6,8 @@ class SidTuneMod;
 class sldb_sum
 {
 private:
-	unsigned char			digest[16];
-	mem_block_t<unsigned>	lengths;
+	unsigned char          digest[16];
+	pfc::array_t<t_uint32> lengths;
 public:
 	bool set_digest(const char * digest_string);
 	bool check_digest(const void * song_digest);

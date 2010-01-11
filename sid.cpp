@@ -108,7 +108,7 @@ class input_sid
 
 	bool eof;
 
-	mem_block_t<short> sample_buffer;
+	pfc::array_t<t_int16> sample_buffer;
 
 	SidTuneMod * pTune;
 	sidplay2 * pSidplay2;
@@ -131,34 +131,28 @@ public:
 		if (pTune) delete pTune;
 	}
 
-	t_io_result open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
+	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
 	{
-		if ( p_reason == input_open_info_write ) return io_result_error_data;
-
-		t_io_result status;
+		if ( p_reason == input_open_info_write ) throw exception_io_data();
 
 		if ( p_file.is_empty() )
 		{
-			status = filesystem::g_open( p_file, p_path, filesystem::open_mode_read, p_abort );
-			if ( io_result_failed( status ) ) return status;
+			filesystem::g_open( p_file, p_path, filesystem::open_mode_read, p_abort );
 		}
 
-		status = p_file->get_stats( m_stats, p_abort );
-		if ( io_result_failed( status ) ) return status;
-		if ( m_stats.m_size < 0 || m_stats.m_size > 1024 * 1024 ) return io_result_error_data; // ???
+		m_stats = p_file->get_stats( p_abort );
+		if ( m_stats.m_size < 0 || m_stats.m_size > 1024 * 1024 ) throw exception_io_data();
 		unsigned size = unsigned( m_stats.m_size );
 
-		mem_block_t<BYTE> sid_file;
-		mem_block_t<BYTE> str_file;
+		pfc::array_t<t_uint8> sid_file;
+		pfc::array_t<t_uint8> str_file;
 
-		if ( ! sid_file.set_size( size ) )
-			return io_result_error_out_of_memory;
+		sid_file.set_size( size );
 
-		status = p_file->read_object( sid_file.get_ptr(), size, p_abort );
-		if (io_result_failed(status)) return status;
+		p_file->read_object( sid_file.get_ptr(), size, p_abort );
 
 		{
-			string_extension_8 ext( p_path );
+			string_extension ext( p_path );
 
 			if ( ! stricmp( ext, "MUS" ) )
 			{
@@ -178,24 +172,20 @@ public:
 					*++ptr = 't';
 					*++ptr = 'r';
 
-					service_ptr_t<file> m_file2;
-					status = filesystem::g_open( m_file2, filename, filesystem::open_mode_read, p_abort );
-					if ( status != io_result_error_not_found )
+					try
 					{
-						if ( io_result_failed( status ) ) return status;
+						service_ptr_t<file> m_file2;
+						filesystem::g_open( m_file2, filename, filesystem::open_mode_read, p_abort );
 
-						t_filesize size264;
-						status = m_file2->get_size( size264, p_abort );
-						if ( io_result_failed( status ) ) return status;
-						if ( size264 < 0 || size264 > 1024 * 1024 ) return io_result_error_data;
+						t_filesize size264 = m_file2->get_size( p_abort );
+						if ( size264 < 0 || size264 > 1024 * 1024 ) throw exception_io_data();
 						unsigned size2 = unsigned( size264 );
 
-						if ( ! str_file.set_size( size2 ) )
-							return io_result_error_out_of_memory;
+						str_file.set_size( size2 );
 
-						status = m_file2->read_object( str_file.get_ptr(), size2, p_abort );
-						if ( io_result_failed( status ) ) return status;
+						m_file2->read_object( str_file.get_ptr(), size2, p_abort );
 					}
+					catch ( const exception_io_not_found & ) {}
 				}
 			}
 		}
@@ -205,12 +195,10 @@ public:
 		else
 			pTune = new SidTuneMod( sid_file.get_ptr(), size );
 
-		if ( ! ( *pTune ) ) return io_result_error_data;
+		if ( ! ( *pTune ) ) throw exception_io_data();
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
-
-		return io_result_success;
 	}
 
 	unsigned get_subsong_count()
@@ -223,7 +211,7 @@ public:
 		return p_index;
 	}
 
-	t_io_result get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
+	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
 	{
 		p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
@@ -263,17 +251,14 @@ public:
 		}
 
 		p_info.set_length( double( length ) );
-
-		return io_result_success;
 	}
 
-	t_io_result get_file_stats( t_filestats & p_stats,abort_callback & p_abort )
+	t_filestats get_file_stats( abort_callback & p_abort )
 	{
-		p_stats = m_stats;
-		return io_result_success;
+		return m_stats;
 	}
 
-	t_io_result decode_initialize( t_uint32 p_subsong, unsigned p_flags, abort_callback & p_abort )
+	void decode_initialize( t_uint32 p_subsong, unsigned p_flags, abort_callback & p_abort )
 	{
 		pTune->selectSong(p_subsong + 1);
 
@@ -331,29 +316,23 @@ public:
 		{
 			length = 0;
 		}
-
-		return io_result_success;
 	}
 
-	t_io_result decode_run(audio_chunk & p_chunk,abort_callback & p_abort)
+	bool decode_run( audio_chunk & p_chunk,abort_callback & p_abort )
 	{
-		if ( eof || ( length && played >= length ) ) return io_result_eof;
+		if ( eof || ( length && played >= length ) ) return false;
 
 		int samples = length - played, written; //(stereo)
 
 		if ( !length || ( samples > 512 * dNch * 2 ) ) samples = 512 * dNch * 2;
 
-		if ( ! sample_buffer.check_size( samples / 2 ) )
-			return io_result_error_out_of_memory;
+		sample_buffer.grow_size( samples / 2 );
 
 		written = pSidplay2->play( sample_buffer.get_ptr(), samples );
 
 		if ( written < samples )
 		{
-			if ( pSidplay2->state() != sid2_stopped )
-			{
-				return io_result_error_generic;
-			}
+			if ( pSidplay2->state() != sid2_stopped ) throw exception_io_data();
 			if ( length ) eof = true;
 		}
 
@@ -364,7 +343,7 @@ public:
 
 		if ( length && d_end + fade > length )
 		{
-			short * foo = ( short * ) sample_buffer;
+			short * foo = sample_buffer.get_ptr();
 			unsigned n;
 			if ( dNch == 1 )
 			{
@@ -402,33 +381,32 @@ public:
 			}
 		}
 
-		if ( ! p_chunk.set_data_fixedpoint( sample_buffer.get_ptr(), written, dSrate, dNch, 16, audio_chunk::g_guess_channel_config( dNch ) ) )
-			return io_result_error_out_of_memory;
+		p_chunk.set_data_fixedpoint( sample_buffer.get_ptr(), written, dSrate, dNch, 16, audio_chunk::g_guess_channel_config( dNch ) );
 
-		return io_result_success;
+		return true;
 	}
 
-	t_io_result decode_seek( double p_seconds, abort_callback & p_abort )
+	void decode_seek( double p_seconds, abort_callback & p_abort )
 	{
 		unsigned samples = unsigned( p_seconds * double( dSrate ) + .5 );
 		samples *= 2 * dNch;
 		if ( samples < played )
 		{
-			t_io_result status = decode_initialize( pTune->getInfo().currentSong - 1, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
-			if ( io_result_failed( status ) ) return status;
+			decode_initialize( pTune->getInfo().currentSong - 1, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
-		if ( ! sample_buffer.check_size( 1024 * dNch ) )
-			return io_result_error_out_of_memory;
+		sample_buffer.grow_size( 1024 * dNch );
 		eof = false;
-		while ( played < samples && !p_abort.is_aborting() )
+		while ( played < samples )
 		{
+			p_abort.check();
+
 			unsigned todo = samples - played;
 			if ( todo > 1024 * dNch ) todo = 1024 * dNch;
 			unsigned done = pSidplay2->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
 				if ( pSidplay2->state() != sid2_stopped )
-					return io_result_error_generic;
+					throw exception_io_data();
 				if ( length )
 				{
 					eof = true;
@@ -437,7 +415,6 @@ public:
 			}
 			played += todo;
 		}
-		return p_abort.is_aborting() ? io_result_aborted : io_result_success;
 	}
 
 	bool decode_can_seek()
@@ -459,14 +436,14 @@ public:
 	{
 	}
 
-	t_io_result retag_set_info( t_uint32 p_subsong, const file_info & p_info, abort_callback & p_abort )
+	void retag_set_info( t_uint32 p_subsong, const file_info & p_info, abort_callback & p_abort )
 	{
-		return io_result_error_data;
+		throw exception_io_data();
 	}
 
-	t_io_result retag_commit( abort_callback & p_abort )
+	void retag_commit( abort_callback & p_abort )
 	{
-		return io_result_error_data;
+		throw exception_io_data();
 	}
 
 	static bool g_is_our_content_type( const char * p_content_type )
@@ -489,40 +466,16 @@ static void update_db_status(HWND wnd)
 	string8 status;
 	if (db.loaded())
 	{
-		status.add_int(db.get_count());
-		status.add_string(" entries loaded.");
+		status << db.get_count() << " entries loaded.";
 	}
 	else
 	{
-		status.add_string("Not loaded.");
+		status << "Not loaded.";
 	}
 	uSetDlgItemText(wnd, IDC_DB_STATUS, status);
 }
 
 unsigned parseTimeStamp(char * & arg);
-
-class string_print_time : public string8
-{
-public:
-	string_print_time( unsigned seconds )
-	{
-		if ( seconds >= 60 * 60 )
-		{
-			add_int( seconds / ( 60 * 60 ) );
-			add_byte( ':' );
-			seconds %= 60 * 60;
-			if ( ( seconds / 60 ) < 10 ) add_byte( '0' );
-		}
-		if ( seconds >= 60 )
-		{
-			add_int( seconds / 60 );
-			add_byte( ':' );
-			seconds %= 60;
-			if ( seconds < 10 ) add_byte( '0' );
-		}
-		add_int( seconds );
-	}
-};
 
 static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 {
@@ -530,7 +483,7 @@ static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 	{
 	case WM_INITDIALOG:
 		uSendDlgItemMessage(wnd, IDC_INFINITE, BM_SETCHECK, cfg_infinite, 0);
-		uSetDlgItemText(wnd, IDC_DLENGTH, string_print_time( cfg_deflength ) );
+		uSetDlgItemText(wnd, IDC_DLENGTH, format_time( cfg_deflength ) );
 		uSetDlgItemText(wnd, IDC_DB_PATH, cfg_db_path);
 		update_db_status(wnd);
 		{
@@ -597,7 +550,7 @@ static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
 			break;
 		case (EN_KILLFOCUS<<16)|IDC_DLENGTH:
 			{
-				uSetWindowText((HWND)lp, string_print_time(cfg_deflength));
+				uSetWindowText((HWND)lp, format_time(cfg_deflength));
 			}
 			break;
 		case (EN_CHANGE<<16)|IDC_FADE:
