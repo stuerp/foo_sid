@@ -20,6 +20,51 @@
 
 #include <foobar2000.h>
 
+bool SidTune::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& bufferRef)
+{
+    Buffer_sidtt<const uint_least8_t> fileBuf;
+    uint_least32_t fileLen = 0;
+
+	service_ptr_t<file> myIn;
+	abort_callback_impl m_abort;
+
+	try
+	{
+		filesystem::g_open( myIn, fileName, filesystem::open_mode_read, m_abort );
+	}
+	catch (...)
+	{
+        info.statusString = SidTune::txt_cantOpenFile;
+        return false;
+	}
+
+    {
+		fileLen = myIn->get_size_ex( m_abort );
+#ifdef HAVE_EXCEPTIONS
+        if ( !fileBuf.assign(new(std::nothrow) uint_least8_t[fileLen],fileLen) )
+#else
+        if ( !fileBuf.assign(new uint_least8_t[fileLen],fileLen) )
+#endif
+        {
+            info.statusString = SidTune::txt_notEnoughMemory;
+            return false;
+        }
+		myIn->read_object( (char*) fileBuf.get(), fileLen, m_abort );
+        info.statusString = SidTune::txt_noErrors;
+    }
+    if ( fileLen==0 )
+    {
+        info.statusString = SidTune::txt_empty;
+        return false;
+    }
+
+    if ( decompressPP20(fileBuf) < 0 )
+        return false;
+
+    bufferRef.assign(fileBuf.xferPtr(),fileBuf.xferLen());
+    return true;
+}
+
 void SidTuneMod::createMD5(hasher_md5_result & digest)
 {
     if (status)

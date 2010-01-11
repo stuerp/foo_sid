@@ -112,9 +112,10 @@ class input_sid
 
 	pfc::array_t<t_int16> sample_buffer;
 
-	SidTuneMod * pTune;
-	sidplay2 * pSidplay2;
-	ReSIDBuilder * pResid;
+	SidTuneMod          * pTune;
+
+	IfLazyPtr<sidplay2>   m_engine;
+    IfLazyPtr<IInterface> m_sidBuilder;
 
 	t_filestats m_stats;
 
@@ -122,14 +123,10 @@ public:
 	input_sid()
 	{
 		pTune = NULL;
-		pSidplay2 = NULL;
-		pResid = NULL;
 	}
 
 	~input_sid()
 	{
-		if (pSidplay2) delete pSidplay2;
-		if (pResid) delete pResid;
 		if (pTune) delete pTune;
 	}
 
@@ -137,65 +134,15 @@ public:
 	{
 		if ( p_reason == input_open_info_write ) throw exception_io_unsupported_format();
 
+
 		if ( p_file.is_empty() )
 		{
 			filesystem::g_open( p_file, p_path, filesystem::open_mode_read, p_abort );
 		}
 
 		m_stats = p_file->get_stats( p_abort );
-		if ( m_stats.m_size < 0 || m_stats.m_size > 1024 * 1024 ) throw exception_io_data();
-		unsigned size = unsigned( m_stats.m_size );
 
-		pfc::array_t<t_uint8> sid_file;
-		pfc::array_t<t_uint8> str_file;
-
-		sid_file.set_size( size );
-
-		p_file->read_object( sid_file.get_ptr(), size, p_abort );
-
-		{
-			pfc::string_extension ext( p_path );
-
-			if ( ! stricmp( ext, "MUS" ) )
-			{
-				pfc::string8 filename = p_path;
-				const char * start = filename + filename.scan_filename();
-				const char * end = start + strlen(start);
-				char * ptr = (char*) end-1;
-				while(ptr>start && *ptr!='.')
-				{
-					if (*ptr=='?') end=ptr;
-					ptr--;
-				}
-
-				if (ptr>=start && *ptr=='.')
-				{
-					*++ptr = 's';
-					*++ptr = 't';
-					*++ptr = 'r';
-
-					try
-					{
-						service_ptr_t<file> m_file2;
-						filesystem::g_open( m_file2, filename, filesystem::open_mode_read, p_abort );
-
-						t_filesize size264 = m_file2->get_size( p_abort );
-						if ( size264 < 0 || size264 > 1024 * 1024 ) throw exception_io_data();
-						unsigned size2 = unsigned( size264 );
-
-						str_file.set_size( size2 );
-
-						m_file2->read_object( str_file.get_ptr(), size2, p_abort );
-					}
-					catch ( const exception_io_not_found & ) {}
-				}
-			}
-		}
-
-		if ( str_file.get_size() )
-			pTune = new SidTuneMod( sid_file.get_ptr(), size, str_file.get_ptr(), str_file.get_size() );
-		else
-			pTune = new SidTuneMod( sid_file.get_ptr(), size );
+		pTune = new SidTuneMod( p_path );
 
 		if ( ! ( *pTune ) ) throw exception_io_data();
 
@@ -282,34 +229,28 @@ public:
 			if (len) length = len;
 		}
 
-		if ( pResid )
+		m_engine = sidplay2::create ();
+
+		m_engine->load( pTune );
+
+		m_sidBuilder = ReSIDBuilderCreate ("");
+		IfLazyPtr<ReSIDBuilder> rs(m_sidBuilder);
+		if (rs)
 		{
-			delete pResid;
-			pResid = 0;
+            rs->create ((m_engine->info ()).maxsids);
+            if (*rs) rs->filter (true);
+            if (*rs) rs->sampling (dSrate);
+			if (!(*rs)) throw exception_io_data();
 		}
-
-		if ( pSidplay2 )
-		{
-			delete pSidplay2;
-			pSidplay2 = 0;
-		}
-
-		pSidplay2 = new sidplay2;
-
-		pResid = new ReSIDBuilder("buoy");
-		pResid->create(pSidplay2->info().maxsids);
-		pResid->filter(true);
-		pResid->sampling(dSrate);
 
 		sid2_config_t conf;
-		conf = pSidplay2->config();
+		conf = m_engine->config();
 		conf.frequency = dSrate;
 		conf.precision = 16 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
-		conf.sidEmulation = pResid;
+		conf.sidEmulation = rs->aggregate();
 		conf.optimisation = 0;
-		pSidplay2->config(conf);
-		pSidplay2->load(pTune);
+		m_engine->config(conf);
 
 		played = 0;
 
@@ -336,11 +277,11 @@ public:
 
 		sample_buffer.grow_size( samples / 2 );
 
-		written = pSidplay2->play( sample_buffer.get_ptr(), samples );
+		written = m_engine->play( sample_buffer.get_ptr(), samples );
 
 		if ( written < samples )
 		{
-			if ( pSidplay2->state() != sid2_stopped ) throw exception_io_data();
+			if ( m_engine->state() != sid2_stopped ) throw exception_io_data();
 			if ( length ) eof = true;
 		}
 
@@ -400,20 +341,26 @@ public:
 		samples *= 2 * dNch;
 		if ( samples < played )
 		{
-			decode_initialize( pTune->getInfo().currentSong - 1, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
+			decode_initialize( pTune->getInfo().currentSong, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
 		sample_buffer.grow_size( 1024 * dNch );
 		eof = false;
+
+		unsigned remain = ( samples - played ) % 32;
+		played /= 32;
+		samples /= 32;
+		m_engine->fastForward( 100 * 32 );
+
 		while ( played < samples )
 		{
 			p_abort.check();
 
 			unsigned todo = samples - played;
 			if ( todo > 1024 * dNch ) todo = 1024 * dNch;
-			unsigned done = pSidplay2->play( sample_buffer.get_ptr(), todo );
+			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
-				if ( pSidplay2->state() != sid2_stopped )
+				if ( m_engine->state() != sid2_stopped )
 					throw exception_io_data();
 				if ( length )
 				{
@@ -423,6 +370,12 @@ public:
 			}
 			played += todo;
 		}
+
+		played *= 32;
+		m_engine->fastForward( 100 );
+
+		if ( remain )
+			played += m_engine->play( sample_buffer.get_ptr(), remain );
 	}
 
 	bool decode_can_seek()
