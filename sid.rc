@@ -16,10 +16,8 @@
 // English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -58,19 +56,16 @@ FONT 8, "Tahoma", 0, 0, 0x0
 BEGIN
     GROUPBOX        "Quality",IDC_STATIC,5,5,244,26
     RTEXT           "Sample rate:",IDC_STATIC,23,15,44,8
-    COMBOBOX        IDC_SAMPLERATE,71,13,47,130,CBS_DROPDOWN | WS_VSCROLL | 
-                    WS_TABSTOP
+    COMBOBOX        IDC_SAMPLERATE,71,13,47,130,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Hz",IDC_STATIC,120,15,10,8
     GROUPBOX        "Length",IDC_STATIC,5,35,244,93
     CONTROL         "Force all songs to play indefinitely",IDC_INFINITE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,45,121,10
     RTEXT           "Default length is:",IDC_STATIC,9,63,58,8
-    EDITTEXT        IDC_DLENGTH,71,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | 
-                    WS_GROUP
+    EDITTEXT        IDC_DLENGTH,71,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
     LTEXT           "m:s",IDC_STATIC,120,63,12,8
     RTEXT           "Fade for:",IDC_STATIC,143,63,31,8
-    EDITTEXT        IDC_FADE,178,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | 
-                    ES_NUMBER | WS_GROUP
+    EDITTEXT        IDC_FADE,178,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | ES_NUMBER | WS_GROUP
     LTEXT           "ms",IDC_STATIC,227,63,10,8
     GROUPBOX        "Database",IDC_STATIC,10,77,235,47
     RTEXT           "Path:",IDC_STATIC,19,91,18,8
@@ -79,8 +74,6 @@ BEGIN
     PUSHBUTTON      "...",IDC_DB_PATH_SET,202,89,13,12,WS_GROUP
     PUSHBUTTON      "clear",IDC_DB_PATH_CLEAR,215,89,23,12,WS_GROUP
     LTEXT           "",IDC_DB_STATUS,41,107,114,8,NOT WS_GROUP
-    PUSHBUTTON      "Load",IDC_DB_LOAD,161,105,36,12
-    PUSHBUTTON      "Unload",IDC_DB_UNLOAD,202,105,36,12
 END
 
 
@@ -90,7 +83,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_CONFIG, DIALOG
     BEGIN

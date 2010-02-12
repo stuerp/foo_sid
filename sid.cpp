@@ -1,7 +1,11 @@
-#define MYVERSION "1.14"
+#define MYVERSION "1.15"
 
 /*
 	changelog
+
+2010-01-11 15:36 UTC - kode54
+- Updated preferences page to 1.0 API
+- Version is now 1.15
 
 2009-04-16 22:30 UTC - kode54
 - Updated libsidplay to latest CVS code
@@ -59,7 +63,8 @@
 #define HAVE_SID2_COM 1
 
 #include <foobar2000.h>
-#include <../helpers/dropdown_helper.h>
+#include "../helpers/dropdown_helper.h"
+#include "../ATLHelpers/ATLHelpers.h"
 
 #include "SidTuneMod.h"
 #include <sidplay/sidplay2.h>
@@ -91,10 +96,18 @@ static const GUID guid_cfg_db_path =
 static const GUID guid_cfg_history_rate = 
 { 0x6ecf3074, 0xfa4d, 0x4717, { 0xb0, 0xb1, 0xc3, 0x11, 0xc3, 0xae, 0xba, 0x80 } };
 
-static cfg_int cfg_infinite(guid_cfg_infinite,0);
-static cfg_int cfg_deflength(guid_cfg_deflength, 180);
-static cfg_int cfg_fade(guid_cfg_fade, 200);
-static cfg_int cfg_rate(guid_cfg_rate,44100);
+enum
+{
+	default_cfg_infinite = 0,
+	default_cfg_deflength = 180,
+	default_cfg_fade = 200,
+	default_cfg_rate = 44100
+};
+
+static cfg_int cfg_infinite(guid_cfg_infinite,default_cfg_infinite);
+static cfg_int cfg_deflength(guid_cfg_deflength, default_cfg_deflength);
+static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
+static cfg_int cfg_rate(guid_cfg_rate,default_cfg_rate);
 //static cfg_int cfg_bps("sid_bps",16);
 
 static cfg_string cfg_db_path(guid_cfg_db_path, "");
@@ -445,10 +458,53 @@ static cfg_dropdown_history cfg_history_rate(guid_cfg_history_rate,16);
 
 static const int srate_tab[]={8000,11025,16000,22050,24000,32000,44100,48000,64000,88200,96000};
 
-static void update_db_status(HWND wnd)
+class CMyPreferences : public CDialogImpl<CMyPreferences>, public preferences_page_instance {
+public:
+	//Constructor - invoked by preferences_page_impl helpers - don't do Create() in here, preferences_page_impl does this for us
+	CMyPreferences(preferences_page_callback::ptr callback) : m_callback(callback) {}
+
+	//Note that we don't bother doing anything regarding destruction of our class.
+	//The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
+
+
+	//dialog resource ID
+	enum {IDD = IDD_CONFIG};
+	// preferences_page_instance methods (not all of them - get_wnd() is supplied by preferences_page_impl helpers)
+	t_uint32 get_state();
+	void apply();
+	void reset();
+
+	//WTL message map
+	BEGIN_MSG_MAP(CMyPreferences)
+		MSG_WM_INITDIALOG(OnInitDialog)
+		COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
+		COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnDBPathSet)
+		COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnDBPathClear)
+		COMMAND_HANDLER_EX(IDC_DLENGTH, EN_CHANGE, OnEditChange)
+		COMMAND_HANDLER_EX(IDC_FADE, EN_CHANGE, OnEditChange)
+		COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_EDITCHANGE, OnEditChange)
+		COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_SELCHANGE, OnSelectionChange)
+		DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, cfg_history_rate)
+	END_MSG_MAP()
+private:
+	BOOL OnInitDialog(CWindow, LPARAM);
+	void OnEditChange(UINT, int, CWindow);
+	void OnSelectionChange(UINT, int, CWindow);
+	void OnButtonClick(UINT, int, CWindow);
+	void OnDBPathSet(UINT, int, CWindow);
+	void OnDBPathClear(UINT, int, CWindow);
+	bool HasChanged();
+	void OnChanged();
+	
+	void update_db_status();
+	
+	const preferences_page_callback::ptr m_callback;
+};
+
+void CMyPreferences::update_db_status()
 {
 	pfc::string8 status;
-	if (db.loaded())
+	if ( db.loaded() )
 	{
 		status << db.get_count() << " entries loaded.";
 	}
@@ -456,145 +512,149 @@ static void update_db_status(HWND wnd)
 	{
 		status << "Not loaded.";
 	}
-	uSetDlgItemText(wnd, IDC_DB_STATUS, status);
+	uSetDlgItemText( m_hWnd, IDC_DB_STATUS, status );
 }
 
 unsigned parseTimeStamp(char * & arg);
 
-static BOOL CALLBACK ConfigProc(HWND wnd,UINT msg,WPARAM wp,LPARAM lp)
-{
-	switch(msg)
+BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
+	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, cfg_infinite );
+	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
+	uSetDlgItemText( m_hWnd, IDC_DB_PATH, cfg_db_path );
+	update_db_status();
 	{
-	case WM_INITDIALOG:
-		uSendDlgItemMessage(wnd, IDC_INFINITE, BM_SETCHECK, cfg_infinite, 0);
-		uSetDlgItemText(wnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
-		uSetDlgItemText(wnd, IDC_DB_PATH, cfg_db_path);
-		update_db_status(wnd);
+		CWindow w;
 		{
-			HWND w;
+			char temp[16];
+			int n;
+			SetDlgItemInt( IDC_FADE, cfg_fade, FALSE );
+			uSendMessage( GetDlgItem( IDC_FADE ), EM_LIMITTEXT, 3, 0);
+			for(n=tabsize(srate_tab);n--;)
 			{
-				char temp[16];
-				int n;
-				w = GetDlgItem(wnd, IDC_FADE);
-				itoa(cfg_fade, temp, 10);
-				uSetWindowText(w, temp);
-				uSendMessage(w, EM_LIMITTEXT, 3, 0);
-				for(n=tabsize(srate_tab);n--;)
+				if (srate_tab[n] != cfg_rate)
 				{
-					if (srate_tab[n] != cfg_rate)
-					{
-						itoa(srate_tab[n], temp, 10);
-						cfg_history_rate.add_item(temp);
-					}
-				}
-				itoa(cfg_rate, temp, 10);
-				cfg_history_rate.add_item(temp);
-				cfg_history_rate.setup_dropdown(w = GetDlgItem(wnd,IDC_SAMPLERATE));
-				uSendMessage(w, CB_SETCURSEL, 0, 0);
-			}
-		}
-		return 1;
-	case WM_COMMAND:
-		switch(wp)
-		{
-		case IDC_INFINITE:
-			cfg_infinite = uSendMessage((HWND)lp, BM_GETCHECK, 0, 0);
-			break;
-		case IDC_DB_PATH_SET:
-			{
-				pfc::string8 path(cfg_db_path);
-				if (uGetOpenFileName(core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
-					1, 0, "Choose SidPlay Song-Lengths Database...", 0, path, false))
-				{
-					uSetDlgItemText(wnd, IDC_DB_PATH, path);
-					cfg_db_path = path;
+					itoa(srate_tab[n], temp, 10);
+					cfg_history_rate.add_item(temp);
 				}
 			}
-			break;
-		case IDC_DB_PATH_CLEAR:
-			uSetDlgItemText(wnd, IDC_DB_PATH, "");
-			cfg_db_path = "";
-			break;
-		case IDC_DB_LOAD:
-			db.unload();
-			db_load(abort_callback_impl());
-			update_db_status(wnd);
-			break;
-		case IDC_DB_UNLOAD:
-			db.unload();
-			update_db_status(wnd);
-			break;
-		case (EN_CHANGE<<16)|IDC_DLENGTH:
-			{
-				string_utf8_from_window foo((HWND)lp);
-				const char * bar = foo.get_ptr();
-				int meh = parseTimeStamp((char *&) bar);
-				if (meh) cfg_deflength = meh;
-			}
-			break;
-		case (EN_KILLFOCUS<<16)|IDC_DLENGTH:
-			{
-				uSetWindowText((HWND)lp, pfc::format_time(cfg_deflength));
-			}
-			break;
-		case (EN_CHANGE<<16)|IDC_FADE:
-			{
-				cfg_fade = atoi(string_utf8_from_window((HWND)lp));
-			}
-			break;
-		case (CBN_KILLFOCUS<<16)|IDC_SAMPLERATE:
-			{
-				int t = GetDlgItemInt(wnd,IDC_SAMPLERATE,0,0);
-				if (t<6000) t=6000;
-				else if (t>192000) t=192000;
-				cfg_rate = t;
-			}
-			break;
+			itoa(cfg_rate, temp, 10);
+			cfg_history_rate.add_item(temp);
+			w = GetDlgItem( IDC_SAMPLERATE );
+			cfg_history_rate.setup_dropdown( w );
+			::SendMessage( w, CB_SETCURSEL, 0, 0 );
 		}
-		break;
-	case WM_DESTROY:
-		char temp[16];
-		itoa(cfg_rate, temp, 10);
-		cfg_history_rate.add_item(temp);
-		break;
 	}
-	return 0;
+	
+	return TRUE;
 }
 
-class preferences_page_sid : public preferences_page
-{
-public:
-	virtual HWND create(HWND parent)
+void CMyPreferences::OnEditChange(UINT, int, CWindow) {
+	OnChanged();
+}
+
+void CMyPreferences::OnSelectionChange(UINT, int, CWindow) {
+	OnChanged();
+}
+
+void CMyPreferences::OnButtonClick(UINT, int, CWindow) {
+	OnChanged();
+}
+
+void CMyPreferences::OnDBPathSet(UINT, int, CWindow) {
+	pfc::string8 path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ) );
+	if ( uGetOpenFileName( core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
+		1, 0, "Choose SidPlay Song-Lengths Database...", 0, path, false ) )
 	{
-		return uCreateDialog(IDD_CONFIG,parent,ConfigProc);
+		uSetDlgItemText( m_hWnd, IDC_DB_PATH, path );
+		OnChanged();
 	}
-	GUID get_guid()
+}
+
+void CMyPreferences::OnDBPathClear(UINT, int, CWindow) {
+	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
+	OnChanged();
+}
+
+t_uint32 CMyPreferences::get_state() {
+	t_uint32 state = preferences_state::resettable;
+	if (HasChanged()) state |= preferences_state::changed;
+	return state;
+}
+
+void CMyPreferences::reset() {
+	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, default_cfg_infinite );
+	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( default_cfg_deflength ) );
+	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
+	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
+	SetDlgItemInt( IDC_FADE, default_cfg_fade, FALSE );
+	
+	OnChanged();
+}
+
+void CMyPreferences::apply() {
+	char temp[16];
+	int t = GetDlgItemInt( IDC_SAMPLERATE, NULL, FALSE );
+	if ( t < 6000 ) t = 6000;
+	else if ( t > 192000 ) t = 192000;
+	SetDlgItemInt( IDC_SAMPLERATE, t, FALSE );
+	itoa( t, temp, 10 );
+	cfg_history_rate.add_item(temp);
+	cfg_rate = t;
+	cfg_db_path = string_utf8_from_window( m_hWnd, IDC_DB_PATH );
+	db.unload();
+	db_load( abort_callback_impl() );
+	update_db_status();
 	{
+		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
+		const char * bar = foo.get_ptr();
+		int meh = parseTimeStamp((char *&) bar);
+		if (meh) cfg_deflength = meh;
+		else uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
+	}
+	cfg_fade = GetDlgItemInt( IDC_FADE, NULL, FALSE );
+	cfg_infinite = SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK );
+	
+	OnChanged();
+}
+
+bool CMyPreferences::HasChanged() {
+	//returns whether our dialog content is different from the current configuration (whether the apply button should be enabled or not)
+	bool changed = false;
+	if ( !changed && GetDlgItemInt( IDC_SAMPLERATE, NULL, FALSE ) != cfg_rate ) changed = true;
+	if ( !changed && GetDlgItemInt( IDC_FADE, NULL, FALSE ) != cfg_fade ) changed = true;
+	if ( !changed && SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK ) != cfg_infinite ) changed = true;
+	if ( !changed && stricmp_utf8( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), cfg_db_path ) ) changed = true;
+	if ( !changed )
+	{
+		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
+		const char * bar = foo.get_ptr();
+		int meh = parseTimeStamp((char *&) bar);
+		if ( meh && meh != cfg_deflength ) changed = true;
+	}
+	return changed;
+}
+void CMyPreferences::OnChanged() {
+	//tell the host that our state has changed to enable/disable the apply button appropriately.
+	m_callback->on_state_changed();
+}
+
+class preferences_page_myimpl : public preferences_page_impl<CMyPreferences> {
+	// preferences_page_impl<> helper deals with instantiation of our dialog; inherits from preferences_page_v3.
+public:
+	const char * get_name() {return "sidplay";}
+	GUID get_guid() {
 		// {206017AC-0421-4d37-9B1F-99B9EADE744E}
-		static const GUID guid = 
-		{ 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
+		static const GUID guid = { 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
 		return guid;
 	}
-	virtual const char * get_name() {return "sidplay";}
 	GUID get_parent_guid() {return guid_input;}
-
-	bool reset_query() {return true;}
-	void reset()
-	{
-		cfg_infinite = 0;
-		cfg_deflength = 180;
-		cfg_fade = 200;;
-		cfg_rate = 44100;
-		// cfg_bps = 16;
-
-		cfg_db_path = "";
-		db.unload();
-	}
 };
 
 DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 
-static input_factory_t           <input_sid>            g_input_sid_factory;
-static preferences_page_factory_t<preferences_page_sid> g_config_sid_factory;
+static input_factory_t           <input_sid>               g_input_sid_factory;
+static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
 
 DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on libsidplay-2.1.1 and ReSID 0.16-p2.\n\nLicensed under the GNU GPL, see COPYING.txt.");
+
+VALIDATE_COMPONENT_FILENAME("foo_sid.dll");
