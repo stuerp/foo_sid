@@ -545,7 +545,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 		}
 	}
 	
-	return TRUE;
+	return FALSE;
 }
 
 void CMyPreferences::OnEditChange(UINT, int, CWindow) {

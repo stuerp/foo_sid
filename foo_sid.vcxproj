@@ -261,6 +261,9 @@
     <ProjectReference Include="..\..\..\sidplay2\libsidplay\win\VC\libsidplay_static.vcxproj">
       <Project>{b39be781-5bfb-4bf5-8bc2-1ed135f7dbdb}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\pfc\pfc.vcxproj">
+      <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\foobar2000_component_client\foobar2000_component_client.vcxproj">
       <Project>{71ad2674-065b-48f5-b8b0-e1f9d3892081}</Project>
     </ProjectReference>
