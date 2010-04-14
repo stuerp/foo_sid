@@ -1,7 +1,11 @@
-#define MYVERSION "1.15"
+#define MYVERSION "1.16"
 
 /*
 	changelog
+
+2010-04-14 20:47 UTC - kode54
+- Amended preferences WM_INITDIALOG handler
+- Version is now 1.16
 
 2010-01-11 15:36 UTC - kode54
 - Updated preferences page to 1.0 API
