@@ -1,7 +1,11 @@
-#define MYVERSION "1.16"
+#define MYVERSION "1.17"
 
 /*
 	changelog
+
+2010-05-01 06:54 UTC - kode54
+- Updated lengths database picker to use the last file's path
+- Version is now 1.17
 
 2010-04-14 20:47 UTC - kode54
 - Amended preferences WM_INITDIALOG handler
@@ -63,6 +67,8 @@
 - Version is 1.0
 
 */
+
+#define _WIN32_WINNT 0x0501
 
 #define HAVE_SID2_COM 1
 
@@ -548,7 +554,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 			::SendMessage( w, CB_SETCURSEL, 0, 0 );
 		}
 	}
-	
+
 	return FALSE;
 }
 
@@ -566,8 +572,10 @@ void CMyPreferences::OnButtonClick(UINT, int, CWindow) {
 
 void CMyPreferences::OnDBPathSet(UINT, int, CWindow) {
 	pfc::string8 path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ) );
+	pfc::string8 directory( path );
+	directory.truncate( directory.scan_filename() );
 	if ( uGetOpenFileName( core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
-		1, 0, "Choose SidPlay Song-Lengths Database...", 0, path, false ) )
+		1, 0, "Choose SidPlay Song-Lengths Database...", directory, path, false ) )
 	{
 		uSetDlgItemText( m_hWnd, IDC_DB_PATH, path );
 		OnChanged();
