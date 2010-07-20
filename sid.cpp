@@ -1,7 +1,11 @@
-#define MYVERSION "1.17"
+#define MYVERSION "1.18"
 
 /*
 	changelog
+
+2010-07-20 05:23 UTC - kode54
+- Updated to sidplay-residfp
+- Version is now 1.18
 
 2010-05-01 06:54 UTC - kode54
 - Updated lengths database picker to use the last file's path
@@ -70,18 +74,13 @@
 
 #define _WIN32_WINNT 0x0501
 
-#define HAVE_SID2_COM 1
-
 #include <foobar2000.h>
 #include "../helpers/dropdown_helper.h"
 #include "../ATLHelpers/ATLHelpers.h"
 
 #include "SidTuneMod.h"
 #include <sidplay/sidplay2.h>
-#ifdef HAVE_SID2_COM
-#include <sidplay/sidlazyiptr.h>
-#endif
-#include <sidplay/builders/resid.h>
+#include <builders/resid-builder/resid.h>
 
 #include "sldb.h"
 
@@ -142,12 +141,10 @@ class input_sid
 
 	bool first_block;
 
-	pfc::array_t<t_int16>    sample_buffer;
-
 	SidTuneMod             * pTune;
 
 	sidplay2               * m_engine;
-    SidLazyIPtr<ISidUnknown> m_sidBuilder;
+    ReSIDBuilder           * m_sidBuilder;
 
 	t_filestats m_stats;
 
@@ -156,12 +153,14 @@ public:
 	{
 		pTune = NULL;
 		m_engine = NULL;
+		m_sidBuilder = NULL;
 	}
 
 	~input_sid()
 	{
 		delete pTune;
 		delete m_engine;
+		delete m_sidBuilder;
 	}
 
 	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
@@ -201,7 +200,6 @@ public:
 		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set( "encoding", "synthesized" );
 		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
-		p_info.info_set_int("bitspersample", 16 /*dBps*/);
 
 		SidTuneInfo sidinfo;
 
@@ -266,28 +264,28 @@ public:
 
 		delete m_engine;
 
-		m_engine = ( sidplay2 * ) sidplay2::create ();
+		m_engine = new sidplay2;
 
-		m_engine->load( pTune );
+		if (m_engine->load( pTune ) < 0) throw exception_io_data(m_engine->error());
 
-		m_sidBuilder = ReSIDBuilderCreate ("");
-		SidLazyIPtr<IReSIDBuilder> rs(m_sidBuilder);
-		if (rs)
+		delete m_sidBuilder;
+
+		m_sidBuilder = new ReSIDBuilder( "ReSID" );
+		if (m_sidBuilder)
 		{
-            rs->create ((m_engine->info ()).maxsids);
-            if (*rs) rs->filter (true);
-            if (*rs) rs->sampling (dSrate);
-			if (!(*rs)) throw exception_io_data();
+            m_sidBuilder->create ((m_engine->info ()).maxsids);
+            if (*m_sidBuilder) m_sidBuilder->filter (true);
+			if (*m_sidBuilder) m_sidBuilder->filter ((const sid_filter_t *)NULL);
+			if (!(*m_sidBuilder)) throw exception_io_data();
 		}
 
 		sid2_config_t conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
-		conf.precision = 16 /*dBps*/;
+		conf.precision = 32 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
-		conf.sidEmulation = rs->iaggregate();
-		conf.optimisation = 0;
-		m_engine->config(conf);
+		conf.sidEmulation = m_sidBuilder;
+		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
 
 		played = 0;
 
@@ -295,8 +293,8 @@ public:
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
-			length *= dSrate * dNch * 2 /*(dBps>>3)*/;
-			fade = (cfg_fade * dSrate / 1000) * dNch * 2 /*(dBps>>3)*/;
+			length *= dSrate * dNch;
+			fade = (cfg_fade * dSrate / 1000) * dNch;
 		}
 		else
 		{
@@ -310,17 +308,21 @@ public:
 
 		int samples = length - played, written; //(stereo)
 
-		if ( !length || ( samples > 512 * dNch * 2 ) ) samples = 512 * dNch * 2;
+		if ( !length || ( samples > 10240 * dNch ) ) samples = 10240 * dNch;
 
-		sample_buffer.grow_size( samples / 2 );
+		p_chunk.grow_data_size( samples );
+		p_chunk.set_srate( dSrate );
+		p_chunk.set_channels( dNch );
 
-		written = m_engine->play( sample_buffer.get_ptr(), samples );
+		written = m_engine->play( p_chunk.get_data(), samples );
 
 		if ( written < samples )
 		{
 			if ( m_engine->state() != sid2_stopped ) throw exception_io_data();
-			if ( length ) eof = true;
+			eof = true;
 		}
+
+		p_chunk.set_sample_count( written / dNch );
 
 		unsigned d_start, d_end;
 		d_start = played;
@@ -329,11 +331,12 @@ public:
 
 		if ( length && d_end + fade > length )
 		{
-			short * foo = sample_buffer.get_ptr();
+			audio_sample * foo = p_chunk.get_data();
 			unsigned n;
+			audio_sample factor = 1.0 / fade;
 			if ( dNch == 1 )
 			{
-				for ( n = d_start; n < d_end; n += 2 )
+				for ( n = d_start; n < d_end; n++ )
 				{
 					if ( n > length )
 					{
@@ -341,15 +344,15 @@ public:
 					}
 					else
 					{
-						unsigned bleh = length - n;
-						*foo = MulDiv( *foo, int( bleh ), int( fade ) );
+						audio_sample bleh = (audio_sample)(length - n) * factor;
+						*foo *= bleh;
 					}
 				}
 				++foo;
 			}
 			else if ( dNch == 2 )
 			{
-				for ( n = d_start; n < d_end; n += 4 )
+				for ( n = d_start; n < d_end; n += 2 )
 				{
 					if ( n > length )
 					{
@@ -358,16 +361,14 @@ public:
 					}
 					else
 					{
-						unsigned bleh = length - n;
-						foo[0] = MulDiv( foo[0], int( bleh ), int( fade ) );
-						foo[1] = MulDiv( foo[1], int( bleh ), int( fade ) );
+						audio_sample bleh = (audio_sample)(length - n) * factor;
+						foo[0] *= bleh;
+						foo[1] *= bleh;
 					}
 					foo += 2;
 				}
 			}
 		}
-
-		p_chunk.set_data_fixedpoint( sample_buffer.get_ptr(), written, dSrate, dNch, 16, audio_chunk::g_guess_channel_config( dNch ) );
 
 		return true;
 	}
@@ -376,12 +377,13 @@ public:
 	{
 		first_block = true;
 		unsigned samples = unsigned( audio_math::time_to_samples( p_seconds, dSrate ) );
-		samples *= 2 * dNch;
+		samples *= dNch;
 		if ( samples < played )
 		{
 			decode_initialize( pTune->getInfo().currentSong, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
-		sample_buffer.grow_size( 1024 * dNch );
+		pfc::array_t<audio_sample> sample_buffer;
+		sample_buffer.grow_size( 10240 * dNch );
 		eof = false;
 
 		unsigned remain = ( samples - played ) % 32;
@@ -394,17 +396,14 @@ public:
 			p_abort.check();
 
 			unsigned todo = samples - played;
-			if ( todo > 1024 * dNch ) todo = 1024 * dNch;
+			if ( todo > 10240 * dNch ) todo = 10240 * dNch;
 			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
 				if ( m_engine->state() != sid2_stopped )
 					throw exception_io_data();
-				if ( length )
-				{
-					eof = true;
-					break;
-				}
+				eof = true;
+				break;
 			}
 			played += todo;
 		}

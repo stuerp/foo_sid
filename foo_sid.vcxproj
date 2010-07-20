@@ -27,6 +27,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>PGUpdate</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -88,7 +89,7 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay2/libsidplay/include;../../../sidplay2/builders/resid-builder/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/sidplay/win/VC;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/builders/resid-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;STATIC_CPPLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -131,7 +132,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay2/libsidplay/include;../../../sidplay2/builders/resid-builder/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/sidplay/win/VC;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/builders/resid-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -175,7 +176,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay2/libsidplay/include;../../../sidplay2/builders/resid-builder/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/sidplay/win/VC;../../../sidplay-residfp/trunk/sidplay-libs-2.1.1/builders/resid-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;STATIC_CPPLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -256,11 +257,11 @@
     <ClInclude Include="sldb.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\sidplay2\builders\resid-builder\win\VC\resid_builder.vcxproj">
-      <Project>{a6924ef7-2833-4d83-9c76-f47ed7f15bb0}</Project>
+    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\sidplay-libs-2.1.1\builders\resid-builder\win\VC\resid_builder.vcxproj">
+      <Project>{873230ea-1ebc-4b11-80b9-fd446582fa27}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\sidplay2\libsidplay\win\VC\libsidplay_static.vcxproj">
-      <Project>{b39be781-5bfb-4bf5-8bc2-1ed135f7dbdb}</Project>
+    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\sidplay-libs-2.1.1\sidplay\win\VC\libsidplay.vcxproj">
+      <Project>{3afb0f7c-8cff-4440-9c12-9d4dc3a1736a}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
