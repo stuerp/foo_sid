@@ -1,7 +1,12 @@
-#define MYVERSION "1.18"
+#define MYVERSION "1.19"
 
 /*
 	changelog
+
+2010-08-10 20:27 UTC - kode54
+- Fixed archive path handling of path separators in sidplay
+- File open function now reports unsupported file when SidTune loader fails
+- Version is now 1.19
 
 2010-07-20 05:23 UTC - kode54
 - Updated to sidplay-residfp
@@ -177,7 +182,7 @@ public:
 
 		pTune = new SidTuneMod( p_path );
 
-		if ( ! ( *pTune ) ) throw exception_io_data();
+		if ( ! ( *pTune ) ) throw exception_io_unsupported_format();
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
