@@ -3,8 +3,6 @@
 #include "SidTuneMod.h"
 #include "sldb.h"
 
-#include "MD5/MD5.h"
-
 static int hex_digit(int c)
 {
 	if (c >= '0' && c <= '9') return c - '0';
