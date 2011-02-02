@@ -1,7 +1,14 @@
-#define MYVERSION "1.19"
+#define MYVERSION "1.20"
 
 /*
 	changelog
+
+2011-02-02 02:49 UTC - kode54
+- Implemented smart relative path support for song length database
+- Version is now 1.20
+
+2011-02-02 06:15 UTC - kode54
+- Implemented song length database locking
 
 2010-08-10 20:27 UTC - kode54
 - Fixed archive path handling of path separators in sidplay
@@ -126,14 +133,77 @@ static cfg_int cfg_rate(guid_cfg_rate,default_cfg_rate);
 
 static cfg_string cfg_db_path(guid_cfg_db_path, "");
 
+static critical_section db_lock;
+
 static sldb db;
+
+static void convert_db_path( const char * in, pfc::string_base & out, bool from_config );
 
 static void db_load(abort_callback & p_abort)
 {
+	pfc::string8 real_path;
 	pfc::string8 path("file://");
-	path += cfg_db_path;
+	convert_db_path( cfg_db_path, real_path, true );
+	path += real_path;
 	if (path.length() == 7) return;
 	db.load(path, p_abort);
+}
+
+static void convert_db_path( const char * in, pfc::string_base & out, bool from_config )
+{
+	pfc::string8 player_path;
+	pfc::string8 component_path;
+	pfc::string8 profile_path;
+	
+	uGetModuleFileName( NULL, player_path );
+	player_path.truncate( player_path.scan_filename() - 1 );
+
+	component_path = core_api::get_my_full_path();
+	component_path.truncate( component_path.scan_filename() - 1 );
+
+	profile_path = core_api::get_profile_path();
+
+	out.reset();
+
+	if ( from_config )
+	{
+		while ( *in )
+		{
+			t_size first = pfc::string_find_first( in, '<' );
+			out.add_string( in, first );
+			if ( first != pfc::infinite_size )
+			{
+				if ( !pfc::stricmp_ascii_ex( in + first, 13, "<player path>", 13 ) ) out += player_path;
+				else if ( !pfc::stricmp_ascii_ex( in + first, 14, "<profile path>", 14 ) ) out += profile_path;
+				else if ( !pfc::stricmp_ascii_ex( in + first, 16, "<component path>", 16 ) ) out += component_path;
+				first = pfc::string_find_first( in, '>', first );
+				if ( first != pfc::infinite_size ) ++first;
+			}
+			if ( first == pfc::infinite_size ) first = strlen( in );
+			in += first;
+		}
+	}
+	else
+	{
+		while ( *in )
+		{
+			size_t pos_player_path = pfc::string_find_first( in, player_path );
+			size_t pos_component_path = pfc::string_find_first( in, component_path );
+			size_t pos_profile_path = pfc::string_find_first( in, profile_path );
+			t_size first = pos_player_path;
+			if ( pos_component_path < first ) first = pos_component_path;
+			if ( pos_profile_path < first ) first = pos_player_path;
+			out.add_string( in, first );
+			if ( first != pfc::infinite_size )
+			{
+				if ( first == pos_component_path ) { out += "<component path>"; in += first + component_path.length(); }
+				else if ( first == pos_profile_path ) { out += "<profile path>"; in += first + profile_path.length(); }
+				else if ( first == pos_player_path ) { out += "<player path>"; in += first + player_path.length(); }
+			}
+			if ( first == pfc::infinite_size ) first = strlen( in );
+			in += first;
+		}
+	}
 }
 
 class input_sid
@@ -231,12 +301,16 @@ public:
 
 		unsigned length = cfg_deflength;
 
-		if ( ! db.loaded() ) db_load( p_abort );
-
-		if ( db.loaded() )
 		{
-			unsigned len = db.find( pTune, p_subsong - 1 );
-			if (len) length = len;
+			insync( db_lock );
+
+			if ( ! db.loaded() ) db_load( p_abort );
+
+			if ( db.loaded() )
+			{
+				unsigned len = db.find( pTune, p_subsong - 1 );
+				if (len) length = len;
+			}
 		}
 
 		p_info.set_length( double( length ) );
@@ -259,12 +333,16 @@ public:
 
 		length = cfg_deflength;
 
-		if ( ! db.loaded() ) db_load( p_abort );
-
-		if ( db.loaded() )
 		{
-			unsigned len = db.find( pTune, p_subsong - 1 );
-			if (len) length = len;
+			insync( db_lock );
+
+			if ( ! db.loaded() ) db_load( p_abort );
+
+			if ( db.loaded() )
+			{
+				unsigned len = db.find( pTune, p_subsong - 1 );
+				if (len) length = len;
+			}
 		}
 
 		delete m_engine;
@@ -517,6 +595,7 @@ private:
 
 void CMyPreferences::update_db_status()
 {
+	insync( db_lock );
 	pfc::string8 status;
 	if ( db.loaded() )
 	{
@@ -575,13 +654,16 @@ void CMyPreferences::OnButtonClick(UINT, int, CWindow) {
 }
 
 void CMyPreferences::OnDBPathSet(UINT, int, CWindow) {
-	pfc::string8 path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ) );
+	pfc::string8 path;
+	convert_db_path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), path, true );
 	pfc::string8 directory( path );
 	directory.truncate( directory.scan_filename() );
 	if ( uGetOpenFileName( core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
 		1, 0, "Choose SidPlay Song-Lengths Database...", directory, path, false ) )
 	{
-		uSetDlgItemText( m_hWnd, IDC_DB_PATH, path );
+		pfc::string8 new_path;
+		convert_db_path( path, new_path, false );
+		uSetDlgItemText( m_hWnd, IDC_DB_PATH, new_path );
 		OnChanged();
 	}
 }
@@ -616,9 +698,14 @@ void CMyPreferences::apply() {
 	itoa( t, temp, 10 );
 	cfg_history_rate.add_item(temp);
 	cfg_rate = t;
-	cfg_db_path = string_utf8_from_window( m_hWnd, IDC_DB_PATH );
-	db.unload();
-	db_load( abort_callback_impl() );
+	pfc::string8 db_path;
+	convert_db_path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), db_path, false );
+	cfg_db_path = db_path;
+	{
+		insync( db_lock );
+		db.unload();
+		db_load( abort_callback_impl() );
+	}
 	update_db_status();
 	{
 		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
@@ -639,7 +726,12 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && GetDlgItemInt( IDC_SAMPLERATE, NULL, FALSE ) != cfg_rate ) changed = true;
 	if ( !changed && GetDlgItemInt( IDC_FADE, NULL, FALSE ) != cfg_fade ) changed = true;
 	if ( !changed && SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK ) != cfg_infinite ) changed = true;
-	if ( !changed && stricmp_utf8( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), cfg_db_path ) ) changed = true;
+	if ( !changed )
+	{
+		pfc::string8 db_path;
+		convert_db_path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), db_path, false );
+		if ( stricmp_utf8( db_path, cfg_db_path ) ) changed = true;
+	}
 	if ( !changed )
 	{
 		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
