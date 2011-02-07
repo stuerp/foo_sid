@@ -1,7 +1,15 @@
-#define MYVERSION "1.20"
+#define MYVERSION "1.22"
 
 /*
 	changelog
+
+2011-02-03 14:47 UTC - kode54
+- Fixed relative patch token matching on configuration file read
+- Version is now 1.22
+
+2011-02-03 07:50 UTC - kode54
+- Fixed relative paths for the profile path, which has file:// prepended to it
+- Version is now 1.21
 
 2011-02-02 02:49 UTC - kode54
 - Implemented smart relative path support for song length database
@@ -161,7 +169,9 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 	component_path = core_api::get_my_full_path();
 	component_path.truncate( component_path.scan_filename() - 1 );
 
-	profile_path = core_api::get_profile_path();
+	const char * path = core_api::get_profile_path();
+	if ( !pfc::stricmp_ascii_ex( path, 7, "file://", 7 ) ) path += 7;
+	profile_path = path;
 
 	out.reset();
 
@@ -173,9 +183,9 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 			out.add_string( in, first );
 			if ( first != pfc::infinite_size )
 			{
-				if ( !pfc::stricmp_ascii_ex( in + first, 13, "<player path>", 13 ) ) out += player_path;
-				else if ( !pfc::stricmp_ascii_ex( in + first, 14, "<profile path>", 14 ) ) out += profile_path;
-				else if ( !pfc::stricmp_ascii_ex( in + first, 16, "<component path>", 16 ) ) out += component_path;
+				if ( !pfc::strcmp_partial( in + first, "<player path>" ) ) out += player_path;
+				else if ( !pfc::strcmp_partial( in + first, "<profile path>" ) ) out += profile_path;
+				else if ( !pfc::strcmp_partial( in + first, "<component path>" ) ) out += component_path;
 				first = pfc::string_find_first( in, '>', first );
 				if ( first != pfc::infinite_size ) ++first;
 			}
