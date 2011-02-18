@@ -1,10 +1,14 @@
-#define MYVERSION "1.22"
+#define MYVERSION "1.23"
 
 /*
 	changelog
 
+2011-02-18 14:48 UTC - kode54
+- Fixed relative path token matching for the profile path, for real this time
+- Version is now 1.23
+
 2011-02-03 14:47 UTC - kode54
-- Fixed relative patch token matching on configuration file read
+- Fixed relative path token matching on configuration file read
 - Version is now 1.22
 
 2011-02-03 07:50 UTC - kode54
@@ -202,7 +206,7 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 			size_t pos_profile_path = pfc::string_find_first( in, profile_path );
 			t_size first = pos_player_path;
 			if ( pos_component_path < first ) first = pos_component_path;
-			if ( pos_profile_path < first ) first = pos_player_path;
+			if ( pos_profile_path < first ) first = pos_profile_path;
 			out.add_string( in, first );
 			if ( first != pfc::infinite_size )
 			{
