@@ -14,7 +14,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <sidplay/sidendian.h>
+#include <sidplayfp/sidendian.h>
 #include "config.h"
 #include "SidTuneMod.h"
 
@@ -58,8 +58,8 @@ bool SidTune::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& 
         return false;
     }
 
-    if ( decompressPP20(fileBuf) < 0 )
-        return false;
+    /*if ( decompressPP20(fileBuf) < 0 )
+        return false;*/
 
     bufferRef.assign(fileBuf.xferPtr(),fileBuf.xferLen());
     return true;

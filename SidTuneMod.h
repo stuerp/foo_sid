@@ -17,7 +17,7 @@
 #ifndef SIDTUNEMOD_H
 #define SIDTUNEMOD_H
 
-#include <sidplay/SidTune.h>
+#include <sidplayfp/SidTune.h>
 
 #include <foobar2000.h>
 

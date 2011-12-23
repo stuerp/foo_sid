@@ -1,7 +1,14 @@
-#define MYVERSION "1.23"
+#define MYVERSION "1.24"
+
+// plain resid filtering is broken
+// #define USE_RESID
 
 /*
 	changelog
+
+2011-12-22 21:18 UTC - kode54
+- Updated to latest residfp library
+- Version is now 1.24
 
 2011-02-18 14:48 UTC - kode54
 - Fixed relative path token matching for the profile path, for real this time
@@ -103,8 +110,11 @@
 #include "../ATLHelpers/ATLHelpers.h"
 
 #include "SidTuneMod.h"
-#include <sidplay/sidplay2.h>
+#include <sidplayfp/sidplay2.h>
+#ifdef USE_RESID
 #include <builders/resid-builder/resid.h>
+#endif
+#include <builders/residfp-builder/residfp.h>
 
 #include "sldb.h"
 
@@ -128,19 +138,30 @@ static const GUID guid_cfg_db_path =
 // {6ECF3074-FA4D-4717-B0B1-C311C3AEBA80}
 static const GUID guid_cfg_history_rate = 
 { 0x6ecf3074, 0xfa4d, 0x4717, { 0xb0, 0xb1, 0xc3, 0x11, 0xc3, 0xae, 0xba, 0x80 } };
+#ifdef USE_RESID
+// {55884484-BE63-4425-997E-94A5D23DF605}
+static const GUID guid_cfg_use_residfp = 
+{ 0x55884484, 0xbe63, 0x4425, { 0x99, 0x7e, 0x94, 0xa5, 0xd2, 0x3d, 0xf6, 0x5 } };
+#endif
 
 enum
 {
 	default_cfg_infinite = 0,
 	default_cfg_deflength = 180,
 	default_cfg_fade = 200,
-	default_cfg_rate = 44100
+	default_cfg_rate = 44100,
+#ifdef USE_RESID
+	default_cfg_use_residfp = false
+#endif
 };
 
 static cfg_int cfg_infinite(guid_cfg_infinite,default_cfg_infinite);
 static cfg_int cfg_deflength(guid_cfg_deflength, default_cfg_deflength);
 static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
 static cfg_int cfg_rate(guid_cfg_rate,default_cfg_rate);
+#ifdef USE_RESID
+static cfg_bool cfg_use_residfp(guid_cfg_use_residfp,default_cfg_use_residfp);
+#endif
 //static cfg_int cfg_bps("sid_bps",16);
 
 static cfg_string cfg_db_path(guid_cfg_db_path, "");
@@ -233,7 +254,9 @@ class input_sid
 	SidTuneMod             * pTune;
 
 	sidplay2               * m_engine;
-    ReSIDBuilder           * m_sidBuilder;
+    sidbuilder             * m_sidBuilder;
+
+	pfc::array_t<t_int16>    m_sampleBuffer;
 
 	t_filestats m_stats;
 
@@ -266,7 +289,7 @@ public:
 
 		pTune = new SidTuneMod( p_path );
 
-		if ( ! ( *pTune ) ) throw exception_io_unsupported_format();
+		if ( ! pTune->getStatus() ) throw exception_io_unsupported_format();
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
@@ -311,7 +334,7 @@ public:
 		}
 
 		if (sidinfo.clockSpeed) p_info.info_set("clock_speed", sidinfo.clockSpeed == 2 ? "NTSC" : "PAL");
-		p_info.info_set("sid_model", sidinfo.sidModel == SIDTUNE_SIDMODEL_8580 ? "8580" : "6581");
+		p_info.info_set("sid_model", sidinfo.sidModel1 == SIDTUNE_SIDMODEL_8580 ? "8580" : "6581");
 
 		unsigned length = cfg_deflength;
 
@@ -366,20 +389,38 @@ public:
 		if (m_engine->load( pTune ) < 0) throw exception_io_data(m_engine->error());
 
 		delete m_sidBuilder;
+		m_sidBuilder = NULL;
 
-		m_sidBuilder = new ReSIDBuilder( "ReSID" );
-		if (m_sidBuilder)
+#ifdef USE_RESID
+		if ( cfg_use_residfp )
+#endif
 		{
-            m_sidBuilder->create ((m_engine->info ()).maxsids);
-            if (*m_sidBuilder) m_sidBuilder->filter (true);
-			if (*m_sidBuilder) m_sidBuilder->filter ((const sid_filter_t *)NULL);
-			if (!(*m_sidBuilder)) throw exception_io_data();
+			ReSIDfpBuilder * builder = new ReSIDfpBuilder( "ReSIDfp" );
+			if (builder)
+			{
+				builder->create ((m_engine->info ()).maxsids);
+				if (builder->getStatus()) builder->filter (true);
+				if (!builder->getStatus()) throw exception_io_data();
+				m_sidBuilder = builder;
+			}
 		}
+#ifdef USE_RESID
+		else
+		{
+			ReSIDBuilder * builder = new ReSIDBuilder( "ReSID" );
+			if (builder)
+			{
+				builder->create((m_engine->info ()).maxsids);
+				if (builder->getStatus()) builder->filter (true);
+				if (!builder->getStatus()) throw exception_io_data();
+				m_sidBuilder = builder;
+			}
+		}
+#endif
 
 		sid2_config_t conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
-		conf.precision = 32 /*dBps*/;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
 		conf.sidEmulation = m_sidBuilder;
 		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
@@ -397,6 +438,8 @@ public:
 		{
 			length = 0;
 		}
+
+		m_sampleBuffer.set_count( 10240 * dNch );
 	}
 
 	bool decode_run( audio_chunk & p_chunk,abort_callback & p_abort )
@@ -411,7 +454,9 @@ public:
 		p_chunk.set_srate( dSrate );
 		p_chunk.set_channels( dNch );
 
-		written = m_engine->play( p_chunk.get_data(), samples );
+		written = m_engine->play( m_sampleBuffer.get_ptr(), samples );
+
+		audio_math::convert_from_int16( m_sampleBuffer.get_ptr(), written * dNch, p_chunk.get_data(), 1.0 );
 
 		if ( written < samples )
 		{
@@ -479,7 +524,7 @@ public:
 		{
 			decode_initialize( pTune->getInfo().currentSong, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
-		pfc::array_t<audio_sample> sample_buffer;
+		pfc::array_t<t_int16> sample_buffer;
 		sample_buffer.grow_size( 10240 * dNch );
 		eof = false;
 
@@ -584,6 +629,9 @@ public:
 	BEGIN_MSG_MAP(CMyPreferences)
 		MSG_WM_INITDIALOG(OnInitDialog)
 		COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
+#ifdef USE_RESID
+		COMMAND_HANDLER_EX(IDC_USE_RESIDFP, BN_CLICKED, OnButtonClick)
+#endif
 		COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnDBPathSet)
 		COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnDBPathClear)
 		COMMAND_HANDLER_EX(IDC_DLENGTH, EN_CHANGE, OnEditChange)
@@ -626,6 +674,9 @@ unsigned parseTimeStamp(char * & arg);
 
 BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, cfg_infinite );
+#ifdef USE_RESID
+	SendDlgItemMessage( IDC_USE_RESIDFP, BM_SETCHECK, cfg_use_residfp );
+#endif
 	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, cfg_db_path );
 	update_db_status();
@@ -695,6 +746,9 @@ t_uint32 CMyPreferences::get_state() {
 
 void CMyPreferences::reset() {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, default_cfg_infinite );
+#ifdef USE_RESID
+	SendDlgItemMessage( IDC_USE_RESIDFP, BM_SETCHECK, default_cfg_use_residfp );
+#endif
 	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( default_cfg_deflength ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
 	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
@@ -730,6 +784,9 @@ void CMyPreferences::apply() {
 	}
 	cfg_fade = GetDlgItemInt( IDC_FADE, NULL, FALSE );
 	cfg_infinite = SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK );
+#ifdef USE_RESID
+	cfg_use_residfp = !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK );
+#endif
 	
 	OnChanged();
 }
@@ -740,6 +797,9 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && GetDlgItemInt( IDC_SAMPLERATE, NULL, FALSE ) != cfg_rate ) changed = true;
 	if ( !changed && GetDlgItemInt( IDC_FADE, NULL, FALSE ) != cfg_fade ) changed = true;
 	if ( !changed && SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK ) != cfg_infinite ) changed = true;
+#ifdef USE_RESID
+	if ( !changed && !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK ) != cfg_use_residfp ) changed = true;
+#endif
 	if ( !changed )
 	{
 		pfc::string8 db_path;
@@ -777,6 +837,6 @@ DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 static input_factory_t           <input_sid>               g_input_sid_factory;
 static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
 
-DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on libsidplay-2.1.1 and ReSID 0.16-p2.\n\nLicensed under the GNU GPL, see COPYING.txt.");
+DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.");
 
 VALIDATE_COMPONENT_FILENAME("foo_sid.dll");
