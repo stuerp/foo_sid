@@ -16,7 +16,9 @@
 #define IDC_DATABASE_SEP                1010
 #define IDC_LENGTH_SEP                  1011
 #define IDC_QUALITY_SEP                 1012
-#define IDC_USE_RESIDFP                 1013
+#define IDC_CLOCK_OVERRIDE              1013
+#define IDC_OVERRIDE_SID                1014
+#define IDC_SID_OVERRIDE                1014
 
 // Next default values for new objects
 // 

@@ -1,10 +1,14 @@
-#define MYVERSION "1.24"
+#define MYVERSION "1.25"
 
 // plain resid filtering is broken
 // #define USE_RESID
 
 /*
 	changelog
+
+2012-01-26 22:10 UTC - kode54
+- Implemented clock speed and SID chip override controls
+- Version is now 1.25
 
 2011-12-22 21:18 UTC - kode54
 - Updated to latest residfp library
@@ -138,6 +142,12 @@ static const GUID guid_cfg_db_path =
 // {6ECF3074-FA4D-4717-B0B1-C311C3AEBA80}
 static const GUID guid_cfg_history_rate = 
 { 0x6ecf3074, 0xfa4d, 0x4717, { 0xb0, 0xb1, 0xc3, 0x11, 0xc3, 0xae, 0xba, 0x80 } };
+// {D0FC838C-9433-409A-93E4-0B89D3B4FB15}
+static const GUID guid_cfg_clock_override = 
+{ 0xd0fc838c, 0x9433, 0x409a, { 0x93, 0xe4, 0xb, 0x89, 0xd3, 0xb4, 0xfb, 0x15 } };
+// {9DF20A98-DFA4-461C-8F67-6009FD934590}
+static const GUID guid_cfg_sid_override = 
+{ 0x9df20a98, 0xdfa4, 0x461c, { 0x8f, 0x67, 0x60, 0x9, 0xfd, 0x93, 0x45, 0x90 } };
 #ifdef USE_RESID
 // {55884484-BE63-4425-997E-94A5D23DF605}
 static const GUID guid_cfg_use_residfp = 
@@ -150,6 +160,8 @@ enum
 	default_cfg_deflength = 180,
 	default_cfg_fade = 200,
 	default_cfg_rate = 44100,
+	default_cfg_clock_override = 0,
+	default_cfg_sid_override = 0,
 #ifdef USE_RESID
 	default_cfg_use_residfp = false
 #endif
@@ -159,6 +171,8 @@ static cfg_int cfg_infinite(guid_cfg_infinite,default_cfg_infinite);
 static cfg_int cfg_deflength(guid_cfg_deflength, default_cfg_deflength);
 static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
 static cfg_int cfg_rate(guid_cfg_rate,default_cfg_rate);
+static cfg_int cfg_clock_override(guid_cfg_clock_override,default_cfg_clock_override);
+static cfg_int cfg_sid_override(guid_cfg_sid_override,default_cfg_sid_override);
 #ifdef USE_RESID
 static cfg_bool cfg_use_residfp(guid_cfg_use_residfp,default_cfg_use_residfp);
 #endif
@@ -333,7 +347,8 @@ public:
 			if (sidinfo.commentString[i] && sidinfo.commentString[i][0] && strcmp(sidinfo.commentString[i], "--- SAVED WITH SIDPLAY ---")) p_info.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(sidinfo.commentString[i]));
 		}
 
-		if (sidinfo.clockSpeed) p_info.info_set("clock_speed", sidinfo.clockSpeed == 2 ? "NTSC" : "PAL");
+		if (sidinfo.clockSpeed && ( sidinfo.clockSpeed == SIDTUNE_CLOCK_NTSC || sidinfo.clockSpeed == SIDTUNE_CLOCK_PAL ) )
+			p_info.info_set("clock_speed", sidinfo.clockSpeed == SIDTUNE_CLOCK_NTSC ? "NTSC" : "PAL");
 		p_info.info_set("sid_model", sidinfo.sidModel1 == SIDTUNE_SIDMODEL_8580 ? "8580" : "6581");
 
 		unsigned length = cfg_deflength;
@@ -423,6 +438,15 @@ public:
 		conf.frequency = dSrate;
 		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
 		conf.sidEmulation = m_sidBuilder;
+		if ( cfg_clock_override )
+		{
+			conf.clockForced = true;
+			conf.clockSpeed = ( cfg_clock_override == 1 ) ? SID2_CLOCK_PAL : SID2_CLOCK_NTSC;
+		}
+		if ( cfg_sid_override )
+		{
+			conf.sidModel = ( cfg_sid_override == 1 ) ? SID2_MOS6581 : SID2_MOS8580;
+		}
 		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
 
 		played = 0;
@@ -638,6 +662,8 @@ public:
 		COMMAND_HANDLER_EX(IDC_FADE, EN_CHANGE, OnEditChange)
 		COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_EDITCHANGE, OnEditChange)
 		COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_SELCHANGE, OnSelectionChange)
+		COMMAND_HANDLER_EX(IDC_CLOCK_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
+		COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
 		DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, cfg_history_rate)
 	END_MSG_MAP()
 private:
@@ -701,6 +727,18 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 			cfg_history_rate.setup_dropdown( w );
 			::SendMessage( w, CB_SETCURSEL, 0, 0 );
 		}
+
+		w = GetDlgItem( IDC_CLOCK_OVERRIDE );
+		uSendMessageText( w, CB_ADDSTRING, 0, "As input file specifies" );
+		uSendMessageText( w, CB_ADDSTRING, 0, "Force PAL" );
+		uSendMessageText( w, CB_ADDSTRING, 0, "Force NTSC" );
+		::SendMessage( w, CB_SETCURSEL, cfg_clock_override, 0 );
+
+		w = GetDlgItem( IDC_SID_OVERRIDE );
+		uSendMessageText( w, CB_ADDSTRING, 0, "As input file specifies" );
+		uSendMessageText( w, CB_ADDSTRING, 0, "Force 6581" );
+		uSendMessageText( w, CB_ADDSTRING, 0, "Force 8580" );
+		::SendMessage( w, CB_SETCURSEL, cfg_sid_override, 0 );
 	}
 
 	return FALSE;
@@ -746,6 +784,8 @@ t_uint32 CMyPreferences::get_state() {
 
 void CMyPreferences::reset() {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, default_cfg_infinite );
+	SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override );
+	SendDlgItemMessage( IDC_SID_OVERRIDE, CB_SETCURSEL, default_cfg_sid_override );
 #ifdef USE_RESID
 	SendDlgItemMessage( IDC_USE_RESIDFP, BM_SETCHECK, default_cfg_use_residfp );
 #endif
@@ -784,6 +824,8 @@ void CMyPreferences::apply() {
 	}
 	cfg_fade = GetDlgItemInt( IDC_FADE, NULL, FALSE );
 	cfg_infinite = SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK );
+	cfg_clock_override = SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_GETCURSEL );
+	cfg_sid_override = SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL );
 #ifdef USE_RESID
 	cfg_use_residfp = !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK );
 #endif
@@ -797,6 +839,8 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && GetDlgItemInt( IDC_SAMPLERATE, NULL, FALSE ) != cfg_rate ) changed = true;
 	if ( !changed && GetDlgItemInt( IDC_FADE, NULL, FALSE ) != cfg_fade ) changed = true;
 	if ( !changed && SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK ) != cfg_infinite ) changed = true;
+	if ( !changed && SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_GETCURSEL ) != cfg_clock_override ) changed = true;
+	if ( !changed && SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL ) != cfg_sid_override ) changed = true;
 #ifdef USE_RESID
 	if ( !changed && !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK ) != cfg_use_residfp ) changed = true;
 #endif
