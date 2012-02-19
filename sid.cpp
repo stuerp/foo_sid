@@ -1,10 +1,14 @@
-#define MYVERSION "1.26"
+#define MYVERSION "1.27"
 
 // plain resid filtering is broken
 // #define USE_RESID
 
 /*
 	changelog
+
+2012-02-19 20:01 UTC - kode54
+- Added abort check to decoder
+- Version is now 1.27
 
 2012-02-19 01:36 UTC - kode54
 - Updated residfp to revision 664
@@ -493,6 +497,8 @@ public:
 
 	bool decode_run( audio_chunk & p_chunk,abort_callback & p_abort )
 	{
+		p_abort.check();
+
 		if ( eof || ( length && played >= length ) ) return false;
 
 		int samples = length - played, written; //(stereo)
