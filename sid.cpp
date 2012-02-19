@@ -1,10 +1,15 @@
-#define MYVERSION "1.25"
+#define MYVERSION "1.26"
 
 // plain resid filtering is broken
 // #define USE_RESID
 
 /*
 	changelog
+
+2012-02-19 01:36 UTC - kode54
+- Updated residfp to revision 664
+- Implemented resid filter curve configuration
+- Version is now 1.26
 
 2012-01-26 22:10 UTC - kode54
 - Implemented clock speed and SID chip override controls
@@ -148,6 +153,12 @@ static const GUID guid_cfg_clock_override =
 // {9DF20A98-DFA4-461C-8F67-6009FD934590}
 static const GUID guid_cfg_sid_override = 
 { 0x9df20a98, 0xdfa4, 0x461c, { 0x8f, 0x67, 0x60, 0x9, 0xfd, 0x93, 0x45, 0x90 } };
+// {8DCA8173-C912-4C79-BBCF-1AC005DCE6D3}
+static const GUID guid_cfg_sid_filter_6581 = 
+{ 0x8dca8173, 0xc912, 0x4c79, { 0xbb, 0xcf, 0x1a, 0xc0, 0x5, 0xdc, 0xe6, 0xd3 } };
+// {58ED05BF-A672-43D1-A87D-BD4D8BFCE7B3}
+static const GUID guid_cfg_sid_filter_8580 = 
+{ 0x58ed05bf, 0xa672, 0x43d1, { 0xa8, 0x7d, 0xbd, 0x4d, 0x8b, 0xfc, 0xe7, 0xb3 } };
 #ifdef USE_RESID
 // {55884484-BE63-4425-997E-94A5D23DF605}
 static const GUID guid_cfg_use_residfp = 
@@ -162,6 +173,8 @@ enum
 	default_cfg_rate = 44100,
 	default_cfg_clock_override = 0,
 	default_cfg_sid_override = 0,
+	default_cfg_sid_filter_6581 = 128,
+	default_cfg_sid_filter_8580 = 12500,
 #ifdef USE_RESID
 	default_cfg_use_residfp = false
 #endif
@@ -173,6 +186,8 @@ static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
 static cfg_int cfg_rate(guid_cfg_rate,default_cfg_rate);
 static cfg_int cfg_clock_override(guid_cfg_clock_override,default_cfg_clock_override);
 static cfg_int cfg_sid_override(guid_cfg_sid_override,default_cfg_sid_override);
+static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581,default_cfg_sid_filter_6581);
+static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580,default_cfg_sid_filter_8580);
 #ifdef USE_RESID
 static cfg_bool cfg_use_residfp(guid_cfg_use_residfp,default_cfg_use_residfp);
 #endif
@@ -414,7 +429,12 @@ public:
 			if (builder)
 			{
 				builder->create ((m_engine->info ()).maxsids);
-				if (builder->getStatus()) builder->filter (true);
+				if (builder->getStatus())
+				{
+					builder->filter (true);
+					builder->filter6581Curve( cfg_sid_filter_6581 / 256. );
+					builder->filter8580Curve( (double) cfg_sid_filter_8580 );
+				}
 				if (!builder->getStatus()) throw exception_io_data();
 				m_sidBuilder = builder;
 			}
@@ -426,7 +446,12 @@ public:
 			if (builder)
 			{
 				builder->create((m_engine->info ()).maxsids);
-				if (builder->getStatus()) builder->filter (true);
+				if (builder->getStatus())
+				{
+					builder->filter (true);
+					builder->filter6581Curve( cfg_sid_filter_6581 / 256. );
+					builder->filter8580Curve( (double) cfg_sid_filter_8580 );
+				}
 				if (!builder->getStatus()) throw exception_io_data();
 				m_sidBuilder = builder;
 			}
@@ -664,6 +689,7 @@ public:
 		COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_SELCHANGE, OnSelectionChange)
 		COMMAND_HANDLER_EX(IDC_CLOCK_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
 		COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
+		MSG_WM_HSCROLL(OnHScroll);
 		DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, cfg_history_rate)
 	END_MSG_MAP()
 private:
@@ -673,12 +699,15 @@ private:
 	void OnButtonClick(UINT, int, CWindow);
 	void OnDBPathSet(UINT, int, CWindow);
 	void OnDBPathClear(UINT, int, CWindow);
+	void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar);
 	bool HasChanged();
 	void OnChanged();
 	
 	void update_db_status();
 	
 	const preferences_page_callback::ptr m_callback;
+
+	CTrackBarCtrl m_slider_6581, m_slider_8580;
 };
 
 void CMyPreferences::update_db_status()
@@ -741,6 +770,18 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 		::SendMessage( w, CB_SETCURSEL, cfg_sid_override, 0 );
 	}
 
+	m_slider_6581 = GetDlgItem( IDC_SLIDER_6581 );
+	m_slider_6581.SetRangeMin( 0 );
+	m_slider_6581.SetRangeMax( 256 );
+	m_slider_6581.SetPos( cfg_sid_filter_6581 );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( cfg_sid_filter_6581 / 256., 0, 2 ) );
+
+	m_slider_8580 = GetDlgItem( IDC_SLIDER_8580 );
+	m_slider_8580.SetRangeMin( 150 );
+	m_slider_8580.SetRangeMax( 22050 );
+	m_slider_8580.SetPos( cfg_sid_filter_8580 );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << cfg_sid_filter_8580 << " Hz" );
+
 	return FALSE;
 }
 
@@ -753,6 +794,19 @@ void CMyPreferences::OnSelectionChange(UINT, int, CWindow) {
 }
 
 void CMyPreferences::OnButtonClick(UINT, int, CWindow) {
+	OnChanged();
+}
+
+void CMyPreferences::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar)
+{
+	if ( pScrollBar.m_hWnd == m_slider_6581.m_hWnd )
+	{
+		uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( m_slider_6581.GetPos() / 256., 0, 2 ) );
+	}
+	else if ( pScrollBar.m_hWnd == m_slider_8580.m_hWnd )
+	{
+		uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << m_slider_8580.GetPos() << " Hz" );
+	}
 	OnChanged();
 }
 
@@ -793,6 +847,10 @@ void CMyPreferences::reset() {
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
 	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
 	SetDlgItemInt( IDC_FADE, default_cfg_fade, FALSE );
+	m_slider_6581.SetPos( default_cfg_sid_filter_6581 );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( default_cfg_sid_filter_6581 / 256., 0, 2 ) );
+	m_slider_8580.SetPos( default_cfg_sid_filter_8580 );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << default_cfg_sid_filter_8580 << " Hz" );
 	
 	OnChanged();
 }
@@ -826,6 +884,8 @@ void CMyPreferences::apply() {
 	cfg_infinite = SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK );
 	cfg_clock_override = SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_GETCURSEL );
 	cfg_sid_override = SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL );
+	cfg_sid_filter_6581 = m_slider_6581.GetPos();
+	cfg_sid_filter_8580 = m_slider_8580.GetPos();
 #ifdef USE_RESID
 	cfg_use_residfp = !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK );
 #endif
@@ -841,6 +901,8 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK ) != cfg_infinite ) changed = true;
 	if ( !changed && SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_GETCURSEL ) != cfg_clock_override ) changed = true;
 	if ( !changed && SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL ) != cfg_sid_override ) changed = true;
+	if ( !changed && m_slider_6581.GetPos() != cfg_sid_filter_6581 ) changed = true;
+	if ( !changed && m_slider_8580.GetPos() != cfg_sid_filter_8580 ) changed = true;
 #ifdef USE_RESID
 	if ( !changed && !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK ) != cfg_use_residfp ) changed = true;
 #endif

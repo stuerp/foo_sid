@@ -19,6 +19,11 @@
 #define IDC_CLOCK_OVERRIDE              1013
 #define IDC_OVERRIDE_SID                1014
 #define IDC_SID_OVERRIDE                1014
+#define IDC_SLIDER_6581                 1015
+#define IDC_SLIDER2                     1016
+#define IDC_SLIDER_8580                 1016
+#define IDC_TEXT_6581                   1017
+#define IDC_TEXT_8580                   1018
 
 // Next default values for new objects
 // 
@@ -26,7 +31,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        102
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1014
+#define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
