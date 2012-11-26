@@ -120,6 +120,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="roms.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="sid.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -153,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="roms.hpp" />
     <ClInclude Include="SidTuneMod.h" />
     <ClInclude Include="sldb.h" />
   </ItemGroup>
@@ -162,6 +166,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\sidplay-residfp\trunk\libsidplayfp\sidplayfp\win\VC\libsidplay.vcxproj">
       <Project>{3afb0f7c-8cff-4440-9c12-9d4dc3a1736a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\libsidplayfp\utils\win\VC\libsidutils.vcxproj">
+      <Project>{63370df9-1079-4428-9403-e7912dd39505}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>

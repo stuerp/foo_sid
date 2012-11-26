@@ -18,9 +18,17 @@
 #include "config.h"
 #include "SidTuneMod.h"
 
+#include <sidplayfp/sidtune/SidTuneBase.h>
+#include <sidplayfp/sidtune/SidTuneInfoImpl.h>
+
 #include <foobar2000.h>
 
-bool SidTune::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& bufferRef)
+const char ERR_CANT_OPEN_FILE[]      = "SIDTUNE ERROR: Could not open file for binary input";
+const char ERR_EMPTY[]               = "SIDTUNE ERROR: No data to load";
+const char ERR_NOT_ENOUGH_MEMORY[]   = "SIDTUNE ERROR: Not enough free memory";
+const char ERR_CANT_LOAD_FILE[]      = "SIDTUNE ERROR: Could not load input file";
+
+void SidTuneBase::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& bufferRef)
 {
     Buffer_sidtt<const uint_least8_t> fileBuf;
     uint_least32_t fileLen = 0;
@@ -34,60 +42,60 @@ bool SidTune::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& 
 	}
 	catch (...)
 	{
-        info.statusString = SidTune::txt_cantOpenFile;
-        return false;
+        throw loadError(ERR_CANT_OPEN_FILE);
 	}
 
     {
 		fileLen = myIn->get_size_ex( m_abort );
+		if ( fileLen == 0 )
+		{
+			throw loadError(ERR_EMPTY);
+		}
 #ifdef HAVE_EXCEPTIONS
         if ( !fileBuf.assign(new(std::nothrow) uint_least8_t[fileLen],fileLen) )
 #else
         if ( !fileBuf.assign(new uint_least8_t[fileLen],fileLen) )
 #endif
         {
-            info.statusString = SidTune::txt_notEnoughMemory;
-            return false;
+            throw loadError(ERR_NOT_ENOUGH_MEMORY);
         }
-		myIn->read_object( (char*) fileBuf.get(), fileLen, m_abort );
-        info.statusString = SidTune::txt_noErrors;
+		try
+		{
+			myIn->read_object( (char*) fileBuf.get(), fileLen, m_abort );
+		}
+		catch (...)
+		{
+			throw loadError(ERR_CANT_LOAD_FILE);
+		}
     }
-    if ( fileLen==0 )
-    {
-        info.statusString = SidTune::txt_empty;
-        return false;
-    }
-
-    /*if ( decompressPP20(fileBuf) < 0 )
-        return false;*/
 
     bufferRef.assign(fileBuf.xferPtr(),fileBuf.xferLen());
-    return true;
 }
 
 void SidTuneMod::createMD5(hasher_md5_result & digest)
 {
-    if (status)
+    if (getStatus())
     {   // Include C64 data.
 		static_api_ptr_t<hasher_md5> p_md5;
 		hasher_md5_state m_state;
         unsigned char tmp[2];
 		p_md5->initialize(m_state);
-		p_md5->process(m_state, cache.get()+fileOffset,info.c64dataLen);
+		p_md5->process(m_state, tune->cache.get()+tune->fileOffset,tune->info->m_c64dataLen);
         // Include INIT and PLAY address.
-        endian_little16 (tmp, info.initAddr);
+        endian_little16 (tmp, tune->info->m_initAddr);
         p_md5->process(m_state, tmp, sizeof(tmp));
-        endian_little16 (tmp,info.playAddr);
+        endian_little16 (tmp, tune->info->m_playAddr);
         p_md5->process(m_state, tmp, sizeof(tmp));
         // Include number of songs.
-        endian_little16 (tmp,info.songs);
+        endian_little16 (tmp, tune->info->songs());
         p_md5->process(m_state, tmp, sizeof(tmp));
         {   // Include song speed for each song.
-            uint_least16_t currentSong = info.currentSong;
-            for (uint_least16_t s = 1; s <= info.songs; s++)
+            uint_least16_t currentSong = tune->info->currentSong();
+            for (uint_least16_t s = 1; s <= tune->info->songs(); s++)
             {
                 selectSong (s);
-                p_md5->process(m_state, &info.songSpeed, sizeof(info.songSpeed));
+				uint_least8_t speed = (uint_least8_t) tune->info->songSpeed();
+                p_md5->process(m_state, &speed, sizeof(speed));
             }
             // Restore old song
             selectSong (currentSong);
@@ -96,8 +104,8 @@ void SidTuneMod::createMD5(hasher_md5_result & digest)
         // clock speed change the MD5 fingerprint. That way the
         // fingerprint of a PAL-speed sidtune in PSID v1, v2, and
         // PSID v2NG format is the same.
-        if (info.clockSpeed == SIDTUNE_CLOCK_NTSC)
-            p_md5->process(m_state, &info.clockSpeed, sizeof(info.clockSpeed));
+		if (tune->info->m_clockSpeed == SidTuneInfo::CLOCK_NTSC)
+            p_md5->process(m_state, &tune->info->m_clockSpeed, sizeof(tune->info->m_clockSpeed));
         // NB! If the fingerprint is used as an index into a
         // song-lengths database or cache, modify above code to
         // allow for PSID v2NG files which have clock speed set to

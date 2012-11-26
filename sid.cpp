@@ -1,10 +1,15 @@
-#define MYVERSION "1.27"
-
-// plain resid filtering is broken
-// #define USE_RESID
+#define MYVERSION "1.29"
 
 /*
 	changelog
+
+2012-11-26 13:08 UTC - kode54
+- Updated sidplay-residfp
+- Version is now 1.29
+
+2012-11-25 02:16 UTC - kode54
+- Updated sidplay-residfp
+- Version is now 1.28
 
 2012-02-19 20:01 UTC - kode54
 - Added abort check to decoder
@@ -123,15 +128,17 @@
 #include "../ATLHelpers/ATLHelpers.h"
 
 #include "SidTuneMod.h"
-#include <sidplayfp/sidplay2.h>
-#ifdef USE_RESID
-#include <builders/resid-builder/resid.h>
-#endif
+#include <sidplayfp/SidConfig.h>
+#include <sidplayfp/SidInfo.h>
+#include <sidplayfp/SidTuneInfo.h>
+#include <sidplayfp/sidplayfp.h>
 #include <builders/residfp-builder/residfp.h>
 
 #include "sldb.h"
 
 #include "resource.h"
+
+#include "roms.hpp"
 
 // {7ABA4483-9480-4f9b-ADB5-BA2A495EAB22}
 static const GUID guid_cfg_infinite = 
@@ -163,11 +170,6 @@ static const GUID guid_cfg_sid_filter_6581 =
 // {58ED05BF-A672-43D1-A87D-BD4D8BFCE7B3}
 static const GUID guid_cfg_sid_filter_8580 = 
 { 0x58ed05bf, 0xa672, 0x43d1, { 0xa8, 0x7d, 0xbd, 0x4d, 0x8b, 0xfc, 0xe7, 0xb3 } };
-#ifdef USE_RESID
-// {55884484-BE63-4425-997E-94A5D23DF605}
-static const GUID guid_cfg_use_residfp = 
-{ 0x55884484, 0xbe63, 0x4425, { 0x99, 0x7e, 0x94, 0xa5, 0xd2, 0x3d, 0xf6, 0x5 } };
-#endif
 
 enum
 {
@@ -179,9 +181,6 @@ enum
 	default_cfg_sid_override = 0,
 	default_cfg_sid_filter_6581 = 128,
 	default_cfg_sid_filter_8580 = 12500,
-#ifdef USE_RESID
-	default_cfg_use_residfp = false
-#endif
 };
 
 static cfg_int cfg_infinite(guid_cfg_infinite,default_cfg_infinite);
@@ -192,9 +191,6 @@ static cfg_int cfg_clock_override(guid_cfg_clock_override,default_cfg_clock_over
 static cfg_int cfg_sid_override(guid_cfg_sid_override,default_cfg_sid_override);
 static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581,default_cfg_sid_filter_6581);
 static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580,default_cfg_sid_filter_8580);
-#ifdef USE_RESID
-static cfg_bool cfg_use_residfp(guid_cfg_use_residfp,default_cfg_use_residfp);
-#endif
 //static cfg_int cfg_bps("sid_bps",16);
 
 static cfg_string cfg_db_path(guid_cfg_db_path, "");
@@ -286,7 +282,7 @@ class input_sid
 
 	SidTuneMod             * pTune;
 
-	sidplay2               * m_engine;
+	sidplayfp              * m_engine;
     sidbuilder             * m_sidBuilder;
 
 	pfc::array_t<t_int16>    m_sampleBuffer;
@@ -330,7 +326,7 @@ public:
 
 	unsigned get_subsong_count()
 	{
-		return pTune->getInfo().songs;
+		return pTune->getInfo()->songs();
 	}
 
 	t_uint32 get_subsong(unsigned p_index)
@@ -342,33 +338,33 @@ public:
 	{
 		if ( ! p_subsong ) throw exception_io_data();
 
+		const SidTuneInfo * sidinfo;
+
+		sidinfo = pTune->getInfo();
+
 		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set( "encoding", "synthesized" );
-		p_info.info_set_int("channels", pTune->isStereo() ? 2 : 1);
+		p_info.info_set_int("channels", sidinfo->isStereo() ? 2 : 1);
 
-		SidTuneInfo sidinfo;
+		int i = sidinfo->numberOfInfoStrings();
 
-		pTune->getInfo(sidinfo);
-
-		int i = sidinfo.numberOfInfoStrings;
-
-		if (i >= 1 && sidinfo.infoString[0] && sidinfo.infoString[0][0]) p_info.meta_add(sidinfo.songs > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[0]));
-		if (i >= 2 && sidinfo.infoString[1] && sidinfo.infoString[1][0]) p_info.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[1]));
-		if (i >= 3 && sidinfo.infoString[2] && sidinfo.infoString[2][0]) p_info.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[2]));
+		if (i >= 1 && sidinfo->infoString(0) && sidinfo->infoString(0)[0]) p_info.meta_add(sidinfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(0)));
+		if (i >= 2 && sidinfo->infoString(1) && sidinfo->infoString(1)[0]) p_info.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(1)));
+		if (i >= 3 && sidinfo->infoString(2) && sidinfo->infoString(2)[0]) p_info.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(2)));
 
 		for (int j = 3; j < i; j++)
 		{
-			if (sidinfo.infoString[j] && sidinfo.infoString[j][0]) p_info.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(sidinfo.infoString[j]));
+			if (sidinfo->infoString(j) && sidinfo->infoString(j)[0]) p_info.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(j)));
 		}
 
-		for (int i = 0, j = sidinfo.numberOfCommentStrings; i < j; i++)
+		for (int i = 0, j = sidinfo->numberOfCommentStrings(); i < j; i++)
 		{
-			if (sidinfo.commentString[i] && sidinfo.commentString[i][0] && strcmp(sidinfo.commentString[i], "--- SAVED WITH SIDPLAY ---")) p_info.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(sidinfo.commentString[i]));
+			if (sidinfo->commentString(i) && sidinfo->commentString(i)[0] && strcmp(sidinfo->commentString(i), "--- SAVED WITH SIDPLAY ---")) p_info.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(sidinfo->commentString(i)));
 		}
 
-		if (sidinfo.clockSpeed && ( sidinfo.clockSpeed == SIDTUNE_CLOCK_NTSC || sidinfo.clockSpeed == SIDTUNE_CLOCK_PAL ) )
-			p_info.info_set("clock_speed", sidinfo.clockSpeed == SIDTUNE_CLOCK_NTSC ? "NTSC" : "PAL");
-		p_info.info_set("sid_model", sidinfo.sidModel1 == SIDTUNE_SIDMODEL_8580 ? "8580" : "6581");
+		if (sidinfo->clockSpeed() && ( sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC || sidinfo->clockSpeed() == SidTuneInfo::CLOCK_PAL ) )
+			p_info.info_set("clock_speed", sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
+		p_info.info_set("sid_model", sidinfo->sidModel1() == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
 
 		unsigned length = cfg_deflength;
 
@@ -400,7 +396,7 @@ public:
 
 		pTune->selectSong(p_subsong);
 
-		dNch = pTune->isStereo() ? 2 : 1;
+		dNch = pTune->getInfo()->isStereo() ? 2 : 1;
 
 		length = cfg_deflength;
 
@@ -418,21 +414,20 @@ public:
 
 		delete m_engine;
 
-		m_engine = new sidplay2;
+		m_engine = new sidplayfp;
+
+		m_engine->setRoms( kernel, basic, chargen );
 
 		if (m_engine->load( pTune ) < 0) throw exception_io_data(m_engine->error());
 
 		delete m_sidBuilder;
 		m_sidBuilder = NULL;
 
-#ifdef USE_RESID
-		if ( cfg_use_residfp )
-#endif
 		{
 			ReSIDfpBuilder * builder = new ReSIDfpBuilder( "ReSIDfp" );
 			if (builder)
 			{
-				builder->create ((m_engine->info ()).maxsids);
+				builder->create ((m_engine->info ()).maxsids());
 				if (builder->getStatus())
 				{
 					builder->filter (true);
@@ -443,38 +438,21 @@ public:
 				m_sidBuilder = builder;
 			}
 		}
-#ifdef USE_RESID
-		else
-		{
-			ReSIDBuilder * builder = new ReSIDBuilder( "ReSID" );
-			if (builder)
-			{
-				builder->create((m_engine->info ()).maxsids);
-				if (builder->getStatus())
-				{
-					builder->filter (true);
-					builder->filter6581Curve( cfg_sid_filter_6581 / 256. );
-					builder->filter8580Curve( (double) cfg_sid_filter_8580 );
-				}
-				if (!builder->getStatus()) throw exception_io_data();
-				m_sidBuilder = builder;
-			}
-		}
-#endif
 
-		sid2_config_t conf;
+		SidConfig conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
-		conf.playback = dNch == 2 ? sid2_stereo : sid2_mono;
+		conf.playback = dNch == 2 ? SidConfig::STEREO : SidConfig::MONO;
 		conf.sidEmulation = m_sidBuilder;
 		if ( cfg_clock_override )
 		{
 			conf.clockForced = true;
-			conf.clockSpeed = ( cfg_clock_override == 1 ) ? SID2_CLOCK_PAL : SID2_CLOCK_NTSC;
+			conf.clockDefault = ( cfg_clock_override == 1 ) ? SidConfig::CLOCK_PAL : SidConfig::CLOCK_NTSC;
 		}
 		if ( cfg_sid_override )
 		{
-			conf.sidModel = ( cfg_sid_override == 1 ) ? SID2_MOS6581 : SID2_MOS8580;
+			conf.forceModel = true;
+			conf.sidDefault = ( cfg_sid_override == 1 ) ? SidConfig::MOS6581 : SidConfig::MOS8580;
 		}
 		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
 
@@ -515,7 +493,7 @@ public:
 
 		if ( written < samples )
 		{
-			if ( m_engine->state() != sid2_stopped ) throw exception_io_data();
+			if ( m_engine->error() ) throw exception_io_data( m_engine->error() );
 			eof = true;
 		}
 
@@ -577,7 +555,7 @@ public:
 		samples *= dNch;
 		if ( samples < played )
 		{
-			decode_initialize( pTune->getInfo().currentSong, input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
+			decode_initialize( pTune->getInfo()->currentSong(), input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
 		pfc::array_t<t_int16> sample_buffer;
 		sample_buffer.grow_size( 10240 * dNch );
@@ -597,8 +575,8 @@ public:
 			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
-				if ( m_engine->state() != sid2_stopped )
-					throw exception_io_data();
+				if ( m_engine->error() )
+					throw exception_io_data( m_engine->error() );
 				eof = true;
 				break;
 			}
@@ -684,9 +662,6 @@ public:
 	BEGIN_MSG_MAP(CMyPreferences)
 		MSG_WM_INITDIALOG(OnInitDialog)
 		COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
-#ifdef USE_RESID
-		COMMAND_HANDLER_EX(IDC_USE_RESIDFP, BN_CLICKED, OnButtonClick)
-#endif
 		COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnDBPathSet)
 		COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnDBPathClear)
 		COMMAND_HANDLER_EX(IDC_DLENGTH, EN_CHANGE, OnEditChange)
@@ -735,9 +710,6 @@ unsigned parseTimeStamp(char * & arg);
 
 BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, cfg_infinite );
-#ifdef USE_RESID
-	SendDlgItemMessage( IDC_USE_RESIDFP, BM_SETCHECK, cfg_use_residfp );
-#endif
 	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, cfg_db_path );
 	update_db_status();
@@ -846,9 +818,6 @@ void CMyPreferences::reset() {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, default_cfg_infinite );
 	SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override );
 	SendDlgItemMessage( IDC_SID_OVERRIDE, CB_SETCURSEL, default_cfg_sid_override );
-#ifdef USE_RESID
-	SendDlgItemMessage( IDC_USE_RESIDFP, BM_SETCHECK, default_cfg_use_residfp );
-#endif
 	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( default_cfg_deflength ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
 	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
@@ -892,9 +861,6 @@ void CMyPreferences::apply() {
 	cfg_sid_override = SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL );
 	cfg_sid_filter_6581 = m_slider_6581.GetPos();
 	cfg_sid_filter_8580 = m_slider_8580.GetPos();
-#ifdef USE_RESID
-	cfg_use_residfp = !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK );
-#endif
 	
 	OnChanged();
 }
@@ -909,9 +875,6 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && SendDlgItemMessage( IDC_SID_OVERRIDE, CB_GETCURSEL ) != cfg_sid_override ) changed = true;
 	if ( !changed && m_slider_6581.GetPos() != cfg_sid_filter_6581 ) changed = true;
 	if ( !changed && m_slider_8580.GetPos() != cfg_sid_filter_8580 ) changed = true;
-#ifdef USE_RESID
-	if ( !changed && !!SendDlgItemMessage( IDC_USE_RESIDFP, BM_GETCHECK ) != cfg_use_residfp ) changed = true;
-#endif
 	if ( !changed )
 	{
 		pfc::string8 db_path;

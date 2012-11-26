@@ -1,0 +1,4 @@
+resource name=roms
+  binary id=kernel name=kernal.bin
+  binary id=basic name=basic.bin
+  binary id=chargen name=chargen.bin
