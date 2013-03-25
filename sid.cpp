@@ -1,7 +1,11 @@
-#define MYVERSION "1.29"
+#define MYVERSION "1.30"
 
 /*
 	changelog
+
+2013-03-25 18:03 UTC - kode54
+- Fixed stupid race condition with initializing reSIDfp
+- Version is now 1.30
 
 2012-11-26 13:08 UTC - kode54
 - Updated sidplay-residfp
@@ -133,6 +137,9 @@
 #include <sidplayfp/SidTuneInfo.h>
 #include <sidplayfp/sidplayfp.h>
 #include <builders/residfp-builder/residfp.h>
+
+// XXX
+#include <builders/residfp-builder/residfp/FilterModelConfig.h>
 
 #include "sldb.h"
 
@@ -269,6 +276,17 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 		}
 	}
 }
+
+namespace reSIDfp
+{
+	static struct residfp_fixup
+	{
+		residfp_fixup()
+		{
+			(void) FilterModelConfig::getInstance();
+		}
+	} fix_crap;
+};
 
 class input_sid
 {
