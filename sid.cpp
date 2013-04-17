@@ -1,7 +1,11 @@
-#define MYVERSION "1.30"
+#define MYVERSION "1.31"
 
 /*
 	changelog
+
+2013-04-17 03:45 UTC - kode54
+- Fixed stereo playback
+- Version is now 1.31
 
 2013-03-25 18:03 UTC - kode54
 - Fixed stupid race condition with initializing reSIDfp
@@ -507,7 +511,7 @@ public:
 
 		written = m_engine->play( m_sampleBuffer.get_ptr(), samples );
 
-		audio_math::convert_from_int16( m_sampleBuffer.get_ptr(), written * dNch, p_chunk.get_data(), 1.0 );
+		audio_math::convert_from_int16( m_sampleBuffer.get_ptr(), written, p_chunk.get_data(), 1.0 );
 
 		if ( written < samples )
 		{
