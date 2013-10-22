@@ -131,6 +131,9 @@
 
 #define _WIN32_WINNT 0x0501
 
+// wtf
+#define _USING_V110_SDK71_
+
 #include <foobar2000.h>
 #include "../helpers/dropdown_helper.h"
 #include "../ATLHelpers/ATLHelpers.h"
