@@ -1,7 +1,11 @@
-#define MYVERSION "1.31"
+#define MYVERSION "1.32"
 
 /*
 	changelog
+
+2014-04-01 00:40 UTC - kode54
+- Updated residfp to revision 1516
+- Version is now 1.32
 
 2013-04-17 03:45 UTC - kode54
 - Fixed stereo playback
@@ -471,13 +475,13 @@ public:
 		conf.sidEmulation = m_sidBuilder;
 		if ( cfg_clock_override )
 		{
-			conf.clockForced = true;
-			conf.clockDefault = ( cfg_clock_override == 1 ) ? SidConfig::CLOCK_PAL : SidConfig::CLOCK_NTSC;
+			conf.forceC64Model = true;
+			conf.defaultC64Model = ( cfg_clock_override == 1 ) ? SidConfig::PAL : SidConfig::NTSC;
 		}
 		if ( cfg_sid_override )
 		{
-			conf.forceModel = true;
-			conf.sidDefault = ( cfg_sid_override == 1 ) ? SidConfig::MOS6581 : SidConfig::MOS8580;
+			conf.forceSidModel = true;
+			conf.defaultSidModel = ( cfg_sid_override == 1 ) ? SidConfig::MOS6581 : SidConfig::MOS8580;
 		}
 		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
 

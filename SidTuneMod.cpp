@@ -28,13 +28,10 @@ const char ERR_EMPTY[]               = "SIDTUNE ERROR: No data to load";
 const char ERR_NOT_ENOUGH_MEMORY[]   = "SIDTUNE ERROR: Not enough free memory";
 const char ERR_CANT_LOAD_FILE[]      = "SIDTUNE ERROR: Could not load input file";
 
-void SidTuneBase::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_t>& bufferRef)
+void SidTuneBase::loadFile(const char* fileName, buffer_t& bufferRef)
 {
-    Buffer_sidtt<const uint_least8_t> fileBuf;
-    uint_least32_t fileLen = 0;
-
 	service_ptr_t<file> myIn;
-	abort_callback_impl m_abort;
+	abort_callback_dummy m_abort;
 
 	try
 	{
@@ -45,23 +42,20 @@ void SidTuneBase::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_
         throw loadError(ERR_CANT_OPEN_FILE);
 	}
 
+    buffer_t fileBuf;
+
     {
-		fileLen = myIn->get_size_ex( m_abort );
+		const size_t fileLen = myIn->get_size_ex( m_abort );
 		if ( fileLen == 0 )
 		{
 			throw loadError(ERR_EMPTY);
 		}
-#ifdef HAVE_EXCEPTIONS
-        if ( !fileBuf.assign(new(std::nothrow) uint_least8_t[fileLen],fileLen) )
-#else
-        if ( !fileBuf.assign(new uint_least8_t[fileLen],fileLen) )
-#endif
-        {
-            throw loadError(ERR_NOT_ENOUGH_MEMORY);
-        }
+        
+		fileBuf.resize(fileLen);
+
 		try
 		{
-			myIn->read_object( (char*) fileBuf.get(), fileLen, m_abort );
+			myIn->read_object( &fileBuf[0], fileLen, m_abort );
 		}
 		catch (...)
 		{
@@ -69,7 +63,7 @@ void SidTuneBase::loadFile(const char* fileName, Buffer_sidtt<const uint_least8_
 		}
     }
 
-    bufferRef.assign(fileBuf.xferPtr(),fileBuf.xferLen());
+    bufferRef.swap(fileBuf);
 }
 
 void SidTuneMod::createMD5(hasher_md5_result & digest)
@@ -80,7 +74,7 @@ void SidTuneMod::createMD5(hasher_md5_result & digest)
 		hasher_md5_state m_state;
         unsigned char tmp[2];
 		p_md5->initialize(m_state);
-		p_md5->process(m_state, tune->cache.get()+tune->fileOffset,tune->info->m_c64dataLen);
+		p_md5->process(m_state, &tune->cache[tune->fileOffset],tune->info->m_c64dataLen);
         // Include INIT and PLAY address.
         endian_little16 (tmp, tune->info->m_initAddr);
         p_md5->process(m_state, tmp, sizeof(tmp));
