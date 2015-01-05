@@ -65,7 +65,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/trunk/libsidplayfp;../../../sidplay-residfp/trunk/libsidplayfp/sidplayfp/win/VC;../../../sidplay-residfp/trunk/libsidplayfp/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -97,7 +97,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/trunk/libsidplayfp;../../../sidplay-residfp/trunk/libsidplayfp/sidplayfp/win/VC;../../../sidplay-residfp/trunk/libsidplayfp/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;FOO_SID_EXPORTS;HAVE_MSWINDOWS;STATIC_CPPLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -162,14 +162,8 @@
     <ClInclude Include="sldb.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\libsidplayfp\builders\residfp-builder\win\VC\resuidfp_builder.vcxproj">
-      <Project>{873230ea-1ebc-4b11-80b9-fd446582fa27}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\libsidplayfp\sidplayfp\win\VC\libsidplay.vcxproj">
-      <Project>{3afb0f7c-8cff-4440-9c12-9d4dc3a1736a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\sidplay-residfp\trunk\libsidplayfp\utils\win\VC\libsidutils.vcxproj">
-      <Project>{63370df9-1079-4428-9403-e7912dd39505}</Project>
+    <ProjectReference Include="..\..\..\sidplay-residfp\projects\win\VC\libsidplayfp\libsidplayfp.vcxproj">
+      <Project>{62eb3e65-1e51-44eb-b407-fe1c7b3afb5c}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>

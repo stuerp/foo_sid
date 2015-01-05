@@ -11,6 +11,8 @@
 #define IDC_DB_PATH_SET                 1005
 #define IDC_DB_PATH_CLEAR               1006
 #define IDC_DB_LOAD                     1007
+#define IDC_SAMPLERATE2                 1007
+#define IDC_SID_BUILDER                 1007
 #define IDC_DB_UNLOAD                   1008
 #define IDC_DB_STATUS                   1009
 #define IDC_DATABASE_SEP                1010

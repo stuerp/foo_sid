@@ -14,12 +14,13 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <sidplayfp/sidendian.h>
+#include "sidendian.h"
 #include "config.h"
 #include "SidTuneMod.h"
 
-#include <sidplayfp/sidtune/SidTuneBase.h>
-#include <sidplayfp/sidtune/SidTuneInfoImpl.h>
+#include <vector>
+
+#include <sidtune/SidTuneBase.h>
 
 #include <foobar2000.h>
 
@@ -28,7 +29,7 @@ const char ERR_EMPTY[]               = "SIDTUNE ERROR: No data to load";
 const char ERR_NOT_ENOUGH_MEMORY[]   = "SIDTUNE ERROR: Not enough free memory";
 const char ERR_CANT_LOAD_FILE[]      = "SIDTUNE ERROR: Could not load input file";
 
-void SidTuneBase::loadFile(const char* fileName, buffer_t& bufferRef)
+void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint_least8_t>& bufferRef)
 {
 	service_ptr_t<file> myIn;
 	abort_callback_dummy m_abort;
@@ -39,16 +40,16 @@ void SidTuneBase::loadFile(const char* fileName, buffer_t& bufferRef)
 	}
 	catch (...)
 	{
-        throw loadError(ERR_CANT_OPEN_FILE);
+        throw libsidplayfp::loadError(ERR_CANT_OPEN_FILE);
 	}
 
-    buffer_t fileBuf;
+    std::vector<uint_least8_t> fileBuf;
 
     {
 		const size_t fileLen = myIn->get_size_ex( m_abort );
 		if ( fileLen == 0 )
 		{
-			throw loadError(ERR_EMPTY);
+			throw libsidplayfp::loadError(ERR_EMPTY);
 		}
         
 		fileBuf.resize(fileLen);
@@ -59,57 +60,40 @@ void SidTuneBase::loadFile(const char* fileName, buffer_t& bufferRef)
 		}
 		catch (...)
 		{
-			throw loadError(ERR_CANT_LOAD_FILE);
+			throw libsidplayfp::loadError(ERR_CANT_LOAD_FILE);
 		}
     }
 
     bufferRef.swap(fileBuf);
 }
 
-void SidTuneMod::createMD5(hasher_md5_result & digest)
-{
-    if (getStatus())
-    {   // Include C64 data.
-		static_api_ptr_t<hasher_md5> p_md5;
-		hasher_md5_state m_state;
-        unsigned char tmp[2];
-		p_md5->initialize(m_state);
-		p_md5->process(m_state, &tune->cache[tune->fileOffset],tune->info->m_c64dataLen);
-        // Include INIT and PLAY address.
-        endian_little16 (tmp, tune->info->m_initAddr);
-        p_md5->process(m_state, tmp, sizeof(tmp));
-        endian_little16 (tmp, tune->info->m_playAddr);
-        p_md5->process(m_state, tmp, sizeof(tmp));
-        // Include number of songs.
-        endian_little16 (tmp, tune->info->songs());
-        p_md5->process(m_state, tmp, sizeof(tmp));
-        {   // Include song speed for each song.
-            uint_least16_t currentSong = tune->info->currentSong();
-            for (uint_least16_t s = 1; s <= tune->info->songs(); s++)
-            {
-                selectSong (s);
-				uint_least8_t speed = (uint_least8_t) tune->info->songSpeed();
-                p_md5->process(m_state, &speed, sizeof(speed));
-            }
-            // Restore old song
-            selectSong (currentSong);
-        }
-        // Deal with PSID v2NG clock speed flags: Let only NTSC
-        // clock speed change the MD5 fingerprint. That way the
-        // fingerprint of a PAL-speed sidtune in PSID v1, v2, and
-        // PSID v2NG format is the same.
-		if (tune->info->m_clockSpeed == SidTuneInfo::CLOCK_NTSC)
-            p_md5->process(m_state, &tune->info->m_clockSpeed, sizeof(tune->info->m_clockSpeed));
-        // NB! If the fingerprint is used as an index into a
-        // song-lengths database or cache, modify above code to
-        // allow for PSID v2NG files which have clock speed set to
-        // SIDTUNE_CLOCK_ANY. If the SID player program fully
-        // supports the SIDTUNE_CLOCK_ANY setting, a sidtune could
-        // either create two different fingerprints depending on
-        // the clock speed chosen by the player, or there could be
-        // two different values stored in the database/cache.
+SidTuneMod::SidTuneMod(const char* fileName, const char **fileNameExt, const bool separatorIsSlash)
+	: SidTune(fileName, fileNameExt, separatorIsSlash, MyLoaderFunc) { }
 
-		digest = p_md5->get_result(m_state);
-    }
+static void decode_hex(const char *& in, char & out)
+{
+	unsigned char byte;
+	if (in[0] >= '0' && in[0] <= '9') byte = (in[0] - '0') * 16;
+	else if (in[0] >= 'A' && in[0] <= 'F') byte = (in[0] - 'A' + 10) * 16;
+	else if (in[0] >= 'a' && in[0] <= 'f') byte = (in[0] - 'a' + 10) * 16;
+	else throw exception_io_data();
+	if (in[1] >= '0' && in[1] <= '9') byte += in[1] - '0';
+	else if (in[1] >= 'A' && in[1] <= 'F') byte += in[1] - 'A' + 10;
+	else if (in[1] >= 'a' && in[1] <= 'f') byte += in[1] - 'a' + 10;
+	else throw exception_io_data();
+	out = byte;
+	in += 2;
 }
 
+void SidTuneMod::createMD5(hasher_md5_result & digest)
+{
+	char hash_string[33];
+	const char * hash_string_ptr = SidTune::createMD5(hash_string);
+	if (hash_string_ptr)
+	{
+		for (unsigned int i = 0; i < 16; ++i)
+		{
+			decode_hex(hash_string_ptr, digest.m_data[i]);
+		}
+	}
+}
