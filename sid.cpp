@@ -1,7 +1,11 @@
-#define MYVERSION "1.33"
+#define MYVERSION "1.34"
 
 /*
 	changelog
+
+2015-11-07 04:28 UTC - kode54
+- Updated residfp to revision 2100
+- Version is now 1.34
 
 2015-01-05 02:40 UTC - kode54
 - Updated residfp to revision 1863
