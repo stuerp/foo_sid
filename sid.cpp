@@ -1,7 +1,13 @@
-#define MYVERSION "1.34"
+#define MYVERSION "1.35"
 
 /*
 	changelog
+
+2016-05-19 05:36 UTC - kode54
+- Updated sidplay-residfp
+  - Now uses std::mutex locking for several globals, to fix race conditions
+- Now compiled with MSVC 2015
+- Version is now 1.35
 
 2015-11-07 04:28 UTC - kode54
 - Updated residfp to revision 2100
@@ -387,7 +393,7 @@ public:
 
 	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
 	{
-		if ( ! p_subsong ) throw exception_io_data();
+		if ( ! p_subsong ) return;
 
 		const SidTuneInfo * sidinfo;
 
@@ -469,7 +475,7 @@ public:
 
 		m_engine->setRoms( kernel, basic, chargen );
 
-		if (m_engine->load( pTune ) < 0) throw exception_io_data(m_engine->error());
+		if (!m_engine->load( pTune )) throw exception_io_data(m_engine->error());
 
 		delete m_sidBuilder;
 		m_sidBuilder = NULL;
@@ -523,7 +529,7 @@ public:
 			conf.forceSidModel = true;
 			conf.defaultSidModel = ( cfg_sid_override == 1 ) ? SidConfig::MOS6581 : SidConfig::MOS8580;
 		}
-		if (m_engine->config(conf) < 0) throw exception_io_data(m_engine->error());
+		if (!m_engine->config(conf)) throw exception_io_data(m_engine->error());
 
 		played = 0;
 
