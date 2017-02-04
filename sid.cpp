@@ -1,7 +1,11 @@
-#define MYVERSION "1.35"
+#define MYVERSION "1.36"
 
 /*
 	changelog
+
+2017-02-04 05:10 UTC - kode54
+- Add link to about string
+- Version is now 1.36
 
 2016-05-19 05:36 UTC - kode54
 - Updated sidplay-residfp
@@ -1006,6 +1010,6 @@ DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 static input_factory_t           <input_sid>               g_input_sid_factory;
 static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
 
-DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.");
+DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54");
 
 VALIDATE_COMPONENT_FILENAME("foo_sid.dll");
