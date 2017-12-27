@@ -1,7 +1,12 @@
-#define MYVERSION "1.36"
+#define MYVERSION "1.40"
 
 /*
 	changelog
+
+2017-12-27 09:15 UTC - kode54
+- Updated sidplay-residfp with two years worth of new changes
+- Updated component to remove references to deprecated interfaces
+- Version is now 1.40
 
 2017-02-04 05:10 UTC - kode54
 - Add link to about string
@@ -405,7 +410,7 @@ public:
 
 		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set( "encoding", "synthesized" );
-		p_info.info_set_int("channels", sidinfo->isStereo() ? 2 : 1);
+		p_info.info_set_int("channels", sidinfo->sidChips());
 
 		int i = sidinfo->numberOfInfoStrings();
 
@@ -425,7 +430,7 @@ public:
 
 		if (sidinfo->clockSpeed() && ( sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC || sidinfo->clockSpeed() == SidTuneInfo::CLOCK_PAL ) )
 			p_info.info_set("clock_speed", sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
-		p_info.info_set("sid_model", sidinfo->sidModel1() == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
+		p_info.info_set("sid_model", sidinfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
 
 		unsigned length = cfg_deflength;
 
@@ -457,7 +462,7 @@ public:
 
 		pTune->selectSong(p_subsong);
 
-		dNch = pTune->getInfo()->isStereo() ? 2 : 1;
+		dNch = pTune->getInfo()->sidChips();
 
 		length = cfg_deflength;
 
