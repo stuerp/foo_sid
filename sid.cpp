@@ -1,7 +1,11 @@
-#define MYVERSION "1.40"
+#define MYVERSION "1.41"
 
 /*
 	changelog
+
+2018-01-30 09:48 UTC - kode54
+- Updated to version 1.4 SDK
+- Version is now 1.41
 
 2017-12-27 09:15 UTC - kode54
 - Updated sidplay-residfp with two years worth of new changes
@@ -158,14 +162,10 @@
 
 */
 
-#define _WIN32_WINNT 0x0501
-
-// wtf
-#define _USING_V110_SDK71_
-
 #include <foobar2000.h>
 #include "../helpers/dropdown_helper.h"
-#include "../ATLHelpers/ATLHelpers.h"
+#include "../ATLHelpers/ATLHelpersLean.h"
+#include "../ATLHelpers/misc.h"
 
 #include "SidTuneMod.h"
 #include <sidplayfp/SidConfig.h>
@@ -336,7 +336,7 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 	} fix_crap;
 };*/
 
-class input_sid
+class input_sid : public input_stubs
 {
 	int dSrate, dBps, dNch;
 
@@ -372,8 +372,7 @@ public:
 
 	void open( service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort )
 	{
-		if ( p_reason == input_open_info_write ) throw exception_io_unsupported_format();
-
+		if ( p_reason == input_open_info_write ) throw exception_tagging_unsupported();
 
 		if ( p_file.is_empty() )
 		{
@@ -703,12 +702,12 @@ public:
 
 	void retag_set_info( t_uint32 p_subsong, const file_info & p_info, abort_callback & p_abort )
 	{
-		throw exception_io_unsupported_format();
+		throw exception_tagging_unsupported();
 	}
 
 	void retag_commit( abort_callback & p_abort )
 	{
-		throw exception_io_unsupported_format();
+		throw exception_tagging_unsupported();
 	}
 
 	static bool g_is_our_content_type( const char * p_content_type )
@@ -719,6 +718,21 @@ public:
 	static bool g_is_our_path( const char * p_path, const char * p_extension )
 	{
 		return ! stricmp( p_extension, "sid" ) || ! stricmp( p_extension, "mus" );
+	}
+
+	static GUID g_get_guid()
+	{
+		return { 0x7fff51a2, 0x5130, 0x4307,{ 0x95, 0x22, 0x16, 0xf9, 0x74, 0xd, 0x61, 0xde } };
+	}
+
+	static const char * g_get_name()
+	{
+		return "sidplay";
+	}
+
+	static GUID g_get_preferences_guid()
+	{
+		return { 0x206017ac, 0x421, 0x4d37,{ 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
 	}
 };
 
@@ -1001,12 +1015,8 @@ void CMyPreferences::OnChanged() {
 class preferences_page_myimpl : public preferences_page_impl<CMyPreferences> {
 	// preferences_page_impl<> helper deals with instantiation of our dialog; inherits from preferences_page_v3.
 public:
-	const char * get_name() {return "sidplay";}
-	GUID get_guid() {
-		// {206017AC-0421-4d37-9B1F-99B9EADE744E}
-		static const GUID guid = { 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
-		return guid;
-	}
+	const char * get_name() {return input_sid::g_get_name();}
+	GUID get_guid() {return input_sid::g_get_preferences_guid();}
 	GUID get_parent_guid() {return guid_input;}
 };
 
