@@ -1,7 +1,13 @@
-#define MYVERSION "1.41"
+#define MYVERSION "1.42"
 
 /*
 	changelog
+
+2018-05-02 02:41 UTC - kode54
+- Updated libsidplayfp
+- Fixed a serious bug with how the 8580 filter curve was configured,
+  as the updates changed the value type and range to match the 6581
+- Version is now 1.42
 
 2018-01-30 09:48 UTC - kode54
 - Updated to version 1.4 SDK
@@ -212,8 +218,11 @@ static const GUID guid_cfg_sid_override =
 static const GUID guid_cfg_sid_filter_6581 = 
 { 0x8dca8173, 0xc912, 0x4c79, { 0xbb, 0xcf, 0x1a, 0xc0, 0x5, 0xdc, 0xe6, 0xd3 } };
 // {58ED05BF-A672-43D1-A87D-BD4D8BFCE7B3}
-static const GUID guid_cfg_sid_filter_8580 = 
+static const GUID guid_cfg_sid_filter_8580_old = 
 { 0x58ed05bf, 0xa672, 0x43d1, { 0xa8, 0x7d, 0xbd, 0x4d, 0x8b, 0xfc, 0xe7, 0xb3 } };
+// {69ABCEF1-F460-45A4-8583-DFF0501ADAC7}
+static const GUID guid_cfg_sid_filter_8580 =
+{ 0x69abcef1, 0xf460, 0x45a4,{ 0x85, 0x83, 0xdf, 0xf0, 0x50, 0x1a, 0xda, 0xc7 } };
 // {C9E01956-6EAB-46E3-AEA1-2A8A3A34382D}
 static const GUID guid_cfg_sid_builder =
 { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0xa1, 0x2a, 0x8a, 0x3a, 0x34, 0x38, 0x2d } };
@@ -233,7 +242,7 @@ enum
 	default_cfg_clock_override = 0,
 	default_cfg_sid_override = 0,
 	default_cfg_sid_filter_6581 = 128,
-	default_cfg_sid_filter_8580 = 12500,
+	default_cfg_sid_filter_8580 = 128,
 	default_cfg_sid_builder = sid_builder_residfp
 };
 
@@ -245,8 +254,35 @@ static cfg_int cfg_clock_override(guid_cfg_clock_override,default_cfg_clock_over
 static cfg_int cfg_sid_override(guid_cfg_sid_override,default_cfg_sid_override);
 static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581,default_cfg_sid_filter_6581);
 static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580,default_cfg_sid_filter_8580);
+static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
 static cfg_int cfg_sid_builder(guid_cfg_sid_builder,default_cfg_sid_builder);
 //static cfg_int cfg_bps("sid_bps",16);
+
+static class initquit_upgrade_vars : public initquit
+{
+public:
+	void on_init()
+	{
+		if (cfg_sid_filter_8580_old > 0)
+		{
+			if (cfg_sid_filter_8580_old <= 12500)
+			{
+				cfg_sid_filter_8580 = (cfg_sid_filter_8580_old - 150) * 128 / (12500 - 150);
+			}
+			else if (cfg_sid_filter_8580_old <= 22050)
+			{
+				cfg_sid_filter_8580 = 128 + ((cfg_sid_filter_8580_old - 12500) / (22050 - 12500));
+			}
+			else
+			{
+				cfg_sid_filter_8580 = 128;
+			}
+			cfg_sid_filter_8580_old = -1;
+		}
+	}
+
+	void on_quit() { }
+};
 
 static cfg_string cfg_db_path(guid_cfg_db_path, "");
 
@@ -501,7 +537,7 @@ public:
 				{
 					builder->filter(true);
 					builder->filter6581Curve(cfg_sid_filter_6581 / 256.);
-					builder->filter8580Curve((double)cfg_sid_filter_8580);
+					builder->filter8580Curve(cfg_sid_filter_8580 / 256.);
 				}
 				if (!builder->getStatus()) throw exception_io_data();
 			}
@@ -1024,6 +1060,7 @@ DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 
 static input_factory_t           <input_sid>               g_input_sid_factory;
 static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
+static initquit_factory_t<initquit_upgrade_vars>           g_initquit_sid_factory;
 
 DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54");
 

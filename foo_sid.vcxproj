@@ -27,7 +27,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>PGUpdate</WholeProgramOptimization>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -66,7 +66,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -100,7 +100,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
