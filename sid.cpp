@@ -3,7 +3,7 @@
 /*
 	changelog
 
-2018-05-02 02:41 UTC - kode54
+2018-05-02 02:51 UTC - kode54
 - Updated libsidplayfp
 - Fixed a serious bug with how the 8580 filter curve was configured,
   as the updates changed the value type and range to match the 6581
@@ -897,10 +897,10 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 		m_slider_6581.EnableWindow( FALSE );
 
 	m_slider_8580 = GetDlgItem( IDC_SLIDER_8580 );
-	m_slider_8580.SetRangeMin( 150 );
-	m_slider_8580.SetRangeMax( 22050 );
+	m_slider_8580.SetRangeMin( 0 );
+	m_slider_8580.SetRangeMax( 256 );
 	m_slider_8580.SetPos( cfg_sid_filter_8580 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << cfg_sid_filter_8580 << " Hz" );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( cfg_sid_filter_8580 / 256., 0, 2 ) );
 	if ( cfg_sid_builder != sid_builder_residfp )
 		m_slider_8580.EnableWindow( FALSE );
 
