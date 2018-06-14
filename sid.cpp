@@ -1,7 +1,12 @@
-#define MYVERSION "1.42"
+#define MYVERSION "1.43"
 
 /*
 	changelog
+
+2018-06-14 02:04 UTC - kode54
+- Added a safety check to part of sidplay-residfp, to help prevent crashes on
+  files that otherwise have no signature to verify
+- Version is now 1.43
 
 2018-05-02 02:51 UTC - kode54
 - Updated libsidplayfp
