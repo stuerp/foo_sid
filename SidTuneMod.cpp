@@ -15,7 +15,6 @@
  */
 
 #include "sidendian.h"
-#include "config.h"
 #include "SidTuneMod.h"
 
 #include <vector>

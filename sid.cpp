@@ -1,7 +1,16 @@
-#define MYVERSION "1.43"
+#define MYVERSION "1.44"
 
 /*
 	changelog
+
+2020-02-11 08:47 UTC - kode54
+- Updated libsidplayfp to version 2.0.1 or so
+- Update to more recent foobar2000 SDK
+- Updated to new song length system
+- Fade is now in addition to length
+- Default length is now configurable to include milliseconds
+- Fixed various errors in the database and length handling
+- Version is now 1.44
 
 2018-06-14 02:04 UTC - kode54
 - Added a safety check to part of sidplay-residfp, to help prevent crashes on
@@ -175,8 +184,14 @@
 
 #include <foobar2000.h>
 #include "../helpers/dropdown_helper.h"
-#include "../ATLHelpers/ATLHelpersLean.h"
-#include "../ATLHelpers/misc.h"
+
+#include <atlbase.h>
+#include <atlapp.h>
+#include <atlctrls.h>
+#include <atlcrack.h>
+#include <atlmisc.h>
+#include "../helpers/atl-misc.h"
+#include "../../libPPUI/wtl-pp.h"
 
 #include "SidTuneMod.h"
 #include <sidplayfp/SidConfig.h>
@@ -185,11 +200,10 @@
 #include <sidplayfp/sidplayfp.h>
 #include <builders/resid-builder/resid.h>
 #include <builders/residfp-builder/residfp.h>
+#include <utils/SidDatabase.h>
 
 // XXX
 //#include <builders/residfp-builder/residfp/FilterModelConfig.h>
-
-#include "sldb.h"
 
 #include "resource.h"
 
@@ -198,9 +212,9 @@
 // {7ABA4483-9480-4f9b-ADB5-BA2A495EAB22}
 static const GUID guid_cfg_infinite = 
 { 0x7aba4483, 0x9480, 0x4f9b, { 0xad, 0xb5, 0xba, 0x2a, 0x49, 0x5e, 0xab, 0x22 } };
-// {59ABCA51-75FB-4e8d-8B6F-5024DFA8D916}
-static const GUID guid_cfg_deflength = 
-{ 0x59abca51, 0x75fb, 0x4e8d, { 0x8b, 0x6f, 0x50, 0x24, 0xdf, 0xa8, 0xd9, 0x16 } };
+// {6228BE43-CBB1-48E4-9488-0F4242091BB7}
+static const GUID guid_cfg_deflength =
+{ 0x6228be43, 0xcbb1, 0x48e4, { 0x94, 0x88, 0xf, 0x42, 0x42, 0x9, 0x1b, 0xb7 } };
 // {4143484B-5A86-40f6-BD86-5D7B0A33D5BD}
 static const GUID guid_cfg_fade = 
 { 0x4143484b, 0x5a86, 0x40f6, { 0xbd, 0x86, 0x5d, 0x7b, 0xa, 0x33, 0xd5, 0xbd } };
@@ -241,7 +255,7 @@ enum
 enum
 {
 	default_cfg_infinite = 0,
-	default_cfg_deflength = 180,
+	default_cfg_deflength = 180000,
 	default_cfg_fade = 200,
 	default_cfg_rate = 44100,
 	default_cfg_clock_override = 0,
@@ -293,18 +307,24 @@ static cfg_string cfg_db_path(guid_cfg_db_path, "");
 
 static critical_section db_lock;
 
-static sldb db;
+static bool db_loaded = false;
+
+static SidDatabase db;
 
 static void convert_db_path( const char * in, pfc::string_base & out, bool from_config );
 
-static void db_load(abort_callback & p_abort)
+static void db_load()
 {
-	pfc::string8 real_path;
-	pfc::string8 path("file://");
-	convert_db_path( cfg_db_path, real_path, true );
-	path += real_path;
-	if (path.length() == 7) return;
-	db.load(path, p_abort);
+	pfc::string8 path;
+	convert_db_path( cfg_db_path, path, true );
+	if (path.length() == 0) return;
+	db_loaded = db.open(pfc::stringcvt::string_wide_from_utf8(path));
+}
+
+static void db_unload()
+{
+	db.close();
+	db_loaded = false;
 }
 
 static void convert_db_path( const char * in, pfc::string_base & out, bool from_config )
@@ -477,16 +497,17 @@ public:
 		{
 			insync( db_lock );
 
-			if ( ! db.loaded() ) db_load( p_abort );
+			if ( ! db_loaded ) db_load();
 
-			if ( db.loaded() )
+			if ( db_loaded )
 			{
-				unsigned len = db.find( pTune, p_subsong - 1 );
-				if (len) length = len;
+				pTune->selectSong( p_subsong );
+				unsigned len = db.lengthMs( *pTune );
+				if ( len ) length = len;
 			}
 		}
 
-		p_info.set_length( double( length ) );
+		p_info.set_length( double( length ) / 1000.0 );
 	}
 
 	t_filestats get_file_stats( abort_callback & p_abort )
@@ -509,11 +530,11 @@ public:
 		{
 			insync( db_lock );
 
-			if ( ! db.loaded() ) db_load( p_abort );
+			if ( ! db_loaded ) db_load();
 
-			if ( db.loaded() )
+			if ( db_loaded )
 			{
-				unsigned len = db.find( pTune, p_subsong - 1 );
+				unsigned len = db.lengthMs(*pTune);
 				if (len) length = len;
 			}
 		}
@@ -586,7 +607,7 @@ public:
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
-			length *= dSrate * dNch;
+			length = (unsigned int)((__int64)length * dSrate * dNch / 1000);
 			fade = (cfg_fade * dSrate / 1000) * dNch;
 		}
 		else
@@ -601,7 +622,7 @@ public:
 	{
 		p_abort.check();
 
-		if ( eof || ( length && played >= length ) ) return false;
+		if ( eof || ( length && played >= (length + fade) ) ) return false;
 
 		int samples = length - played, written; //(stereo)
 
@@ -637,13 +658,13 @@ public:
 			{
 				for ( n = d_start; n < d_end; n++ )
 				{
-					if ( n > length )
+					if ( n >= (length + fade) )
 					{
 						*foo = 0;
 					}
-					else
+					else if ( n >= length )
 					{
-						audio_sample bleh = (audio_sample)(length - n) * factor;
+						audio_sample bleh = (audio_sample)(length + fade - n) * factor;
 						*foo *= bleh;
 					}
 				}
@@ -653,14 +674,14 @@ public:
 			{
 				for ( n = d_start; n < d_end; n += 2 )
 				{
-					if ( n > length )
+					if ( n >= (length + fade) )
 					{
 						foo[0] = 0;
 						foo[1] = 0;
 					}
-					else
+					else if ( n >= length )
 					{
-						audio_sample bleh = (audio_sample)(length - n) * factor;
+						audio_sample bleh = (audio_sample)(length + fade - n) * factor;
 						foo[0] *= bleh;
 						foo[1] *= bleh;
 					}
@@ -835,9 +856,9 @@ void CMyPreferences::update_db_status()
 {
 	insync( db_lock );
 	pfc::string8 status;
-	if ( db.loaded() )
+	if ( db_loaded )
 	{
-		status << db.get_count() << " entries loaded.";
+		status << "Database loaded.";
 	}
 	else
 	{
@@ -846,11 +867,11 @@ void CMyPreferences::update_db_status()
 	uSetDlgItemText( m_hWnd, IDC_DB_STATUS, status );
 }
 
-unsigned parseTimeStamp(char * & arg);
+const char* parseTime(const char* str, int_least32_t& result);
 
 BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, cfg_infinite );
-	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
+	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time_ex( (double)cfg_deflength / 1000.0 ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, cfg_db_path );
 	update_db_status();
 	{
@@ -948,7 +969,7 @@ void CMyPreferences::OnDBPathSet(UINT, int, CWindow) {
 	convert_db_path( string_utf8_from_window( m_hWnd, IDC_DB_PATH ), path, true );
 	pfc::string8 directory( path );
 	directory.truncate( directory.scan_filename() );
-	if ( uGetOpenFileName( core_api::get_main_window(), "Text and INI files|*.TXT;*.INI",
+	if ( uGetOpenFileName( core_api::get_main_window(), "Song length database|Songlengths.md5",
 		1, 0, "Choose SidPlay Song-Lengths Database...", directory, path, false ) )
 	{
 		pfc::string8 new_path;
@@ -974,7 +995,7 @@ void CMyPreferences::reset() {
 	SendDlgItemMessage( IDC_SID_BUILDER, CB_SETCURSEL, default_cfg_sid_builder );
 	SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override );
 	SendDlgItemMessage( IDC_SID_OVERRIDE, CB_SETCURSEL, default_cfg_sid_override );
-	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( default_cfg_deflength ) );
+	uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time_ex( (double)default_cfg_deflength / 1000.0 ) );
 	uSetDlgItemText( m_hWnd, IDC_DB_PATH, "" );
 	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
 	SetDlgItemInt( IDC_FADE, default_cfg_fade, FALSE );
@@ -1000,16 +1021,24 @@ void CMyPreferences::apply() {
 	cfg_db_path = db_path;
 	{
 		insync( db_lock );
-		db.unload();
-		db_load( abort_callback_impl() );
+		db_unload();
+		db_load();
 	}
 	update_db_status();
 	{
 		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
+		int_least32_t timestamp = 0;
 		const char * bar = foo.get_ptr();
-		int meh = parseTimeStamp((char *&) bar);
-		if (meh) cfg_deflength = meh;
-		else uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time( cfg_deflength ) );
+		const char* end;
+		try
+		{
+			parseTime(bar, timestamp);
+		}
+		catch (...)
+		{
+		}
+		if (timestamp) cfg_deflength = timestamp;
+		else uSetDlgItemText( m_hWnd, IDC_DLENGTH, pfc::format_time_ex( (double)cfg_deflength / 1000.0 ) );
 	}
 	cfg_fade = GetDlgItemInt( IDC_FADE, NULL, FALSE );
 	cfg_infinite = SendDlgItemMessage( IDC_INFINITE, BM_GETCHECK );
@@ -1042,9 +1071,17 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed )
 	{
 		string_utf8_from_window foo( m_hWnd, IDC_DLENGTH );
+		int_least32_t timestamp = 0;
 		const char * bar = foo.get_ptr();
-		int meh = parseTimeStamp((char *&) bar);
-		if ( meh && meh != cfg_deflength ) changed = true;
+		const char * end;
+		try
+		{
+			end = parseTime(bar, timestamp);
+		}
+		catch (...)
+		{
+		}
+		if ( timestamp && timestamp != cfg_deflength ) changed = true;
 	}
 	return changed;
 }
@@ -1067,6 +1104,10 @@ static input_factory_t           <input_sid>               g_input_sid_factory;
 static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
 static initquit_factory_t<initquit_upgrade_vars>           g_initquit_sid_factory;
 
-DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54");
+#include "../patrons.h"
+
+DECLARE_COMPONENT_VERSION("sidplay2",MYVERSION,"Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54\n\n"
+MY_PATRONS
+);
 
 VALIDATE_COMPONENT_FILENAME("foo_sid.dll");

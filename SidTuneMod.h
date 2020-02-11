@@ -21,6 +21,8 @@
 
 #include <foobar2000.h>
 
+#include <vector>
+
 class SID_EXTERN SidTuneMod : public SidTune
 {
 	static void MyLoaderFunc(const char* fileName, std::vector<uint_least8_t>& bufferRef);

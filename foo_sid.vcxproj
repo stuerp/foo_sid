@@ -66,9 +66,9 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../SDK;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -100,9 +100,9 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -133,7 +133,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="SidTuneMod.cpp" />
-    <ClCompile Include="sldb.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="sid.rc" />
@@ -142,11 +141,13 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="roms.hpp" />
     <ClInclude Include="SidTuneMod.h" />
-    <ClInclude Include="sldb.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\sidplay-residfp\projects\win\VC\libsidplayfp\libsidplayfp.vcxproj">
-      <Project>{62eb3e65-1e51-44eb-b407-fe1c7b3afb5c}</Project>
+      <Project>{337270ff-3209-46c8-b7c2-0c847b792fb5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\libPPUI\libPPUI.vcxproj">
+      <Project>{7729eb82-4069-4414-964b-ad399091a03f}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
