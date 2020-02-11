@@ -1,7 +1,11 @@
-#define MYVERSION "1.44"
+#define MYVERSION "1.45"
 
 /*
 	changelog
+
+2020-02-11 09:10 UTC - kode54
+- Reverted fade behavior
+- Version is now 1.45
 
 2020-02-11 08:47 UTC - kode54
 - Updated libsidplayfp to version 2.0.1 or so
@@ -607,7 +611,7 @@ public:
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
-			length = (unsigned int)((__int64)length * dSrate * dNch / 1000);
+			length = (unsigned int)((__int64)length * dSrate / 1000) * dNch;
 			fade = (cfg_fade * dSrate / 1000) * dNch;
 		}
 		else
@@ -622,7 +626,7 @@ public:
 	{
 		p_abort.check();
 
-		if ( eof || ( length && played >= (length + fade) ) ) return false;
+		if ( eof || ( length && played >= length ) ) return false;
 
 		int samples = length - played, written; //(stereo)
 
@@ -658,13 +662,13 @@ public:
 			{
 				for ( n = d_start; n < d_end; n++ )
 				{
-					if ( n >= (length + fade) )
+					if ( n > length )
 					{
 						*foo = 0;
 					}
-					else if ( n >= length )
+					else
 					{
-						audio_sample bleh = (audio_sample)(length + fade - n) * factor;
+						audio_sample bleh = (audio_sample)(length - n) * factor;
 						*foo *= bleh;
 					}
 				}
@@ -674,14 +678,14 @@ public:
 			{
 				for ( n = d_start; n < d_end; n += 2 )
 				{
-					if ( n >= (length + fade) )
+					if ( n > length )
 					{
 						foo[0] = 0;
 						foo[1] = 0;
 					}
-					else if ( n >= length )
+					else
 					{
-						audio_sample bleh = (audio_sample)(length + fade - n) * factor;
+						audio_sample bleh = (audio_sample)(length - n) * factor;
 						foo[0] *= bleh;
 						foo[1] *= bleh;
 					}
