@@ -1,7 +1,11 @@
-#define MYVERSION "1.46"
+#define MYVERSION "1.47"
 
 /*
 	changelog
+
+2020-02-12 02:18 UTC - kode54
+- Fix 3SID playback
+- Version is now 1.47
 
 2020-02-12 01:17 UTC - kode54
 - Fixed song length database handling for unlisted files
@@ -409,7 +413,7 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 
 class input_sid : public input_stubs
 {
-	int dSrate, dBps, dNch;
+	int dSrate, dBps, dNch, dNch_actual;
 
 	unsigned length, played, fade;
 
@@ -480,7 +484,7 @@ public:
 
 		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set( "encoding", "synthesized" );
-		p_info.info_set_int("channels", sidinfo->sidChips());
+		p_info.info_set_int("channels", sidinfo->sidChips() == 1 ? 1 : 2);
 
 		int i = sidinfo->numberOfInfoStrings();
 
@@ -535,6 +539,7 @@ public:
 		pTune->selectSong(p_subsong);
 
 		dNch = pTune->getInfo()->sidChips();
+		dNch_actual = dNch == 1 ? 1 : 2;
 
 		length = cfg_deflength;
 
@@ -598,7 +603,7 @@ public:
 		SidConfig conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
-		conf.playback = dNch == 2 ? SidConfig::STEREO : SidConfig::MONO;
+		conf.playback = dNch == 1 ? SidConfig::MONO : SidConfig::STEREO;
 		conf.sidEmulation = m_sidBuilder;
 		if ( cfg_clock_override )
 		{
@@ -618,15 +623,15 @@ public:
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
-			length = (unsigned int)((__int64)length * dSrate / 1000) * dNch;
-			fade = (cfg_fade * dSrate / 1000) * dNch;
+			length = (unsigned int)((__int64)length * dSrate / 1000) * dNch_actual;
+			fade = (cfg_fade * dSrate / 1000) * dNch_actual;
 		}
 		else
 		{
 			length = 0;
 		}
 
-		m_sampleBuffer.set_count( 10240 * dNch );
+		m_sampleBuffer.set_count( 10240 * dNch_actual );
 	}
 
 	bool decode_run( audio_chunk & p_chunk,abort_callback & p_abort )
@@ -637,11 +642,11 @@ public:
 
 		int samples = length - played, written; //(stereo)
 
-		if ( !length || ( samples > 10240 * dNch ) ) samples = 10240 * dNch;
+		if ( !length || ( samples > 10240 * dNch_actual ) ) samples = 10240 * dNch_actual;
 
 		p_chunk.grow_data_size( samples );
 		p_chunk.set_srate( dSrate );
-		p_chunk.set_channels( dNch );
+		p_chunk.set_channels( dNch_actual );
 
 		written = m_engine->play( m_sampleBuffer.get_ptr(), samples );
 
@@ -653,7 +658,7 @@ public:
 			eof = true;
 		}
 
-		p_chunk.set_sample_count( written / dNch );
+		p_chunk.set_sample_count( written / dNch_actual );
 
 		unsigned d_start, d_end;
 		d_start = played;
@@ -665,7 +670,7 @@ public:
 			audio_sample * foo = p_chunk.get_data();
 			unsigned n;
 			audio_sample factor = 1.0 / fade;
-			if ( dNch == 1 )
+			if ( dNch_actual == 1 )
 			{
 				for ( n = d_start; n < d_end; n++ )
 				{
@@ -681,7 +686,7 @@ public:
 				}
 				++foo;
 			}
-			else if ( dNch == 2 )
+			else if ( dNch_actual == 2 )
 			{
 				for ( n = d_start; n < d_end; n += 2 )
 				{
@@ -708,13 +713,13 @@ public:
 	{
 		first_block = true;
 		unsigned samples = unsigned( audio_math::time_to_samples( p_seconds, dSrate ) );
-		samples *= dNch;
+		samples *= dNch_actual;
 		if ( samples < played )
 		{
 			decode_initialize( pTune->getInfo()->currentSong(), input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
 		pfc::array_t<t_int16> sample_buffer;
-		sample_buffer.grow_size( 10240 * dNch );
+		sample_buffer.grow_size( 10240 * dNch_actual );
 		eof = false;
 
 		unsigned remain = ( samples - played ) % 32;
@@ -727,7 +732,7 @@ public:
 			p_abort.check();
 
 			unsigned todo = samples - played;
-			if ( todo > 10240 * dNch ) todo = 10240 * dNch;
+			if ( todo > 10240 * dNch_actual ) todo = 10240 * dNch_actual;
 			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
