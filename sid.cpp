@@ -1,7 +1,13 @@
-#define MYVERSION "1.45"
+#define MYVERSION "1.46"
 
 /*
 	changelog
+
+2020-02-12 01:17 UTC - kode54
+- Fixed song length database handling for unlisted files
+- Improved handling of song lengths in the get_info() function
+  to not modify the state of the loaded song
+- Version is now 1.46
 
 2020-02-11 09:10 UTC - kode54
 - Reverted fade behavior
@@ -505,9 +511,10 @@ public:
 
 			if ( db_loaded )
 			{
-				pTune->selectSong( p_subsong );
-				unsigned len = db.lengthMs( *pTune );
-				if ( len ) length = len;
+				char md5[SidTune::MD5_LENGTH + 1];
+				pTune->createMD5New(md5);
+				int32_t len = db.lengthMs( md5, p_subsong );
+				if ( len > 0 ) length = len;
 			}
 		}
 
@@ -538,8 +545,8 @@ public:
 
 			if ( db_loaded )
 			{
-				unsigned len = db.lengthMs(*pTune);
-				if (len) length = len;
+				int32_t len = db.lengthMs(*pTune);
+				if ( len > 0 ) length = len;
 			}
 		}
 
