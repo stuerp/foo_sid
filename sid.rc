@@ -54,39 +54,42 @@ IDD_CONFIG DIALOGEX 0, 0, 255, 229
 STYLE DS_SETFONT | WS_CHILD
 FONT 8, "Tahoma", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "Quality",IDC_STATIC,5,5,244,26
+    GROUPBOX        "Quality",IDC_STATIC,5,5,244,40
     RTEXT           "Sample rate:",IDC_STATIC,23,15,44,8
     COMBOBOX        IDC_SAMPLERATE,71,13,47,130,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Hz",IDC_STATIC,120,15,10,8
     RTEXT           "Core:",IDC_STATIC,137,15,37,8
     COMBOBOX        IDC_SID_BUILDER,178,13,47,130,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Length",IDC_STATIC,5,35,244,93
+    RTEXT           "Stereo separation:",IDC_STATIC,5,29,62,8
+    CONTROL         "",IDC_SLIDER_SSEP,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,67,29,51,10
+    RTEXT           "%",IDC_TEXT_SSEP,120,29,37,8
+    GROUPBOX        "Length",IDC_STATIC,5,49,244,93
     CONTROL         "Force all songs to play indefinitely",IDC_INFINITE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,45,121,10
-    RTEXT           "Default length is:",IDC_STATIC,9,63,58,8
-    EDITTEXT        IDC_DLENGTH,71,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
-    LTEXT           "m:s",IDC_STATIC,120,63,12,8
-    RTEXT           "Fade for:",IDC_STATIC,143,63,31,8
-    EDITTEXT        IDC_FADE,178,61,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | ES_NUMBER | WS_GROUP
-    LTEXT           "ms",IDC_STATIC,227,63,10,8
-    GROUPBOX        "Database",IDC_STATIC,10,77,235,47
-    RTEXT           "Path:",IDC_STATIC,19,91,18,8
-    RTEXT           "Status:",IDC_STATIC,13,107,24,8
-    EDITTEXT        IDC_DB_PATH,41,89,160,12,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "...",IDC_DB_PATH_SET,202,89,13,12,WS_GROUP
-    PUSHBUTTON      "clear",IDC_DB_PATH_CLEAR,215,89,23,12,WS_GROUP
-    LTEXT           "",IDC_DB_STATUS,41,107,114,8,NOT WS_GROUP
-    GROUPBOX        "Overrides",IDC_STATIC,5,132,244,78
-    RTEXT           "Clock speed:",IDC_STATIC,13,144,54,8
-    COMBOBOX        IDC_CLOCK_OVERRIDE,71,142,126,12,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "SID model:",IDC_STATIC,13,161,54,8
-    COMBOBOX        IDC_SID_OVERRIDE,71,159,126,12,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "6581 filter curve:",IDC_STATIC,7,178,60,10
-    CONTROL         "",IDC_SLIDER_6581,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,71,178,126,10
-    RTEXT           "Static",IDC_TEXT_6581,202,178,36,10
-    RTEXT           "8580 filter curve:",IDC_STATIC,7,195,60,10
-    CONTROL         "",IDC_SLIDER_8580,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,71,195,126,10
-    RTEXT           "Static",IDC_TEXT_8580,202,195,36,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,59,121,10
+    RTEXT           "Default length is:",IDC_STATIC,9,87,58,8
+    EDITTEXT        IDC_DLENGTH,71,85,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
+    LTEXT           "m:s.ms",IDC_STATIC,120,87,24,8
+    RTEXT           "Fade for:",IDC_STATIC,143,87,31,8
+    EDITTEXT        IDC_FADE,178,85,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | ES_NUMBER | WS_GROUP
+    LTEXT           "ms",IDC_STATIC,227,87,10,8
+    GROUPBOX        "Database",IDC_STATIC,10,73,235,62
+    RTEXT           "Path:",IDC_STATIC,19,105,18,8
+    RTEXT           "Status:",IDC_STATIC,13,121,24,8
+    EDITTEXT        IDC_DB_PATH,41,103,160,12,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "...",IDC_DB_PATH_SET,202,103,13,12,WS_GROUP
+    PUSHBUTTON      "clear",IDC_DB_PATH_CLEAR,215,103,23,12,WS_GROUP
+    LTEXT           "",IDC_DB_STATUS,41,121,114,8,NOT WS_GROUP
+    GROUPBOX        "Overrides",IDC_STATIC,5,146,244,78
+    RTEXT           "Clock speed:",IDC_STATIC,13,158,54,8
+    COMBOBOX        IDC_CLOCK_OVERRIDE,71,156,126,12,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "SID model:",IDC_STATIC,13,175,54,8
+    COMBOBOX        IDC_SID_OVERRIDE,71,173,126,12,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "6581 filter curve:",IDC_STATIC,7,192,60,10
+    CONTROL         "",IDC_SLIDER_6581,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,71,192,126,10
+    RTEXT           "Static",IDC_TEXT_6581,202,192,36,10
+    RTEXT           "8580 filter curve:",IDC_STATIC,7,209,60,10
+    CONTROL         "",IDC_SLIDER_8580,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,71,209,126,10
+    RTEXT           "Static",IDC_TEXT_8580,202,209,36,10
 END
 
 
@@ -121,6 +124,17 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_CONFIG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

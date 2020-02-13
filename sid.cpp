@@ -1,7 +1,12 @@
-#define MYVERSION "1.47"
+#define MYVERSION "1.48"
 
 /*
 	changelog
+
+2020-02-13 03:04 UTC - kode54
+- Implemented configurable stereo mode with configurable separation level
+- Fixed description for 8580 filter setting in two places
+- Version is now 1.48
 
 2020-02-12 02:18 UTC - kode54
 - Fix 3SID playback
@@ -259,6 +264,9 @@ static const GUID guid_cfg_sid_filter_8580 =
 // {C9E01956-6EAB-46E3-AEA1-2A8A3A34382D}
 static const GUID guid_cfg_sid_builder =
 { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0xa1, 0x2a, 0x8a, 0x3a, 0x34, 0x38, 0x2d } };
+// {0278879D-7C46-41A4-9F42-2786D32B5BBE}
+static const GUID guid_cfg_stereo_separation =
+{ 0x278879d, 0x7c46, 0x41a4, { 0x9f, 0x42, 0x27, 0x86, 0xd3, 0x2b, 0x5b, 0xbe } };
 
 enum
 {
@@ -276,7 +284,8 @@ enum
 	default_cfg_sid_override = 0,
 	default_cfg_sid_filter_6581 = 128,
 	default_cfg_sid_filter_8580 = 128,
-	default_cfg_sid_builder = sid_builder_residfp
+	default_cfg_sid_builder = sid_builder_residfp,
+	default_cfg_stereo_separation = 50
 };
 
 static cfg_int cfg_infinite(guid_cfg_infinite,default_cfg_infinite);
@@ -289,6 +298,7 @@ static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581,default_cfg_sid_filt
 static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580,default_cfg_sid_filter_8580);
 static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
 static cfg_int cfg_sid_builder(guid_cfg_sid_builder,default_cfg_sid_builder);
+static cfg_int cfg_stereo_separation(guid_cfg_stereo_separation,default_cfg_stereo_separation);
 //static cfg_int cfg_bps("sid_bps",16);
 
 static class initquit_upgrade_vars : public initquit
@@ -413,7 +423,7 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 
 class input_sid : public input_stubs
 {
-	int dSrate, dBps, dNch, dNch_actual;
+	int dSrate, dBps, stereo_separation;
 
 	unsigned length, played, fade;
 
@@ -462,6 +472,8 @@ public:
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
+
+		stereo_separation = cfg_stereo_separation;
 	}
 
 	unsigned get_subsong_count()
@@ -484,7 +496,8 @@ public:
 
 		//p_info.info_set_int("samplerate", dSrate);
 		p_info.info_set( "encoding", "synthesized" );
-		p_info.info_set_int("channels", sidinfo->sidChips() == 1 ? 1 : 2);
+		p_info.info_set_int("channels", 2);
+		p_info.info_set_int("sid_chip_count", sidinfo->sidChips());
 
 		int i = sidinfo->numberOfInfoStrings();
 
@@ -538,8 +551,7 @@ public:
 
 		pTune->selectSong(p_subsong);
 
-		dNch = pTune->getInfo()->sidChips();
-		dNch_actual = dNch == 1 ? 1 : 2;
+		int dNch = pTune->getInfo()->sidChips();
 
 		length = cfg_deflength;
 
@@ -603,7 +615,7 @@ public:
 		SidConfig conf;
 		conf = m_engine->config();
 		conf.frequency = dSrate;
-		conf.playback = dNch == 1 ? SidConfig::MONO : SidConfig::STEREO;
+		conf.playback = SidConfig::STEREO;
 		conf.sidEmulation = m_sidBuilder;
 		if ( cfg_clock_override )
 		{
@@ -623,15 +635,15 @@ public:
 
 		if ( !cfg_infinite || ( p_flags & input_flag_no_looping ) )
 		{
-			length = (unsigned int)((__int64)length * dSrate / 1000) * dNch_actual;
-			fade = (cfg_fade * dSrate / 1000) * dNch_actual;
+			length = (unsigned int)((__int64)length * dSrate / 1000) * 2;
+			fade = (cfg_fade * dSrate / 1000) * 2;
 		}
 		else
 		{
 			length = 0;
 		}
 
-		m_sampleBuffer.set_count( 10240 * dNch_actual );
+		m_sampleBuffer.set_count( 10240 * 2 );
 	}
 
 	bool decode_run( audio_chunk & p_chunk,abort_callback & p_abort )
@@ -642,11 +654,11 @@ public:
 
 		int samples = length - played, written; //(stereo)
 
-		if ( !length || ( samples > 10240 * dNch_actual ) ) samples = 10240 * dNch_actual;
+		if ( !length || ( samples > 10240 * 2 ) ) samples = 10240 * 2;
 
 		p_chunk.grow_data_size( samples );
 		p_chunk.set_srate( dSrate );
-		p_chunk.set_channels( dNch_actual );
+		p_chunk.set_channels( 2 );
 
 		written = m_engine->play( m_sampleBuffer.get_ptr(), samples );
 
@@ -658,7 +670,19 @@ public:
 			eof = true;
 		}
 
-		p_chunk.set_sample_count( written / dNch_actual );
+		audio_sample factor = (audio_sample)stereo_separation * 0.005; /* percent, pre-scaled by half */
+
+		for (int i = 0; i < written; i += 2)
+		{
+			/* convert to mid-side, scale side difference according to user setting */
+			audio_sample* sample = p_chunk.get_data() + i;
+			float mid = (sample[0] + sample[1]) * 0.5;
+			float side = (sample[0] - sample[1]) * factor;
+			sample[0] = mid + side;
+			sample[1] = mid - side;
+		}
+
+		p_chunk.set_sample_count( written / 2 );
 
 		unsigned d_start, d_end;
 		d_start = played;
@@ -669,24 +693,7 @@ public:
 		{
 			audio_sample * foo = p_chunk.get_data();
 			unsigned n;
-			audio_sample factor = 1.0 / fade;
-			if ( dNch_actual == 1 )
-			{
-				for ( n = d_start; n < d_end; n++ )
-				{
-					if ( n > length )
-					{
-						*foo = 0;
-					}
-					else
-					{
-						audio_sample bleh = (audio_sample)(length - n) * factor;
-						*foo *= bleh;
-					}
-				}
-				++foo;
-			}
-			else if ( dNch_actual == 2 )
+			factor = 1.0 / fade;
 			{
 				for ( n = d_start; n < d_end; n += 2 )
 				{
@@ -713,13 +720,13 @@ public:
 	{
 		first_block = true;
 		unsigned samples = unsigned( audio_math::time_to_samples( p_seconds, dSrate ) );
-		samples *= dNch_actual;
+		samples *= 2;
 		if ( samples < played )
 		{
 			decode_initialize( pTune->getInfo()->currentSong(), input_flag_playback | ( length ? input_flag_no_looping : 0 ), p_abort );
 		}
 		pfc::array_t<t_int16> sample_buffer;
-		sample_buffer.grow_size( 10240 * dNch_actual );
+		sample_buffer.grow_size( 10240 * 2 );
 		eof = false;
 
 		unsigned remain = ( samples - played ) % 32;
@@ -732,7 +739,7 @@ public:
 			p_abort.check();
 
 			unsigned todo = samples - played;
-			if ( todo > 10240 * dNch_actual ) todo = 10240 * dNch_actual;
+			if ( todo > 10240 * 2 ) todo = 10240 * 2;
 			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
 			if ( done < todo )
 			{
@@ -865,7 +872,7 @@ private:
 	
 	const preferences_page_callback::ptr m_callback;
 
-	CTrackBarCtrl m_slider_6581, m_slider_8580;
+	CTrackBarCtrl m_slider_6581, m_slider_8580, m_slider_ssep;
 };
 
 void CMyPreferences::update_db_status()
@@ -946,6 +953,12 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	if ( cfg_sid_builder != sid_builder_residfp )
 		m_slider_8580.EnableWindow( FALSE );
 
+	m_slider_ssep = GetDlgItem( IDC_SLIDER_SSEP );
+	m_slider_ssep.SetRangeMin( 0 );
+	m_slider_ssep.SetRangeMax( 150 );
+	m_slider_ssep.SetPos( cfg_stereo_separation );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << cfg_stereo_separation << "%" );
+
 	return FALSE;
 }
 
@@ -975,7 +988,11 @@ void CMyPreferences::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar)
 	}
 	else if ( pScrollBar.m_hWnd == m_slider_8580.m_hWnd )
 	{
-		uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << m_slider_8580.GetPos() << " Hz" );
+		uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( m_slider_8580.GetPos() / 256., 0, 2 ) );
+	}
+	else if ( pScrollBar.m_hWnd == m_slider_ssep.m_hWnd )
+	{
+		uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << m_slider_ssep.GetPos() << "%" );
 	}
 	OnChanged();
 }
@@ -1018,7 +1035,9 @@ void CMyPreferences::reset() {
 	m_slider_6581.SetPos( default_cfg_sid_filter_6581 );
 	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( default_cfg_sid_filter_6581 / 256., 0, 2 ) );
 	m_slider_8580.SetPos( default_cfg_sid_filter_8580 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << default_cfg_sid_filter_8580 << " Hz" );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( default_cfg_sid_filter_8580 / 256., 0, 2 ) );
+	m_slider_ssep.SetPos( default_cfg_stereo_separation );
+	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << default_cfg_stereo_separation << "%" );
 	
 	OnChanged();
 }
@@ -1063,6 +1082,7 @@ void CMyPreferences::apply() {
 	cfg_sid_builder = SendDlgItemMessage( IDC_SID_BUILDER, CB_GETCURSEL );
 	cfg_sid_filter_6581 = m_slider_6581.GetPos();
 	cfg_sid_filter_8580 = m_slider_8580.GetPos();
+	cfg_stereo_separation = m_slider_ssep.GetPos();
 	
 	OnChanged();
 }
@@ -1078,6 +1098,7 @@ bool CMyPreferences::HasChanged() {
 	if ( !changed && SendDlgItemMessage( IDC_SID_BUILDER, CB_GETCURSEL ) != cfg_sid_builder ) changed = true;
 	if ( !changed && m_slider_6581.GetPos() != cfg_sid_filter_6581 ) changed = true;
 	if ( !changed && m_slider_8580.GetPos() != cfg_sid_filter_8580 ) changed = true;
+	if ( !changed && m_slider_ssep.GetPos() != cfg_stereo_separation ) changed = true;
 	if ( !changed )
 	{
 		pfc::string8 db_path;
