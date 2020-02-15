@@ -1,7 +1,12 @@
-#define MYVERSION "1.48"
+#define MYVERSION "1.49"
 
 /*
 	changelog
+
+2020-02-15 02:39 UTC - kode54
+- Restructured build configuration a bit, moving MSVC specific files
+  into the VC project directory, and enabling missing optimizations
+- Version is now 1.49
 
 2020-02-13 03:04 UTC - kode54
 - Implemented configurable stereo mode with configurable separation level
