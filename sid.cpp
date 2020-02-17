@@ -942,11 +942,14 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 		::SendMessage( w, CB_SETCURSEL, cfg_sid_override, 0 );
 	}
 
+	pfc::string8_fast temp;
+
 	m_slider_6581 = GetDlgItem( IDC_SLIDER_6581 );
 	m_slider_6581.SetRangeMin( 0 );
 	m_slider_6581.SetRangeMax( 256 );
 	m_slider_6581.SetPos( cfg_sid_filter_6581 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( cfg_sid_filter_6581 / 256., 0, 2 ) );
+	temp = pfc::format_float(cfg_sid_filter_6581 / 256., 0, 2);
+	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, temp );
 	if ( cfg_sid_builder != sid_builder_residfp )
 		m_slider_6581.EnableWindow( FALSE );
 
@@ -954,7 +957,8 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	m_slider_8580.SetRangeMin( 0 );
 	m_slider_8580.SetRangeMax( 256 );
 	m_slider_8580.SetPos( cfg_sid_filter_8580 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( cfg_sid_filter_8580 / 256., 0, 2 ) );
+	temp = pfc::format_float(cfg_sid_filter_8580 / 256., 0, 2);
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, temp );
 	if ( cfg_sid_builder != sid_builder_residfp )
 		m_slider_8580.EnableWindow( FALSE );
 
@@ -962,7 +966,9 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM) {
 	m_slider_ssep.SetRangeMin( 0 );
 	m_slider_ssep.SetRangeMax( 150 );
 	m_slider_ssep.SetPos( cfg_stereo_separation );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << cfg_stereo_separation << "%" );
+	temp = pfc::format_int(cfg_stereo_separation);
+	temp += "%";
+	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, temp );
 
 	return FALSE;
 }
@@ -987,17 +993,22 @@ void CMyPreferences::OnButtonClick(UINT, int, CWindow) {
 
 void CMyPreferences::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar)
 {
+	pfc::string8_fast temp;
 	if ( pScrollBar.m_hWnd == m_slider_6581.m_hWnd )
 	{
-		uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( m_slider_6581.GetPos() / 256., 0, 2 ) );
+		temp = pfc::format_float(m_slider_6581.GetPos() / 256., 0, 2);
+		uSetDlgItemText( m_hWnd, IDC_TEXT_6581, temp );
 	}
 	else if ( pScrollBar.m_hWnd == m_slider_8580.m_hWnd )
 	{
-		uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( m_slider_8580.GetPos() / 256., 0, 2 ) );
+		temp = pfc::format_float(m_slider_8580.GetPos() / 256., 0, 2);
+		uSetDlgItemText( m_hWnd, IDC_TEXT_8580, temp );
 	}
 	else if ( pScrollBar.m_hWnd == m_slider_ssep.m_hWnd )
 	{
-		uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << m_slider_ssep.GetPos() << "%" );
+		temp = pfc::format_int(m_slider_ssep.GetPos());
+		temp += "%";
+		uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, temp );
 	}
 	OnChanged();
 }
@@ -1029,6 +1040,7 @@ t_uint32 CMyPreferences::get_state() {
 }
 
 void CMyPreferences::reset() {
+	pfc::string8_fast temp;
 	SendDlgItemMessage( IDC_INFINITE, BM_SETCHECK, default_cfg_infinite );
 	SendDlgItemMessage( IDC_SID_BUILDER, CB_SETCURSEL, default_cfg_sid_builder );
 	SendDlgItemMessage( IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override );
@@ -1038,11 +1050,15 @@ void CMyPreferences::reset() {
 	SetDlgItemInt( IDC_SAMPLERATE, default_cfg_rate, FALSE );
 	SetDlgItemInt( IDC_FADE, default_cfg_fade, FALSE );
 	m_slider_6581.SetPos( default_cfg_sid_filter_6581 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, pfc::string_formatter() << pfc::format_float( default_cfg_sid_filter_6581 / 256., 0, 2 ) );
+	temp = pfc::format_float(default_cfg_sid_filter_6581 / 256., 0, 2);
+	uSetDlgItemText( m_hWnd, IDC_TEXT_6581, temp );
 	m_slider_8580.SetPos( default_cfg_sid_filter_8580 );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, pfc::string_formatter() << pfc::format_float( default_cfg_sid_filter_8580 / 256., 0, 2 ) );
+	temp = pfc::format_float(default_cfg_sid_filter_8580 / 256., 0, 2);
+	uSetDlgItemText( m_hWnd, IDC_TEXT_8580, temp );
 	m_slider_ssep.SetPos( default_cfg_stereo_separation );
-	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, pfc::string_formatter() << default_cfg_stereo_separation << "%" );
+	temp = pfc::format_int(default_cfg_stereo_separation);
+	temp += "%";
+	uSetDlgItemText( m_hWnd, IDC_TEXT_SSEP, temp );
 	
 	OnChanged();
 }
