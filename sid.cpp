@@ -1,7 +1,12 @@
-#define MYVERSION "1.49"
+#define MYVERSION "1.50"
 
 /*
 	changelog
+
+2020-02-28 23:11 UTC - kode54
+- Eliminated fast forwarding from seeking, as it now makes the sinc
+  resampler crash. It apparently had no useful effect anyway.
+- Version is now 1.50
 
 2020-02-15 02:39 UTC - kode54
 - Restructured build configuration a bit, moving MSVC specific files
@@ -734,10 +739,10 @@ public:
 		sample_buffer.grow_size( 10240 * 2 );
 		eof = false;
 
-		unsigned remain = ( samples - played ) % 32;
+		/*unsigned remain = ( samples - played ) % 32;
 		played /= 32;
 		samples /= 32;
-		m_engine->fastForward( 100 * 32 );
+		m_engine->fastForward( 100 * 32 );*/
 
 		while ( played < samples )
 		{
@@ -756,11 +761,11 @@ public:
 			played += todo;
 		}
 
-		played *= 32;
+		/*played *= 32;
 		m_engine->fastForward( 100 );
 
 		if ( remain )
-			played += m_engine->play( sample_buffer.get_ptr(), remain );
+			played += m_engine->play( sample_buffer.get_ptr(), remain );*/
 	}
 
 	bool decode_can_seek()
