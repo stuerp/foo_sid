@@ -66,7 +66,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../libsidplayfp/src;../../../libsidplayfp-projects;../../../libsidplayfp/src/builders/resid-builder;../../../libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -99,7 +99,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../sidplay-residfp/libsidplayfp/src;../../../sidplay-residfp/projects/win/VC/libsidplayfp;../../../sidplay-residfp/libsidplayfp/src/builders/resid-builder;../../../sidplay-residfp/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../SDK;../..;../../../wtl/include;../../../libsidplayfp/src;../../../libsidplayfp-projects;../../../libsidplayfp/src/builders/resid-builder;../../../libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -109,6 +109,7 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalOptions>
       </AdditionalOptions>
+      <PreprocessorDefinitions>_WINDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -143,7 +144,7 @@
     <ClInclude Include="SidTuneMod.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\sidplay-residfp\projects\win\VC\libsidplayfp\libsidplayfp.vcxproj">
+    <ProjectReference Include="..\..\..\libsidplayfp-projects\libsidplayfp.vcxproj">
       <Project>{337270ff-3209-46c8-b7c2-0c847b792fb5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\libPPUI\libPPUI.vcxproj">
