@@ -1,7 +1,13 @@
-#define MYVERSION "1.60"
+#define MYVERSION "1.61"
 
 /*
 	changelog
+
+2021-04-05 18:56 UTC - kode54
+- Implemented support for foobar2000 1.6.1+ preferred sample rate.
+  There's not much overhead to this anyway, since the library is
+  just downsampling to the specified rate anyway.
+- Version is now 1.61
 
 2021-04-04 23:56 UTC - kode54
 - Updated libsidplayfp to version 2.2.0
@@ -498,6 +504,16 @@ public:
 	t_uint32 get_subsong(unsigned p_index)
 	{
 		return p_index + 1;
+	}
+
+	size_t extended_param(const GUID& type, size_t arg1, void* arg2, size_t arg2size) {
+		if (type == input_params::set_preferred_sample_rate)
+		{
+			dSrate = (int)arg1;
+			return 1;
+		}
+		else
+			return 0;
 	}
 
 	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
