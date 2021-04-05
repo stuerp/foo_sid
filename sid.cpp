@@ -1,7 +1,11 @@
-#define MYVERSION "1.50"
+#define MYVERSION "1.60"
 
 /*
 	changelog
+
+2021-04-04 23:56 UTC - kode54
+- Updated libsidplayfp to version 2.2.0
+- Version is now 1.60
 
 2020-02-28 23:11 UTC - kode54
 - Eliminated fast forwarding from seeking, as it now makes the sinc
