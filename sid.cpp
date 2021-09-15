@@ -1,7 +1,11 @@
-#define MYVERSION "1.61"
+#define MYVERSION "1.70"
 
 /*
 	changelog
+
+2021-09-15 07:38 UTC - kode54
+- Let's serialize this entire library because it fucking sucks
+- Version is now 1.70
 
 2021-04-05 18:56 UTC - kode54
 - Implemented support for foobar2000 1.6.1+ preferred sample rate.
@@ -441,6 +445,8 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 	} fix_crap;
 };*/
 
+static critical_section g_sidplayfp_fucking_sucks;
+
 class input_sid : public input_stubs
 {
 	int dSrate, dBps, stereo_separation;
@@ -470,6 +476,7 @@ public:
 
 	~input_sid()
 	{
+		insync(g_sidplayfp_fucking_sucks);
 		delete pTune;
 		delete m_engine;
 		delete m_sidBuilder;
@@ -486,9 +493,13 @@ public:
 
 		m_stats = p_file->get_stats( p_abort );
 
-		pTune = new SidTuneMod( p_path );
+		{
+			insync(g_sidplayfp_fucking_sucks);
 
-		if ( ! pTune->getStatus() ) throw exception_io_unsupported_format();
+			pTune = new SidTuneMod(p_path);
+
+			if (!pTune->getStatus()) throw exception_io_unsupported_format();
+		}
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
@@ -498,6 +509,7 @@ public:
 
 	unsigned get_subsong_count()
 	{
+		insync(g_sidplayfp_fucking_sucks);
 		return pTune->getInfo()->songs();
 	}
 
@@ -512,6 +524,8 @@ public:
 			dSrate = (int)arg1;
 			return 1;
 		}
+		else if (type == input_params::seeking_expensive)
+			return 1;
 		else
 			return 0;
 	}
@@ -519,6 +533,8 @@ public:
 	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
 	{
 		if ( ! p_subsong ) return;
+
+		insync(g_sidplayfp_fucking_sucks);
 
 		const SidTuneInfo * sidinfo;
 
@@ -578,6 +594,8 @@ public:
 		if ( ! p_subsong ) throw exception_io_data();
 
 		first_block = true;
+
+		insync(g_sidplayfp_fucking_sucks);
 
 		pTune->selectSong(p_subsong);
 
@@ -690,12 +708,16 @@ public:
 		p_chunk.set_srate( dSrate );
 		p_chunk.set_channels( 2 );
 
-		written = m_engine->play( m_sampleBuffer.get_ptr(), samples );
+		{
+			insync(g_sidplayfp_fucking_sucks);
+			written = m_engine->play(m_sampleBuffer.get_ptr(), samples);
+		}
 
 		audio_math::convert_from_int16( m_sampleBuffer.get_ptr(), written, p_chunk.get_data(), 1.0 );
 
 		if ( written < samples )
 		{
+			insync(g_sidplayfp_fucking_sucks);
 			if ( m_engine->error() ) throw exception_io_data( m_engine->error() );
 			eof = true;
 		}
@@ -770,7 +792,11 @@ public:
 
 			unsigned todo = samples - played;
 			if ( todo > 10240 * 2 ) todo = 10240 * 2;
-			unsigned done = m_engine->play( sample_buffer.get_ptr(), todo );
+			unsigned done;
+			{
+				insync(g_sidplayfp_fucking_sucks);
+				done = m_engine->play(sample_buffer.get_ptr(), todo);
+			}
 			if ( done < todo )
 			{
 				if ( m_engine->error() )
