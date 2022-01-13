@@ -28,7 +28,7 @@ const char ERR_EMPTY[]               = "SIDTUNE ERROR: No data to load";
 const char ERR_NOT_ENOUGH_MEMORY[]   = "SIDTUNE ERROR: Not enough free memory";
 const char ERR_CANT_LOAD_FILE[]      = "SIDTUNE ERROR: Could not load input file";
 
-void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint_least8_t>& bufferRef)
+void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint8_t>& bufferRef)
 {
 	service_ptr_t<file> myIn;
 	abort_callback_dummy m_abort;
@@ -67,7 +67,7 @@ void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint_least8_t>& 
 }
 
 SidTuneMod::SidTuneMod(const char* fileName, const char **fileNameExt, const bool separatorIsSlash)
-	: SidTune(fileName, fileNameExt, separatorIsSlash, MyLoaderFunc) { }
+	: SidTune(MyLoaderFunc, fileName, fileNameExt, separatorIsSlash) { }
 
 static void decode_hex(const char *& in, char & out)
 {

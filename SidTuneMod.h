@@ -25,7 +25,7 @@
 
 class SID_EXTERN SidTuneMod : public SidTune
 {
-	static void MyLoaderFunc(const char* fileName, std::vector<uint_least8_t>& bufferRef);
+	static void MyLoaderFunc(const char* fileName, std::vector<uint8_t>& bufferRef);
 
 public:  // --------------------------------------------------------- public
 

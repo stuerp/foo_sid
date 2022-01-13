@@ -1,7 +1,11 @@
-#define MYVERSION "1.70"
+#define MYVERSION "1.80"
 
 /*
 	changelog
+
+2022-01-13 01:36 UTC - kode54
+- Updated libsidplay to version 2.3.1
+- Version is now 1.80
 
 2021-09-15 07:38 UTC - kode54
 - Let's serialize this entire library because it fucking sucks
