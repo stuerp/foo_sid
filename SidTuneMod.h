@@ -25,11 +25,14 @@
 
 class SID_EXTERN SidTuneMod : public SidTune
 {
+	std::string _fileName;
+
 	static void MyLoaderFunc(const char* fileName, std::vector<uint8_t>& bufferRef);
 
 public:  // --------------------------------------------------------- public
 
-	SidTuneMod(const char* fileName, const char **fileNameExt = 0, const bool separatorIsSlash = false);
+	SidTuneMod(file::ptr inFile, const char* fileName, const char **fileNameExt = 0, const bool separatorIsSlash = false);
+	~SidTuneMod();
 
 	void createMD5(hasher_md5_result&);
 };

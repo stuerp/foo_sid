@@ -1,14 +1,20 @@
-#define MYVERSION "1.80"
+#define MYVERSION "1.90"
 
 /*
 	changelog
+
+2022-02-12 01:48 UTC - kode54
+- Removed serialization, now should be fairly safe to use properly
+- Updated libsidplayfp again, with synchronization for its caching
+- Properly support dual file MUS/STR files again
+- Version is now 1.90
 
 2022-01-13 01:36 UTC - kode54
 - Updated libsidplay to version 2.3.1
 - Version is now 1.80
 
 2021-09-15 07:38 UTC - kode54
-- Let's serialize this entire library because it fucking sucks
+- Let's serialize this entire library because it effing sucks
 - Version is now 1.70
 
 2021-04-05 18:56 UTC - kode54
@@ -449,7 +455,8 @@ static void convert_db_path( const char * in, pfc::string_base & out, bool from_
 	} fix_crap;
 };*/
 
-static critical_section g_sidplayfp_fucking_sucks;
+static const char* extListEmpty[] = { NULL };
+static const char* extListStr[] = { ".str", NULL };
 
 class input_sid : public input_stubs
 {
@@ -480,7 +487,6 @@ public:
 
 	~input_sid()
 	{
-		insync(g_sidplayfp_fucking_sucks);
 		delete pTune;
 		delete m_engine;
 		delete m_sidBuilder;
@@ -497,13 +503,11 @@ public:
 
 		m_stats = p_file->get_stats( p_abort );
 
-		{
-			insync(g_sidplayfp_fucking_sucks);
+		const char** extList = (pfc::stricmp_ascii(pfc::string_extension(p_path), "mus") == 0) ? extListStr : extListEmpty;
 
-			pTune = new SidTuneMod(p_path);
+		pTune = new SidTuneMod(p_file, p_path, extList);
 
-			if (!pTune->getStatus()) throw exception_io_unsupported_format();
-		}
+		if (!pTune->getStatus()) throw exception_io_unsupported_format();
 
 		dSrate = cfg_rate;
 		//dBps = cfg_bps;
@@ -513,7 +517,6 @@ public:
 
 	unsigned get_subsong_count()
 	{
-		insync(g_sidplayfp_fucking_sucks);
 		return pTune->getInfo()->songs();
 	}
 
@@ -537,8 +540,6 @@ public:
 	void get_info( t_uint32 p_subsong, file_info & p_info, abort_callback & p_abort )
 	{
 		if ( ! p_subsong ) return;
-
-		insync(g_sidplayfp_fucking_sucks);
 
 		const SidTuneInfo * sidinfo;
 
@@ -598,8 +599,6 @@ public:
 		if ( ! p_subsong ) throw exception_io_data();
 
 		first_block = true;
-
-		insync(g_sidplayfp_fucking_sucks);
 
 		pTune->selectSong(p_subsong);
 
@@ -712,16 +711,12 @@ public:
 		p_chunk.set_srate( dSrate );
 		p_chunk.set_channels( 2 );
 
-		{
-			insync(g_sidplayfp_fucking_sucks);
-			written = m_engine->play(m_sampleBuffer.get_ptr(), samples);
-		}
+		written = m_engine->play(m_sampleBuffer.get_ptr(), samples);
 
 		audio_math::convert_from_int16( m_sampleBuffer.get_ptr(), written, p_chunk.get_data(), 1.0 );
 
 		if ( written < samples )
 		{
-			insync(g_sidplayfp_fucking_sucks);
 			if ( m_engine->error() ) throw exception_io_data( m_engine->error() );
 			eof = true;
 		}
@@ -798,7 +793,6 @@ public:
 			if ( todo > 10240 * 2 ) todo = 10240 * 2;
 			unsigned done;
 			{
-				insync(g_sidplayfp_fucking_sucks);
 				done = m_engine->play(sample_buffer.get_ptr(), todo);
 			}
 			if ( done < todo )
@@ -851,6 +845,11 @@ public:
 	}
 
 	void retag_commit( abort_callback & p_abort )
+	{
+		throw exception_tagging_unsupported();
+	}
+
+	void remove_tags(abort_callback& p_abort)
 	{
 		throw exception_tagging_unsupported();
 	}
