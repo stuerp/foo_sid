@@ -239,8 +239,9 @@
 
 #include "../helpers/dropdown_helper.h"
 
-#include <atlapp.h>
 #include <atlbase.h>
+
+#include <atlapp.h>
 
 #include <atlcrack.h>
 #include <atlctrls.h>
