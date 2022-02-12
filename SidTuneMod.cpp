@@ -59,7 +59,7 @@ public:
 				obj.refCount++;
 			}
 			catch (...) {
-				return;
+				return path;
 			}
 		} else {
 			obj.refCount++;
@@ -100,40 +100,21 @@ public:
 
 void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint8_t>& bufferRef)
 {
-	service_ptr_t<file> myIn;
-	abort_callback_dummy m_abort;
-
-	try
-	{
-		filesystem::g_open( myIn, fileName, filesystem::open_mode_read, m_abort );
+	if(!g_file_cache.try_path(std::string(fileName), bufferRef)) {
+		try {
+			service_ptr_t<file> myIn;
+			abort_callback_dummy m_abort;
+			filesystem::g_open(myIn, fileName, filesystem::open_mode_read, m_abort);
+			t_filesize fileSize = myIn->get_size_ex(m_abort);
+			bufferRef.resize(fileSize);
+			myIn->read_object(&bufferRef[0], fileSize, m_abort);
+		} catch(...) {
+			throw libsidplayfp::loadError(ERR_CANT_OPEN_FILE);
+		}
+	} else {
+		if(!bufferRef.size())
+			throw libsidplayfp::loadError(ERR_CANT_OPEN_FILE);
 	}
-	catch (...)
-	{
-        throw libsidplayfp::loadError(ERR_CANT_OPEN_FILE);
-	}
-
-    std::vector<uint_least8_t> fileBuf;
-
-    {
-		const size_t fileLen = myIn->get_size_ex( m_abort );
-		if ( fileLen == 0 )
-		{
-			throw libsidplayfp::loadError(ERR_EMPTY);
-		}
-        
-		fileBuf.resize(fileLen);
-
-		try
-		{
-			myIn->read_object( &fileBuf[0], fileLen, m_abort );
-		}
-		catch (...)
-		{
-			throw libsidplayfp::loadError(ERR_CANT_LOAD_FILE);
-		}
-    }
-
-    bufferRef.swap(fileBuf);
 }
 
 SidTuneMod::SidTuneMod(file::ptr file, const char* fileName, const char **fileNameExt, const bool separatorIsSlash)
