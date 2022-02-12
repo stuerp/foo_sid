@@ -118,7 +118,7 @@ void SidTuneMod::MyLoaderFunc(const char* fileName, std::vector<uint8_t>& buffer
 }
 
 SidTuneMod::SidTuneMod(file::ptr file, const char* fileName, const char **fileNameExt, const bool separatorIsSlash)
-: _fileName(fileName), SidTune(MyLoaderFunc, g_file_cache.add_path(_fileName, file).c_str(), fileNameExt, separatorIsSlash) {
+: _fileName(fileName), SidTune(MyLoaderFunc, g_file_cache.add_path(std::string(fileName), file).c_str(), fileNameExt, separatorIsSlash) {
 }
 
 SidTuneMod::~SidTuneMod() {
