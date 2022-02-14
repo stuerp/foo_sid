@@ -1,7 +1,11 @@
-#define MYVERSION "1.90"
+#define MYVERSION "1.91"
 
 /*
 	changelog
+
+2022-02-14 00:03 UTC - kode54
+- Sync lock RESIDfp creation
+- Version is now 1.91
 
 2022-02-12 01:48 UTC - kode54
 - Removed serialization, now should be fairly safe to use properly
@@ -440,6 +444,8 @@ static void convert_db_path(const char* in, pfc::string_base& out, bool from_con
 static const char* extListEmpty[] = { NULL };
 static const char* extListStr[] = { ".str", NULL };
 
+static critical_section g_residfp_lock;
+
 class input_sid : public input_stubs {
 	int dSrate, dBps, stereo_separation;
 
@@ -597,6 +603,7 @@ class input_sid : public input_stubs {
 
 		switch(cfg_sid_builder) {
 			case sid_builder_residfp: {
+				insync(g_residfp_lock);
 				ReSIDfpBuilder* builder = new ReSIDfpBuilder("ReSIDfp");
 				if(builder) {
 					m_sidBuilder = builder;
