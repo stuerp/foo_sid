@@ -14,8 +14,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SIDTUNEMOD_H
-#define SIDTUNEMOD_H
+#pragma once
 
 #include <sidplayfp/SidTune.h>
 
@@ -25,16 +24,14 @@
 
 class SID_EXTERN SidTuneMod : public SidTune
 {
-	std::string _fileName;
+public:
+    SidTuneMod(file::ptr inFile, std::string fileName, const char ** fileNameExt = 0, const bool separatorIsSlash = false);
+    ~SidTuneMod();
 
-	static void MyLoaderFunc(const char* fileName, std::vector<uint8_t>& bufferRef);
+    void createMD5(hasher_md5_result &);
 
-public:  // --------------------------------------------------------- public
+private:
+    std::string _fileName;
 
-	SidTuneMod(file::ptr inFile, const char* fileName, const char **fileNameExt = 0, const bool separatorIsSlash = false);
-	~SidTuneMod();
-
-	void createMD5(hasher_md5_result&);
+    static void MyLoaderFunc(const char * fileName, std::vector<uint8_t> & bufferRef);
 };
-
-#endif  /* SIDTUNEMOD_H */

@@ -1,7 +1,25 @@
-//{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by sid.rc
-//
+#define STR_COMPANY_NAME        TEXT("")
+#define STR_INTERNAL_NAME       TEXT("foo_sid")
+#define STR_COMMENTS            TEXT("Written by Christopher Snowhill, Peter Stuer")
+#define STR_COPYRIGHT           TEXT("Copyright (C) 2003-2022")
+
+#define STR_FILE_VERSION        TEXT("1.91.0.1")
+#define NUM_FILE_VERSION        1
+#define NUM_FILE_REVISION       91
+#define NUM_FILE_BUILD          0
+#define STR_FILE_NAME           TEXT("foo_sid.dll")
+#define STR_FILE_DESCRIPTION    TEXT("A foobar2000 component")
+
+#define STR_PRODUCT_VERSION     TEXT("1.91.0")
+#define NUM_PRODUCT_VERSION     1
+#define NUM_PRODUCT_REVISION    91
+#define NUM_PRODUCT_BUILD       0
+#define STR_PRODUCT_NAME        STR_INTERNAL_NAME
+
+#define STR_ABOUT_NAME          STR_INTERNAL_NAME
+#define STR_ABOUT_WEB           TEXT("")
+#define STR_ABOUT_EMAIL         TEXT("")
+
 #define IDD_CONFIG                      101
 #define IDC_SAMPLERATE                  1000
 #define IDC_INFINITE                    1001
@@ -29,14 +47,3 @@
 #define IDC_SLIDER_6582                 1019
 #define IDC_SLIDER_SSEP                 1019
 #define IDC_TEXT_SSEP                   1020
-
-// Next default values for new objects
-// 
-#ifdef APSTUDIO_INVOKED
-#ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        103
-#define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1021
-#define _APS_NEXT_SYMED_VALUE           101
-#endif
-#endif
