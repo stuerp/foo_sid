@@ -96,4 +96,4 @@ v1.91.0.1, 2022-12-03, *"Scratchin' the itch"*
 
 ## License
 
-![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
+GNU General Public License v2
