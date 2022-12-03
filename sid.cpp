@@ -556,9 +556,10 @@ public:
         return _Tune->getInfo()->songs();
     }
 
-    t_uint32 get_subsong(unsigned int index) noexcept
+    t_uint32 get_subsong(unsigned int subSongIndex) noexcept
     {
-        return index + 1;
+//      return subSongIndex + 1;
+        return subSongIndex;
     }
 
     size_t extended_param(const GUID& type, size_t arg1, void *, size_t)
@@ -575,10 +576,10 @@ public:
             return 0;
     }
 
-    void get_info(t_uint32 subsongIndex, file_info& fileInfo, abort_callback&)
+    void get_info(t_uint32 subSongIndex, file_info& fileInfo, abort_callback&)
     {
-        if (subsongIndex == 0)
-            return;
+//      if (subSongIndex == 0)
+//          return;
 
         const SidTuneInfo * TuneInfo = _Tune->getInfo();
 
@@ -640,7 +641,7 @@ public:
 
                 _Tune->createMD5New(md5);
 
-                const int LengthFromDatabase = _Database.lengthMs(md5, subsongIndex);
+                const int LengthFromDatabase = _Database.lengthMs(md5, subSongIndex + 1);
 
                 if (LengthFromDatabase > 0)
                     Length = LengthFromDatabase;
@@ -660,14 +661,14 @@ public:
         return _FileStats2;
     }
 
-    void decode_initialize(t_uint32 subsongIndex, unsigned flags, abort_callback & abortHandler)
+    void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback & abortHandler)
     {
-        if (subsongIndex == 0)
-            throw exception_io_data();
+//      if (subSongIndex == 0)
+//          throw exception_io_data();
 
         _IsFirstBlock = true;
 
-        _Tune->selectSong(subsongIndex);
+        _Tune->selectSong(subSongIndex + 1);
 
         const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
