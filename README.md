@@ -9,7 +9,7 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 * Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID or .MUS or .MUS+.STR formats.
 * Supports supports up to 3SID rips.
-* Supports the latest High Voltage SID Collection song length database.
+* Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database.
 * Supports dark mode.
 
 * Compatible with foobar2000 1.6.13 and foobar2000 2.0 or later (32 and 64-bit version).
@@ -86,7 +86,7 @@ v1.91.0.1, 2022-12-03, *"Scratchin' the itch"*
 
 * Peter Pawlowski for the [foobar2000](https://www.foobar2000.org/) audio player. ![foobar2000](https://www.foobar2000.org/button-small.png)
 * [kode54](https://gitlab.com/kode54) for the original [foo_sid](https://gitlab.com/kode54/foo_sid) component.
-* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) for a libary to play Commodore 64 music.
+* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) for a library to play Commodore 64 music.
 
 ## Links
 
