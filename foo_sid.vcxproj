@@ -100,7 +100,7 @@
       <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
@@ -136,7 +136,7 @@
       <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
@@ -172,13 +172,12 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <AdditionalOptions>
       </AdditionalOptions>
       <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -196,12 +195,12 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <AdditionalDependencies>../sdk/foobar2000/shared/shared-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Message>Creating component archive...</Message>
@@ -223,7 +222,7 @@
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <AdditionalOptions>
       </AdditionalOptions>
       <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>

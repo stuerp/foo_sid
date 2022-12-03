@@ -254,9 +254,9 @@
 #include <atlctrls.h>
 #include <atlmisc.h>
 
-#include <../../libPPUI/wtl-pp.h>
-#include <../helpers/atl-misc.h>
-#include <../helpers/dropdown_helper.h>
+#include <libPPUI/wtl-pp.h>
+#include <foobar2000/helpers/atl-misc.h>
+#include <foobar2000/helpers/dropdown_helper.h>
 
 #include "SidTuneMod.h"
 
@@ -301,6 +301,8 @@ static const GUID guid_cfg_sid_builder = { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0
 // {0278879D-7C46-41A4-9F42-2786D32B5BBE}
 static const GUID guid_cfg_stereo_separation = { 0x278879d, 0x7c46, 0x41a4, { 0x9f, 0x42, 0x27, 0x86, 0xd3, 0x2b, 0x5b, 0xbe } };
 
+const unsigned int MaxSamples = 10240;
+
 enum
 {
     sid_builder_resid = 0,
@@ -331,7 +333,7 @@ static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581, default_cfg_sid_fil
 static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580, default_cfg_sid_filter_8580);
 static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
 static cfg_int cfg_sid_builder(guid_cfg_sid_builder, default_cfg_sid_builder);
-static cfg_int cfg_stereo_separation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
+static cfg_int cfg_StereoSeparation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
 //static cfg_int cfg_bps("sid_bps",16);
 
 #pragma region("InitQuit")
@@ -520,35 +522,38 @@ static critical_section g_residfp_lock;
 class InputHandler : public input_stubs
 {
 public:
-    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _Length(0), _SamplesPlayed(0), _Fade(0), _IsEOF(false), _IsFirstBlock(false) { }
+    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _Length(0), _SamplesPlayed(0), _Fade(0), _IsFirstBlock(false), _IsEOF(false) { }
+    InputHandler(const InputHandler&) = delete;
+    InputHandler(const InputHandler&&) = delete;
+    InputHandler& operator=(const InputHandler&) = delete;
+    InputHandler& operator=(InputHandler&&) = delete;
+    virtual ~InputHandler() { };
 
-    void open(service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort)
+    void open(service_ptr_t<file> file, const char * filePath, t_input_open_reason reason, abort_callback & abortHandler)
     {
-        if (p_reason == input_open_info_write)
+        if (reason == input_open_info_write)
             throw exception_tagging_unsupported();
 
-        if (p_file.is_empty())
-        {
-            filesystem::g_open(p_file, p_path, filesystem::open_mode_read, p_abort);
-        }
+        if (file.is_empty())
+            filesystem::g_open(file, filePath, filesystem::open_mode_read, abortHandler);
 
-        _FileStats = p_file->get_stats(p_abort);
+        _FileStats = file->get_stats(abortHandler);
 
-        _FileStats2 = p_file->get_stats2_((uint32_t) stats2_all, p_abort);
+        _FileStats2 = file->get_stats2_((uint32_t) stats2_all, abortHandler);
 
         if ((_FileStats2.m_size == 0) || (_FileStats2.m_size > (t_filesize)1 << 30))
             throw exception_io_unsupported_format();
 
-        const char ** extList = (pfc::stricmp_ascii(pfc::string_extension(p_path), "mus") == 0) ? extListStr : extListEmpty;
+        const char ** extList = (pfc::stricmp_ascii(pfc::string_extension(filePath), "mus") == 0) ? extListStr : extListEmpty;
 
-        _Tune = std::make_unique<SidTuneMod>(p_file, std::string(p_path), extList);
+        _Tune = std::make_unique<SidTuneMod>(file, std::string(filePath), extList);
 
         if (!_Tune->getStatus())
             throw exception_io_unsupported_format();
 
         _SampleRate = cfg_SampleRate;
-    //  _BPS = cfg_bps;
-        _StereoSeparation = cfg_stereo_separation;
+    //  _BPS = cfg_BPS;
+        _StereoSeparation = cfg_StereoSeparation;
     }
 
     unsigned get_subsong_count()
@@ -640,7 +645,7 @@ public:
                 const int LengthFromDatabase = _Database.lengthMs(md5, subSongIndex + 1);
 
                 if (LengthFromDatabase > 0)
-                    Length = LengthFromDatabase;
+                    Length = (unsigned int)LengthFromDatabase;
             }
 
             fileInfo.set_length(double(Length) / 1000.0);
@@ -657,13 +662,13 @@ public:
         return _FileStats2;
     }
 
-    void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback & abortHandler)
+    void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback &)
     {
         _IsFirstBlock = true;
 
         _Tune->selectSong(subSongIndex + 1);
 
-        const int RequiredChipCount = _Tune->getInfo()->sidChips();
+//      const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
         {
             _Length = (unsigned int) cfg_deflength;
@@ -680,7 +685,7 @@ public:
                 const int LengthFromDatabase = _Database.lengthMs(*_Tune);
 
                 if (LengthFromDatabase > 0)
-                    _Length = LengthFromDatabase;
+                    _Length = (unsigned int)LengthFromDatabase;
             }
         }
 
@@ -746,7 +751,7 @@ public:
         {
             SidConfig Config = _Engine->config();
 
-            Config.frequency = _SampleRate;
+            Config.frequency = (uint_least32_t)_SampleRate;
             Config.playback = SidConfig::STEREO;
             Config.sidEmulation = _Builder.get();
 
@@ -773,14 +778,14 @@ public:
         if (!cfg_infinite || (flags & input_flag_no_looping))
         {
             _Length = (unsigned int)((__int64) _Length * _SampleRate / 1000) * 2;
-            _Fade = (cfg_fade * _SampleRate / 1000) * 2;
+            _Fade = (unsigned int)(cfg_fade * _SampleRate / 1000) * 2;
         }
         else
         {
             _Length = 0;
         }
 
-        _SampleBuffer.set_count((t_size)10240 * 2);
+        _SampleBuffer.set_count((t_size)MaxSamples * 2);
     }
 
     bool decode_run(audio_chunk & audioChunk, abort_callback & abortHandler)
@@ -792,8 +797,8 @@ public:
 
         int SampleCount = _Length - _SamplesPlayed;
 
-        if (!_Length || (SampleCount > 10240 * 2))
-            SampleCount = 10240 * 2;
+        if (!_Length || (SampleCount > MaxSamples * 2))
+            SampleCount = MaxSamples * 2;
 
         audioChunk.grow_data_size(SampleCount);
         audioChunk.set_srate(_SampleRate);
@@ -888,7 +893,7 @@ public:
 
         pfc::array_t<t_int16> sample_buffer;
 
-        sample_buffer.grow_size((t_size)10240 * 2);
+        sample_buffer.grow_size((t_size)MaxSamples * 2);
         _IsEOF = false;
 /*
         unsigned remain = ( samples - played ) % 32;
@@ -902,8 +907,8 @@ public:
 
             unsigned todo = samples - _SamplesPlayed;
 
-            if (todo > 10240 * 2)
-                todo = 10240 * 2;
+            if (todo > MaxSamples * 2)
+                todo = MaxSamples * 2;
 
             unsigned done;
             {
@@ -948,7 +953,7 @@ public:
         return true;
     }
 
-    void retag_set_info(t_uint32 p_subsong, const file_info & p_info, abort_callback & p_abort)
+    void retag_set_info(t_uint32, const file_info &, abort_callback &)
     {
         throw exception_tagging_unsupported();
     }
@@ -963,12 +968,12 @@ public:
         throw exception_tagging_unsupported();
     }
 
-    static bool g_is_our_content_type(const char * contentType) noexcept
+    static bool g_is_our_content_type(const char *) noexcept
     {
         return false;
     }
 
-    static bool g_is_our_path(const char * p_path, const char * p_extension) noexcept
+    static bool g_is_our_path(const char *, const char * p_extension) noexcept
     {
         return !_stricmp(p_extension, "sid") || !_stricmp(p_extension, "mus");
     }
@@ -1024,6 +1029,11 @@ public:
     CMyPreferences(preferences_page_callback::ptr callback) : _PageCallback(callback)
     {
     }
+    CMyPreferences(const CMyPreferences&) = delete;
+    CMyPreferences(const CMyPreferences&&) = delete;
+    CMyPreferences& operator=(const CMyPreferences&) = delete;
+    CMyPreferences& operator=(CMyPreferences&&) = delete;
+    virtual ~CMyPreferences() { };
 
     //Note that we don't bother doing anything regarding destruction of our class.
     //The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
@@ -1190,7 +1200,7 @@ void CMyPreferences::apply()
     cfg_sid_builder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
     cfg_sid_filter_6581 = _Slider6581.GetPos();
     cfg_sid_filter_8580 = _Slider8580.GetPos();
-    cfg_stereo_separation = _SliderSsep.GetPos();
+    cfg_StereoSeparation = _SliderSsep.GetPos();
 
     OnChanged();
 }
@@ -1216,7 +1226,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
             for (int n = _countof(_SampleRates); n--;)
             {
-                if (_SampleRates[n] != cfg_SampleRate)
+                if (_SampleRates[n] != (unsigned int)cfg_SampleRate)
                 {
                     _itoa_s(_SampleRates[n], temp, _countof(temp), 10);
                     cfg_history_rate.add_item(temp);
@@ -1283,9 +1293,9 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
     _SliderSsep.SetRangeMin(0);
     _SliderSsep.SetRangeMax(150);
-    _SliderSsep.SetPos(cfg_stereo_separation);
+    _SliderSsep.SetPos(cfg_StereoSeparation);
 
-    temp = pfc::format_int(cfg_stereo_separation);
+    temp = pfc::format_int(cfg_StereoSeparation);
     temp += "%";
 
     ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
@@ -1318,7 +1328,7 @@ void CMyPreferences::OnButtonClick(UINT, int, CWindow)
     OnChanged();
 }
 
-void CMyPreferences::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar)
+void CMyPreferences::OnHScroll(UINT, UINT, CScrollBar pScrollBar)
 {
     pfc::string8_fast temp;
 
@@ -1378,10 +1388,10 @@ bool CMyPreferences::HasChanged()
 {
     bool IsChanged = false;
 
-    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != cfg_SampleRate)
+    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != (UINT)cfg_SampleRate)
         IsChanged = true;
 
-    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != cfg_fade)
+    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != (UINT)cfg_fade)
         IsChanged = true;
 
     if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != cfg_infinite)
@@ -1402,7 +1412,7 @@ bool CMyPreferences::HasChanged()
     if (!IsChanged && _Slider8580.GetPos() != cfg_sid_filter_8580)
         IsChanged = true;
 
-    if (!IsChanged && _SliderSsep.GetPos() != cfg_stereo_separation)
+    if (!IsChanged && _SliderSsep.GetPos() != cfg_StereoSeparation)
         IsChanged = true;
 
     if (!IsChanged)
@@ -1430,7 +1440,7 @@ bool CMyPreferences::HasChanged()
         {
             const char * bar = Text.get_ptr();
 
-            const char * end = ::parseTime(bar, Timestamp);
+            std::ignore = ::parseTime(bar, Timestamp);
         }
         catch (...)
         {

@@ -27,11 +27,10 @@
 
 #include <foobar2000.h>
 
-#pragma warning(disable: 26434 26446 26481 26482 26485 26493)
+#pragma warning(disable: 26415 26418 26434 26446 26481 26482 26485 26493)
 
 const char ERR_CANT_OPEN_FILE[] = "SIDTUNE ERROR: Could not open file for binary input";
 const char ERR_EMPTY[] = "SIDTUNE ERROR: No data to load";
-const char ERR_NOT_ENOUGH_MEMORY[] = "SIDTUNE ERROR: Not enough free memory";
 const char ERR_CANT_LOAD_FILE[] = "SIDTUNE ERROR: Could not load input file";
 
 struct CacheItem
@@ -182,13 +181,13 @@ static unsigned char htoi(const char * src) noexcept
     unsigned char byte;
 
     if (src[0] >= '0' && src[0] <= '9')
-        byte = (src[0] - '0') * 16;
+        byte = (src[0] - '0') << 4;
     else
     if (src[0] >= 'A' && src[0] <= 'F')
-        byte = (src[0] - 'A' + 10) * 16;
+        byte = (src[0] - 'A' + 10) << 4;
     else
     if (src[0] >= 'a' && src[0] <= 'f')
-        byte = (src[0] - 'a' + 10) * 16;
+        byte = (src[0] - 'a' + 10) << 4;
     else
         return 0;
 
@@ -196,10 +195,10 @@ static unsigned char htoi(const char * src) noexcept
         byte += src[1] - '0';
     else
     if (src[1] >= 'A' && src[1] <= 'F')
-        byte += src[1] - 'A' + 10;
+        byte += src[1] - 'A' + (unsigned char)10;
     else
     if (src[1] >= 'a' && src[1] <= 'f')
-        byte += src[1] - 'a' + 10;
+        byte += src[1] - 'a' + (unsigned char)10;
     else
         return 0;
 
