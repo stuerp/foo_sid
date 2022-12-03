@@ -558,7 +558,6 @@ public:
 
     t_uint32 get_subsong(unsigned int subSongIndex) noexcept
     {
-//      return subSongIndex + 1;
         return subSongIndex;
     }
 
@@ -578,9 +577,6 @@ public:
 
     void get_info(t_uint32 subSongIndex, file_info& fileInfo, abort_callback&)
     {
-//      if (subSongIndex == 0)
-//          return;
-
         const SidTuneInfo * TuneInfo = _Tune->getInfo();
 
         if (TuneInfo == nullptr)
@@ -663,9 +659,6 @@ public:
 
     void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback & abortHandler)
     {
-//      if (subSongIndex == 0)
-//          throw exception_io_data();
-
         _IsFirstBlock = true;
 
         _Tune->selectSong(subSongIndex + 1);
