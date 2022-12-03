@@ -536,7 +536,7 @@ public:
 
         _FileStats2 = p_file->get_stats2_((uint32_t) stats2_all, p_abort);
 
-        if (!_FileStats2.m_size || _FileStats2.m_size > (t_size) (1 << 30))
+        if ((_FileStats2.m_size == 0) || (_FileStats2.m_size > (t_filesize)1 << 30))
             throw exception_io_unsupported_format();
 
         const char ** extList = (pfc::stricmp_ascii(pfc::string_extension(p_path), "mus") == 0) ? extListStr : extListEmpty;
@@ -799,10 +799,17 @@ public:
         audioChunk.set_srate(_SampleRate);
         audioChunk.set_channels(2);
 
+        audio_sample * Samples = audioChunk.get_data();
+
+        if (Samples == nullptr)
+            return false;
+
+        // Render an audio chunk.
         const int SamplesWritten = _Engine->play(_SampleBuffer.get_ptr(), SampleCount);
 
+        // Convert the samples from 16-bit signed integer to audio_sample format.
         {
-            audio_math::convert_from_int16(_SampleBuffer.get_ptr(), SamplesWritten, audioChunk.get_data(), 1.0);
+            audio_math::convert_from_int16(_SampleBuffer.get_ptr(), SamplesWritten, Samples, (audio_sample)1.0);
 
             if (SamplesWritten < SampleCount)
             {
@@ -813,22 +820,19 @@ public:
             }
         }
 
-        audio_sample ScaleFactor = (audio_sample) _StereoSeparation * 0.005; /* percent, pre-scaled by half */
+        audio_sample ScaleFactor = (audio_sample) _StereoSeparation * (audio_sample)0.005; /* percent, pre-scaled by half */
 
+        // Convert to mid-side. Scale side difference according to user setting.
         {
+            audio_sample * p = Samples;
+
             for (int i = 0; i < SamplesWritten; i += 2)
             {
-                // Convert to mid-side. Scale side difference according to user setting.
-                audio_sample * Samples = audioChunk.get_data() + i;
+                const audio_sample mid  = (p[0] + p[1]) * (audio_sample)0.5;
+                const audio_sample side = (p[0] - p[1]) * ScaleFactor;
 
-                if (Samples == nullptr)
-                    break;
-
-                const audio_sample mid  = (Samples[0] + Samples[1]) * 0.5;
-                const audio_sample side = (Samples[0] - Samples[1]) * ScaleFactor;
-
-                Samples[0] = mid + side;
-                Samples[1] = mid - side;
+                *p++ = mid + side;
+                *p++ = mid - side;
             }
         }
 
@@ -840,27 +844,24 @@ public:
 
             if ((_Length != 0) && (Tail + _Fade > _Length))
             {
-                audio_sample * Samples = audioChunk.get_data();
+                audio_sample * p = Samples;
 
-                if (Samples)
+                ScaleFactor = (audio_sample)1.0 / _Fade;
+
                 {
-                    ScaleFactor = 1.0 / _Fade;
-
+                    for (unsigned int Index = Head; Index < Tail; Index += 2)
                     {
-                        for (unsigned int Index = Head; Index < Tail; Index += 2)
+                        if (Index > _Length)
                         {
-                            if (Index > _Length)
-                            {
-                                *Samples++ = 0.0;
-                                *Samples++ = 0.0;
-                            }
-                            else
-                            {
-                                const audio_sample bleh = (audio_sample)(_Length - Index) * ScaleFactor;
+                            *p++ = (audio_sample)0.0;
+                            *p++ = (audio_sample)0.0;
+                        }
+                        else
+                        {
+                            const audio_sample bleh = (audio_sample)(_Length - Index) * ScaleFactor;
 
-                                *Samples++ *= bleh;
-                                *Samples++ *= bleh;
-                            }
+                            *p++ *= bleh;
+                            *p++ *= bleh;
                         }
                     }
                 }

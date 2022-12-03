@@ -14,7 +14,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "sidendian.h"
+#include <sidendian.h>
 
 #include "SidTuneMod.h"
 
@@ -27,79 +27,74 @@
 
 #include <foobar2000.h>
 
+#pragma warning(disable: 26434 26446 26481 26482 26485 26493)
+
 const char ERR_CANT_OPEN_FILE[] = "SIDTUNE ERROR: Could not open file for binary input";
 const char ERR_EMPTY[] = "SIDTUNE ERROR: No data to load";
 const char ERR_NOT_ENOUGH_MEMORY[] = "SIDTUNE ERROR: Not enough free memory";
 const char ERR_CANT_LOAD_FILE[] = "SIDTUNE ERROR: Could not load input file";
 
-struct cache_object
+struct CacheItem
 {
-    size_t refCount;
-    std::vector<uint8_t> data;
+    size_t _ReferenceCount;
+    std::vector<uint8_t> _Data;
 
-    cache_object() noexcept : refCount(0)
+    CacheItem() noexcept : _ReferenceCount(0)
     {
     }
 };
 
-static class file_cache
+static class FileCache
 {
 public:
-    std::string add_path(std::string & path, file::ptr file)
+    std::string Add(const std::string& filePath, const file::ptr file)
     {
-        std::lock_guard<std::mutex> guard(lock);
-        cache_object & obj = cache[path];
+        std::lock_guard<std::mutex> Guard(_Lock);
 
-        if (obj.refCount == 0)
+        CacheItem & Item = _Items[filePath];
+
+        if (Item._ReferenceCount == 0)
         {
             try
             {
-                abort_callback_dummy m_abort;
-                t_filesize fileSize = file->get_size_ex(m_abort);
-                file->seek(0, m_abort);
-                obj.data.resize(fileSize);
-                file->read_object(&obj.data[0], fileSize, m_abort);
-                obj.refCount++;
+                abort_callback_dummy AbortHandler;
+
+                const t_filesize FileSize = file->get_size_ex(AbortHandler);
+
+                file->seek(0, AbortHandler);
+
+                Item._Data.resize(FileSize);
+
+                file->read_object(&Item._Data[0], FileSize, AbortHandler);
+
+                Item._ReferenceCount++;
             }
             catch (...)
             {
-                return path;
+                return filePath;
             }
         }
         else
         {
-            obj.refCount++;
+            Item._ReferenceCount++;
         }
 
-        return path;
+        return filePath;
     }
 
-    bool try_path(std::string & path, std::vector<uint8_t> & out)
+    void Remove(const std::string& filePath)
     {
-        std::lock_guard<std::mutex> guard(lock);
-        cache_object & obj = cache[path];
+        std::lock_guard<std::mutex> Guard(_Lock);
 
-        if (obj.refCount > 0)
+        CacheItem& Item = _Items[filePath];
+
+        if (Item._ReferenceCount <= 1)
         {
-            out = obj.data;
-            return true;
-        }
-
-        return false;
-    }
-
-    void remove_path(std::string & path)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        cache_object & obj = cache[path];
-
-        if (obj.refCount <= 1)
-        {
-            for (auto it = cache.begin(); it != cache.end();)
+            for (auto it = _Items.begin(); it != _Items.end();)
             {
-                if (it->first == path)
+                if (it->first == filePath)
                 {
-                    it = cache.erase(it);
+                    it = _Items.erase(it);
                 }
                 else
                 {
@@ -109,33 +104,47 @@ public:
         }
         else
         {
-            --obj.refCount;
+            --Item._ReferenceCount;
         }
     }
 
+    bool TryGet(const std::string& filePath, std::vector<uint8_t>& data)
+    {
+        std::lock_guard<std::mutex> Guard(_Lock);
+
+        const CacheItem& Item = _Items[filePath];
+
+        if (Item._ReferenceCount == 0)
+            return false;
+
+        data = Item._Data;
+
+        return true;
+    }
+
 private:
-    std::mutex lock;
-    std::map<std::string, cache_object> cache;
-} g_file_cache;
+    std::mutex _Lock;
+    std::map<std::string, CacheItem> _Items;
+} _FileCache;
 
-void SidTuneMod::MyLoaderFunc(const char * fileName, std::vector<uint8_t> & bufferRef)
+void SidTuneMod::MyLoaderFunc(const char * filePath, std::vector<uint8_t>& bufferRef)
 {
-    std::string FileName = fileName;
+    std::string FilePath = filePath;
 
-    if (!g_file_cache.try_path(FileName, bufferRef))
+    if (!_FileCache.TryGet(FilePath, bufferRef))
     {
         try
         {
-            service_ptr_t<file> myIn;
-            abort_callback_dummy m_abort;
+            service_ptr_t<file> File;
+            abort_callback_dummy AbortHandler;
 
-            filesystem::g_open(myIn, fileName, filesystem::open_mode_read, m_abort);
+            filesystem::g_open(File, filePath, filesystem::open_mode_read, AbortHandler);
 
-            t_filesize fileSize = myIn->get_size_ex(m_abort);
+            const t_filesize FileSize = File->get_size_ex(AbortHandler);
 
-            bufferRef.resize(fileSize);
+            bufferRef.resize(FileSize);
 
-            myIn->read_object(&bufferRef[0], fileSize, m_abort);
+            File->read_object(&bufferRef[0], FileSize, AbortHandler);
         }
         catch (...)
         {
@@ -150,56 +159,62 @@ void SidTuneMod::MyLoaderFunc(const char * fileName, std::vector<uint8_t> & buff
 }
 
 SidTuneMod::SidTuneMod(file::ptr file, std::string fileName, const char ** fileNameExt, const bool separatorIsSlash)
-    : _fileName(fileName), SidTune(MyLoaderFunc, g_file_cache.add_path(fileName, file).c_str(), fileNameExt, separatorIsSlash)
+    : _fileName(fileName), SidTune(MyLoaderFunc, _FileCache.Add(fileName, file).c_str(), fileNameExt, separatorIsSlash)
 {
 }
 
 SidTuneMod::~SidTuneMod()
 {
-    g_file_cache.remove_path(_fileName);
+    try
+    {
+        _FileCache.Remove(_fileName);
+    }
+    catch (...)
+    {
+    }
 }
 
-static void decode_hex(const char *& in, char & out)
+static unsigned char htoi(const char * src) noexcept
 {
+    if (src == nullptr)
+        return 0;
+
     unsigned char byte;
 
-    if (in[0] >= '0' && in[0] <= '9')
-        byte = (in[0] - '0') * 16;
+    if (src[0] >= '0' && src[0] <= '9')
+        byte = (src[0] - '0') * 16;
     else
-    if (in[0] >= 'A' && in[0] <= 'F')
-        byte = (in[0] - 'A' + 10) * 16;
+    if (src[0] >= 'A' && src[0] <= 'F')
+        byte = (src[0] - 'A' + 10) * 16;
     else
-    if (in[0] >= 'a' && in[0] <= 'f')
-        byte = (in[0] - 'a' + 10) * 16;
+    if (src[0] >= 'a' && src[0] <= 'f')
+        byte = (src[0] - 'a' + 10) * 16;
     else
-        throw exception_io_data();
+        return 0;
 
-    if (in[1] >= '0' && in[1] <= '9')
-        byte += in[1] - '0';
+    if (src[1] >= '0' && src[1] <= '9')
+        byte += src[1] - '0';
     else
-    if (in[1] >= 'A' && in[1] <= 'F')
-        byte += in[1] - 'A' + 10;
+    if (src[1] >= 'A' && src[1] <= 'F')
+        byte += src[1] - 'A' + 10;
     else
-    if (in[1] >= 'a' && in[1] <= 'f')
-        byte += in[1] - 'a' + 10;
+    if (src[1] >= 'a' && src[1] <= 'f')
+        byte += src[1] - 'a' + 10;
     else
-        throw exception_io_data();
+        return 0;
 
-    out = byte;
-    in += 2;
+    return byte;
 }
 
-void SidTuneMod::createMD5(hasher_md5_result & digest)
+void SidTuneMod::createMD5(hasher_md5_result& digest)
 {
-    char hash_string[33];
+    char Hash[33];
 
-    const char * hash_string_ptr = SidTune::createMD5(hash_string);
+    const char * HashPtr = SidTune::createMD5(Hash);
 
-    if (hash_string_ptr)
+    if (HashPtr)
     {
-        for (unsigned int i = 0; i < 16; ++i)
-        {
-            decode_hex(hash_string_ptr, digest.m_data[i]);
-        }
+        for (unsigned int i = 0; i < 16; ++i, HashPtr += 2)
+            digest.m_data[i] = htoi(HashPtr);
     }
 }

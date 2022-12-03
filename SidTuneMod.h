@@ -26,6 +26,10 @@ class SID_EXTERN SidTuneMod : public SidTune
 {
 public:
     SidTuneMod(file::ptr inFile, std::string fileName, const char ** fileNameExt = 0, const bool separatorIsSlash = false);
+    SidTuneMod(const SidTuneMod&) = delete;
+    SidTuneMod(const SidTuneMod&&) = delete;
+    SidTuneMod& operator=(const SidTuneMod&) = delete;
+    SidTuneMod& operator=(SidTuneMod&&) = delete;
     ~SidTuneMod();
 
     void createMD5(hasher_md5_result &);
