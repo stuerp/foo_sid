@@ -24,8 +24,8 @@
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #endif
 
-#include "resid-filter.h"
-#include "resid-dac.h"
+#include "filter.h"
+#include "dac.h"
 #include "spline.h"
 #include <math.h>
 

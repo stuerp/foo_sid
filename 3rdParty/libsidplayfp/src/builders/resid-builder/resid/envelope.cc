@@ -20,7 +20,7 @@
 #define RESID_ENVELOPE_CC
 
 #include "envelope.h"
-#include "resid-dac.h"
+#include "dac.h"
 
 namespace reSID
 {

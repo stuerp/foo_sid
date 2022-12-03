@@ -301,7 +301,7 @@ static const GUID guid_cfg_sid_builder = { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0
 // {0278879D-7C46-41A4-9F42-2786D32B5BBE}
 static const GUID guid_cfg_stereo_separation = { 0x278879d, 0x7c46, 0x41a4, { 0x9f, 0x42, 0x27, 0x86, 0xd3, 0x2b, 0x5b, 0xbe } };
 
-const unsigned int MaxSamples = 10240;
+constexpr int MaxSamples = 10240;
 
 enum
 {

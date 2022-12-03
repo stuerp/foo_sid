@@ -24,7 +24,7 @@
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #endif
 
-#include "resid-dac.h"
+#include "dac.h"
 #include <math.h>
 
 #ifndef INFINITY

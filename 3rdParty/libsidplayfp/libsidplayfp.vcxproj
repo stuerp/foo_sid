@@ -86,7 +86,6 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -100,6 +99,7 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -128,7 +128,6 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -142,6 +141,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -152,53 +152,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\builders\resid-builder\resid-emu.h" />
-    <ClInclude Include="src\builders\resid-builder\resid.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\resid-dac.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\envelope.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\extfilt.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\resid-filter.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\pot.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\resid-config.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\resid-sid.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\siddefs.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\spline.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\voice.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave6581_PST.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave6581_PS_.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave6581_P_T.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave6581__ST.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave8580_PST.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave8580_PS_.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave8580_P_T.h" />
-    <ClInclude Include="src\builders\resid-builder\resid\wave8580__ST.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp-emu.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\array.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Dac.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\EnvelopeGenerator.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\ExternalFilter.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Filter.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Filter6581.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Filter8580.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\FilterModelConfig.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\FilterModelConfig6581.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\FilterModelConfig8580.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Integrator6581.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Integrator8580.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\OpAmp.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Potentiometer.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\resample\Resampler.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\resample\SincResampler.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\resample\TwoPassSincResampler.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\resample\ZeroOrderResampler.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\SID.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\siddefs-fp.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Spline.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\Voice.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\WaveformCalculator.h" />
-    <ClInclude Include="src\builders\residfp-builder\residfp\WaveformGenerator.h" />
     <ClInclude Include="src\c64\Banks\Bank.h" />
     <ClInclude Include="src\c64\Banks\ColorRAMBank.h" />
     <ClInclude Include="src\c64\Banks\DisconnectedBusBank.h" />
@@ -276,37 +229,6 @@
     <ClInclude Include="src\utils\STILview\stildefs.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\builders\resid-builder\resid-builder.cpp" />
-    <ClCompile Include="src\builders\resid-builder\resid-emu.cpp" />
-    <ClCompile Include="src\builders\resid-builder\resid\resid-dac.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\envelope.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\extfilt.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\resid-filter.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\pot.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\resid-sid.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\resid-version.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\voice.cc" />
-    <ClCompile Include="src\builders\resid-builder\resid\wave.cc" />
-    <ClCompile Include="src\builders\residfp-builder\residfp-builder.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp-emu.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Dac.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\EnvelopeGenerator.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\ExternalFilter.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Filter.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Filter6581.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Filter8580.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\FilterModelConfig.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\FilterModelConfig6581.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\FilterModelConfig8580.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Integrator6581.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Integrator8580.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\OpAmp.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\resample\SincResampler.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\SID.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\Spline.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\version.cc" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\WaveformCalculator.cpp" />
-    <ClCompile Include="src\builders\residfp-builder\residfp\WaveformGenerator.cpp" />
     <ClCompile Include="src\c64\c64.cpp" />
     <ClCompile Include="src\c64\CIA\interrupt.cpp" />
     <ClCompile Include="src\c64\CIA\mos652x.cpp" />

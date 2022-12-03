@@ -27,7 +27,7 @@
 #if NEW_8580_FILTER
 #include "filter8580new.h"
 #else
-#include "resid-filter.h"
+#include "filter.h"
 #endif
 #include "extfilt.h"
 #include "pot.h"

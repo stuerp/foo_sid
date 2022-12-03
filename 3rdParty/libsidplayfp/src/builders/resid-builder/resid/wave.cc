@@ -20,7 +20,7 @@
 #define RESID_WAVE_CC
 
 #include "wave.h"
-#include "resid-dac.h"
+#include "dac.h"
 
 namespace reSID
 {
