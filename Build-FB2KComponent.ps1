@@ -29,6 +29,8 @@ Set-PSDebug -Strict; # Equivalent of VBA "Option Explicit".
 
 $ErrorActionPreference = 'Stop';
 
+$PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Host;
+
 # Note: The working directory is the solution directory.
 
 Write-Host "Building package `"$TargetName`"...";

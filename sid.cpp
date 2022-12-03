@@ -239,6 +239,10 @@
 
 */
 
+#pragma warning(disable: 26434 26481 26482 26485 26493)
+
+#include <memory>
+
 #include <foobar2000.h>
 #include <coreDarkMode.h>
 
@@ -320,7 +324,7 @@ enum
 static cfg_int cfg_infinite(guid_cfg_infinite, default_cfg_infinite);
 static cfg_int cfg_deflength(guid_cfg_deflength, default_cfg_deflength);
 static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
-static cfg_int cfg_rate(guid_cfg_rate, default_cfg_rate);
+static cfg_int cfg_SampleRate(guid_cfg_rate, default_cfg_rate);
 static cfg_int cfg_clock_override(guid_cfg_clock_override, default_cfg_clock_override);
 static cfg_int cfg_sid_override(guid_cfg_sid_override, default_cfg_sid_override);
 static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581, default_cfg_sid_filter_6581);
@@ -330,9 +334,18 @@ static cfg_int cfg_sid_builder(guid_cfg_sid_builder, default_cfg_sid_builder);
 static cfg_int cfg_stereo_separation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
 //static cfg_int cfg_bps("sid_bps",16);
 
-class initquit_upgrade_vars : public initquit
+#pragma region("InitQuit")
+
+class InitQuitHandler : public initquit
 {
 public:
+    InitQuitHandler() noexcept { };
+    InitQuitHandler(const InitQuitHandler&) = delete;
+    InitQuitHandler(const InitQuitHandler&&) = delete;
+    InitQuitHandler& operator=(const InitQuitHandler&) = delete;
+    InitQuitHandler& operator=(InitQuitHandler&&) = delete;
+    virtual ~InitQuitHandler() { };
+
     void on_init() override
     {
         if (cfg_sid_filter_8580_old > 0)
@@ -355,158 +368,159 @@ public:
         }
     }
 
-    void on_quit() override
+    void on_quit() noexcept override
     {
     }
 };
 
-static cfg_string cfg_db_path(guid_cfg_db_path, "");
+#pragma endregion
 
-static critical_section db_lock;
+#pragma region("HVSC")
 
-static bool db_loaded = false;
+static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
+static SidDatabase _Database;
+static critical_section _DatabaseLock;
+static bool _IsDatabaseLoaded = false;
 
-static SidDatabase db;
-
-static void convert_db_path(const char * in, pfc::string_base & out, bool from_config);
-
-static void db_load()
+/// <summary>
+/// Replaces parts of the database path with pseudo variables.
+/// </summary>
+static void SanitizeDatabasePathName(const char * in, bool fromConfig, pfc::string_base & out)
 {
-    pfc::string8 path;
-
-    convert_db_path(cfg_db_path, path, true);
-
-    if (path.length() == 0)
-        return;
-
-    db_loaded = db.open(pfc::stringcvt::string_wide_from_utf8(path));
-}
-
-static void db_unload()
-{
-    db.close();
-    db_loaded = false;
-}
-
-static void convert_db_path(const char * in, pfc::string_base & out, bool from_config)
-{
-    pfc::string8 player_path;
-    pfc::string8 component_path;
-    pfc::string8 profile_path;
-
-    uGetModuleFileName(NULL, player_path);
-    player_path.truncate(player_path.scan_filename() - 1);
-
-    component_path = core_api::get_my_full_path();
-    component_path.truncate(component_path.scan_filename() - 1);
-
-    const char * path = core_api::get_profile_path();
-
-    if (!pfc::stricmp_ascii_ex(path, 7, "file://", 7))
-        path += 7;
-
-    profile_path = path;
-
     out.reset();
 
-    if (from_config)
+    if (in == nullptr || (in && *in == '\0'))
+        return;
+
+    pfc::string8 ModulePathName;
+
+    ::uGetModuleFileName(NULL, ModulePathName);
+
+    ModulePathName.truncate(ModulePathName.scan_filename() - 1);
+
+    pfc::string8 ComponentPathName = core_api::get_my_full_path();
+
+    ComponentPathName.truncate(ComponentPathName.scan_filename() - 1);
+
+    const char * ProfileURI = core_api::get_profile_path();
+
+    if (!pfc::stricmp_ascii_ex(ProfileURI, 7, "file://", 7))
+        ProfileURI += 7;
+
+    pfc::string8 ProfilePathName = ProfileURI;
+
+    if (fromConfig)
     {
         while (*in)
         {
-            t_size first = pfc::string_find_first(in, '<');
+            t_size Index = pfc::string_find_first(in, '<');
 
-            out.add_string(in, first);
+            out.add_string(in, Index);
 
-            if (first != pfc::infinite_size)
+            if (Index != pfc::infinite_size)
             {
-                if (!pfc::strcmp_partial(in + first, "<player path>"))
-                    out += player_path;
+                if (!pfc::strcmp_partial(in + Index, "<player path>"))
+                    out += ModulePathName;
                 else
-                if (!pfc::strcmp_partial(in + first, "<profile path>"))
-                    out += profile_path;
+                if (!pfc::strcmp_partial(in + Index, "<profile path>"))
+                    out += ProfilePathName;
                 else
-                if (!pfc::strcmp_partial(in + first, "<component path>"))
-                    out += component_path;
+                if (!pfc::strcmp_partial(in + Index, "<component path>"))
+                    out += ComponentPathName;
 
-                first = pfc::string_find_first(in, '>', first);
+                Index = pfc::string_find_first(in, '>', Index);
 
-                if (first != pfc::infinite_size)
-                    ++first;
+                if (Index != pfc::infinite_size)
+                    ++Index;
             }
 
-            if (first == pfc::infinite_size)
-                first = strlen(in);
+            if (Index == pfc::infinite_size)
+                Index = ::strlen(in);
 
-            in += first;
+            in += Index;
         }
     }
     else
     {
         while (*in)
         {
-            size_t pos_player_path = pfc::string_find_first(in, player_path);
-            size_t pos_component_path = pfc::string_find_first(in, component_path);
-            size_t pos_profile_path = pfc::string_find_first(in, profile_path);
-            t_size first = pos_player_path;
+            const size_t ModulePathNameIndex = pfc::string_find_first(in, ModulePathName);
 
-            if (pos_component_path < first)
-                first = pos_component_path;
+            t_size Index = ModulePathNameIndex;
 
-            if (pos_profile_path < first)
-                first = pos_profile_path;
+            const size_t ComponentPathNameIndex = pfc::string_find_first(in, ComponentPathName);
 
-            out.add_string(in, first);
+            if (ComponentPathNameIndex < Index)
+                Index = ComponentPathNameIndex;
 
-            if (first != pfc::infinite_size)
+            const size_t ProfilePathNameIndex = pfc::string_find_first(in, ProfilePathName);
+
+            if (ProfilePathNameIndex < Index)
+                Index = ProfilePathNameIndex;
+
+            out.add_string(in, Index);
+
+            if (Index != pfc::infinite_size)
             {
-                if (first == pos_component_path)
+                if (Index == ComponentPathNameIndex)
                 {
                     out += "<component path>";
-                    in += first + component_path.length();
+                    in += Index + ComponentPathName.length();
                 }
                 else
-                if (first == pos_profile_path)
+                if (Index == ProfilePathNameIndex)
                 {
                     out += "<profile path>";
-                    in += first + profile_path.length();
+                    in += Index + ProfilePathName.length();
                 }
                 else
-                if (first == pos_player_path)
+                if (Index == ModulePathNameIndex)
                 {
                     out += "<player path>";
-                    in += first + player_path.length();
+                    in += Index + ModulePathName.length();
                 }
             }
 
-            if (first == pfc::infinite_size)
-                first = strlen(in);
+            if (Index == pfc::infinite_size)
+                Index = ::strlen(in);
 
-            in += first;
+            in += Index;
         }
     }
 }
+
+static void LoadDatabase()
+{
+    pfc::string8 FilePath;
+
+    ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
+
+    if (FilePath.length() == 0)
+        return;
+
+    _IsDatabaseLoaded = _Database.open(pfc::stringcvt::string_wide_from_utf8(FilePath));
+}
+
+static void UnloadDatabase()
+{
+    _Database.close();
+
+    _IsDatabaseLoaded = false;
+}
+
+#pragma endregion
+
+#pragma region("Input")
 
 static const char * extListEmpty[] = { NULL };
 static const char * extListStr[] = { ".str", NULL };
 
 static critical_section g_residfp_lock;
 
-class input_sid : public input_stubs
+class InputHandler : public input_stubs
 {
 public:
-    input_sid() noexcept
-    {
-        _Tune = nullptr;
-        _Engine = nullptr;
-        _Builder = nullptr;
-    }
-
-    ~input_sid()
-    {
-        delete _Tune;
-        delete _Engine;
-        delete _Builder;
-    }
+    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _Length(0), _SamplesPlayed(0), _Fade(0), _IsEOF(false), _IsFirstBlock(false) { }
 
     void open(service_ptr_t<file> p_file, const char * p_path, t_input_open_reason p_reason, abort_callback & p_abort)
     {
@@ -527,15 +541,14 @@ public:
 
         const char ** extList = (pfc::stricmp_ascii(pfc::string_extension(p_path), "mus") == 0) ? extListStr : extListEmpty;
 
-        _Tune = new SidTuneMod(p_file, std::string(p_path), extList);
+        _Tune = std::make_unique<SidTuneMod>(p_file, std::string(p_path), extList);
 
         if (!_Tune->getStatus())
             throw exception_io_unsupported_format();
 
-        dSrate = cfg_rate;
-    //  dBps = cfg_bps;
-
-        stereo_separation = cfg_stereo_separation;
+        _SampleRate = cfg_SampleRate;
+    //  _BPS = cfg_bps;
+        _StereoSeparation = cfg_stereo_separation;
     }
 
     unsigned get_subsong_count()
@@ -543,16 +556,16 @@ public:
         return _Tune->getInfo()->songs();
     }
 
-    t_uint32 get_subsong(unsigned p_index) noexcept
+    t_uint32 get_subsong(unsigned int index) noexcept
     {
-        return p_index + 1;
+        return index + 1;
     }
 
     size_t extended_param(const GUID& type, size_t arg1, void *, size_t)
     {
         if (type == input_params::set_preferred_sample_rate)
         {
-            dSrate = (int) arg1;
+            _SampleRate = (int) arg1;
             return 1;
         }
         else
@@ -567,76 +580,84 @@ public:
         if (subsongIndex == 0)
             return;
 
-        const SidTuneInfo * sidinfo = _Tune->getInfo();
+        const SidTuneInfo * TuneInfo = _Tune->getInfo();
 
-        if (sidinfo == nullptr)
+        if (TuneInfo == nullptr)
             return;
 
-    //  fileInfo.info_set_int("samplerate", dSrate);
+    //  fileInfo.info_set_int("samplerate", _SampleRate);
         fileInfo.info_set("encoding", "synthesized");
         fileInfo.info_set_int("channels", 2);
-        fileInfo.info_set_int("sid_chip_count", sidinfo->sidChips());
+        fileInfo.info_set_int("sid_chip_count", TuneInfo->sidChips());
 
-        const unsigned int InfoStringCount = sidinfo->numberOfInfoStrings();
-
-        if (InfoStringCount >= 1 && sidinfo->infoString(0) && sidinfo->infoString(0)[0])
-            fileInfo.meta_add(sidinfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(0)));
-
-        if (InfoStringCount >= 2 && sidinfo->infoString(1) && sidinfo->infoString(1)[0])
-            fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(1)));
-
-        if (InfoStringCount >= 3 && sidinfo->infoString(2) && sidinfo->infoString(2)[0])
-            fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(2)));
-
-        for (unsigned int j = 3; j < InfoStringCount; j++)
         {
-            if (sidinfo->infoString(j) && sidinfo->infoString(j)[0])
-                fileInfo.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(sidinfo->infoString(j)));
+            const unsigned int InfoStringCount = TuneInfo->numberOfInfoStrings();
+
+            if (InfoStringCount >= 1 && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
+                fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
+
+            if (InfoStringCount >= 2 && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
+                fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(1)));
+
+            if (InfoStringCount >= 3 && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
+                fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(2)));
+
+            for (unsigned int j = 3; j < InfoStringCount; ++j)
+            {
+                if (TuneInfo->infoString(j) && TuneInfo->infoString(j)[0])
+                    fileInfo.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(j)));
+            }
         }
 
-        for (int CommentIndex = 0, CommentCount = sidinfo->numberOfCommentStrings(); CommentIndex < CommentCount; CommentIndex++)
         {
-            if (sidinfo->commentString(CommentIndex) && sidinfo->commentString(CommentIndex)[0] && strcmp(sidinfo->commentString(CommentIndex), "--- SAVED WITH SIDPLAY ---"))
-                fileInfo.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(sidinfo->commentString(CommentIndex)));
+            const unsigned int CommentCount = TuneInfo->numberOfCommentStrings();
+
+            for (unsigned int CommentIndex = 0; CommentIndex < CommentCount; ++CommentIndex)
+            {
+                if (TuneInfo->commentString(CommentIndex) && TuneInfo->commentString(CommentIndex)[0] && strcmp(TuneInfo->commentString(CommentIndex), "--- SAVED WITH SIDPLAY ---"))
+                    fileInfo.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->commentString(CommentIndex)));
+            }
         }
 
-        if (sidinfo->clockSpeed() && (sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC || sidinfo->clockSpeed() == SidTuneInfo::CLOCK_PAL))
-            fileInfo.info_set("clock_speed", sidinfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
+        if (TuneInfo->clockSpeed() && (TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC || TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_PAL))
+            fileInfo.info_set("clock_speed", TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
 
-        fileInfo.info_set("sid_model", sidinfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
-
-        unsigned int length = (unsigned int) cfg_deflength;
+        fileInfo.info_set("sid_model", TuneInfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
 
         {
-            insync(db_lock);
+            unsigned int Length = (unsigned int) cfg_deflength;
 
-            if (!db_loaded)
-                db_load();
+            {
+                insync(_DatabaseLock);
 
-            if (db_loaded)
+                if (!_IsDatabaseLoaded)
+                    ::LoadDatabase();
+            }
+
+            if (_IsDatabaseLoaded)
             {
                 char md5[SidTune::MD5_LENGTH + 1];
 
                 _Tune->createMD5New(md5);
 
-                unsigned int len = db.lengthMs(md5, subsongIndex);
+                const int LengthFromDatabase = _Database.lengthMs(md5, subsongIndex);
 
-                if (len > 0)
-                    length = len;
+                if (LengthFromDatabase > 0)
+                    Length = LengthFromDatabase;
             }
+
+            fileInfo.set_length(double(Length) / 1000.0);
         }
-
-        fileInfo.set_length(double(length) / 1000.0);
-    }
-
-    t_filestats2 get_stats2(uint32_t, abort_callback &) noexcept
-    {
-        return _FileStats2;
     }
 
     t_filestats get_file_stats(abort_callback &) noexcept
     {
         return _FileStats;
+    }
+
+    t_filestats2 get_stats2(uint32_t, abort_callback &) noexcept
+    {
+        return _FileStats2;
     }
 
     void decode_initialize(t_uint32 subsongIndex, unsigned flags, abort_callback & abortHandler)
@@ -650,32 +671,32 @@ public:
 
         const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
-        _Length = (unsigned int) cfg_deflength;
-
         {
-            insync(db_lock);
+            _Length = (unsigned int) cfg_deflength;
 
-            if (!db_loaded)
-                db_load();
-
-            if (db_loaded)
             {
-                unsigned int len = db.lengthMs(*_Tune);
+                insync(_DatabaseLock);
 
-                if (len > 0)
-                    _Length = len;
+                if (!_IsDatabaseLoaded)
+                    LoadDatabase();
+            }
+
+            if (_IsDatabaseLoaded)
+            {
+                const int LengthFromDatabase = _Database.lengthMs(*_Tune);
+
+                if (LengthFromDatabase > 0)
+                    _Length = LengthFromDatabase;
             }
         }
 
-        delete _Engine;
-        _Engine = new sidplayfp;
+        _Engine = std::make_unique<sidplayfp>();
 
         _Engine->setRoms(kernel, basic, chargen);
 
-        if (!_Engine->load(_Tune))
+        if (!_Engine->load(_Tune.get()))
             throw exception_io_data(_Engine->error());
 
-        delete _Builder;
         _Builder = nullptr;
 
         switch (cfg_sid_builder)
@@ -684,76 +705,81 @@ public:
             {
                 insync(g_residfp_lock);
 
-                ReSIDfpBuilder * builder = new ReSIDfpBuilder("ReSIDfp");
+                std::unique_ptr<ReSIDfpBuilder> NewBuilder = std::make_unique<ReSIDfpBuilder>("ReSIDfp");
 
-                if (builder)
+                if (NewBuilder)
                 {
-                    _Builder = builder;
+                    NewBuilder->create((_Engine->info()).maxsids());
 
-                    builder->create((_Engine->info()).maxsids());
-
-                    if (builder->getStatus())
+                    if (NewBuilder->getStatus())
                     {
-                        builder->filter(true);
-                        builder->filter6581Curve(cfg_sid_filter_6581 / 256.);
-                        builder->filter8580Curve(cfg_sid_filter_8580 / 256.);
+                        NewBuilder->filter(true);
+                        NewBuilder->filter6581Curve(cfg_sid_filter_6581 / 256.);
+                        NewBuilder->filter8580Curve(cfg_sid_filter_8580 / 256.);
                     }
 
-                    if (!builder->getStatus())
+                    if (!NewBuilder->getStatus())
                         throw exception_io_data();
+
+                    _Builder = std::move(NewBuilder);
                 }
                 break;
             }
 
             case sid_builder_resid:
             {
-                ReSIDBuilder * builder = new ReSIDBuilder("ReSID");
+                std::unique_ptr<ReSIDBuilder> NewBuilder = std::make_unique<ReSIDBuilder>("ReSID");
 
-                if (builder)
+                if (NewBuilder)
                 {
-                    _Builder = builder;
+                    NewBuilder->create((_Engine->info()).maxsids());
 
-                    builder->create((_Engine->info()).maxsids());
+                    if (NewBuilder->getStatus())
+                        NewBuilder->filter(true);
 
-                    if (builder->getStatus())
-                        builder->filter(true);
-
-                    if (!builder->getStatus())
+                    if (!NewBuilder->getStatus())
                         throw exception_io_data();
+
+                    _Builder = std::move(NewBuilder);
                 }
                 break;
             }
+
+            default:
+                throw exception_io_unsupported_feature();
         }
 
-        SidConfig conf = _Engine->config();
-
-        conf.frequency = dSrate;
-        conf.playback = SidConfig::STEREO;
-        conf.sidEmulation = _Builder;
-
-        if (cfg_clock_override)
         {
-            conf.forceC64Model = true;
-            conf.defaultC64Model = (cfg_clock_override == 1) ? SidConfig::PAL : SidConfig::NTSC;
+            SidConfig Config = _Engine->config();
+
+            Config.frequency = _SampleRate;
+            Config.playback = SidConfig::STEREO;
+            Config.sidEmulation = _Builder.get();
+
+            if (cfg_clock_override)
+            {
+                Config.forceC64Model = true;
+                Config.defaultC64Model = (cfg_clock_override == 1) ? SidConfig::PAL : SidConfig::NTSC;
+            }
+
+            if (cfg_sid_override)
+            {
+                Config.forceSidModel = true;
+                Config.defaultSidModel = (cfg_sid_override == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
+            }
+
+            if (!_Engine->config(Config))
+                throw exception_io_data(_Engine->error());
         }
 
-        if (cfg_sid_override)
-        {
-            conf.forceSidModel = true;
-            conf.defaultSidModel = (cfg_sid_override == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
-        }
+        _SamplesPlayed = 0;
 
-        if (!_Engine->config(conf))
-            throw exception_io_data(_Engine->error());
-
-        played = 0;
-
-        eof = false;
+        _IsEOF = false;
 
         if (!cfg_infinite || (flags & input_flag_no_looping))
         {
-            _Length = (unsigned int)((__int64) _Length * dSrate / 1000) * 2;
-            fade = (cfg_fade * dSrate / 1000) * 2;
+            _Length = (unsigned int)((__int64) _Length * _SampleRate / 1000) * 2;
+            _Fade = (cfg_fade * _SampleRate / 1000) * 2;
         }
         else
         {
@@ -763,83 +789,91 @@ public:
         _SampleBuffer.set_count((t_size)10240 * 2);
     }
 
-    bool decode_run(audio_chunk & p_chunk, abort_callback & abortHandler)
+    bool decode_run(audio_chunk & audioChunk, abort_callback & abortHandler)
     {
         abortHandler.check();
 
-        if (eof || (_Length && played >= _Length))
+        if (_IsEOF || (_Length && _SamplesPlayed >= _Length))
             return false;
 
-        int samples = _Length - played, written; //(stereo)
+        int SampleCount = _Length - _SamplesPlayed;
 
-        if (!_Length || (samples > 10240 * 2))
-            samples = 10240 * 2;
+        if (!_Length || (SampleCount > 10240 * 2))
+            SampleCount = 10240 * 2;
 
-        p_chunk.grow_data_size(samples);
-        p_chunk.set_srate(dSrate);
-        p_chunk.set_channels(2);
+        audioChunk.grow_data_size(SampleCount);
+        audioChunk.set_srate(_SampleRate);
+        audioChunk.set_channels(2);
 
-        written = _Engine->play(_SampleBuffer.get_ptr(), samples);
+        const int SamplesWritten = _Engine->play(_SampleBuffer.get_ptr(), SampleCount);
 
-        audio_math::convert_from_int16(_SampleBuffer.get_ptr(), written, p_chunk.get_data(), 1.0);
-
-        if (written < samples)
         {
-            if (_Engine->error())
-                throw exception_io_data(_Engine->error());
+            audio_math::convert_from_int16(_SampleBuffer.get_ptr(), SamplesWritten, audioChunk.get_data(), 1.0);
 
-            eof = true;
-        }
-
-        audio_sample factor = (audio_sample) stereo_separation * 0.005; /* percent, pre-scaled by half */
-
-        for (int i = 0; i < written; i += 2)
-        {
-            /* convert to mid-side, scale side difference according to user setting */
-            audio_sample * sample = p_chunk.get_data() + i;
-
-            audio_sample mid  = (sample[0] + sample[1]) * 0.5;
-            audio_sample side = (sample[0] - sample[1]) * factor;
-
-            sample[0] = mid + side;
-            sample[1] = mid - side;
-        }
-
-        p_chunk.set_sample_count(written / 2);
-
-        const unsigned d_start = played;
-
-        played += written;
-
-        const unsigned d_end = written;
-
-        if (_Length && d_end + fade > _Length)
-        {
-            audio_sample * foo = p_chunk.get_data();
-
-            if (foo)
+            if (SamplesWritten < SampleCount)
             {
-                factor = 1.0 / fade;
+                if (_Engine->error())
+                    throw exception_io_data(_Engine->error());
 
+                _IsEOF = true;
+            }
+        }
+
+        audio_sample ScaleFactor = (audio_sample) _StereoSeparation * 0.005; /* percent, pre-scaled by half */
+
+        {
+            for (int i = 0; i < SamplesWritten; i += 2)
+            {
+                // Convert to mid-side. Scale side difference according to user setting.
+                audio_sample * Samples = audioChunk.get_data() + i;
+
+                if (Samples == nullptr)
+                    break;
+
+                const audio_sample mid  = (Samples[0] + Samples[1]) * 0.5;
+                const audio_sample side = (Samples[0] - Samples[1]) * ScaleFactor;
+
+                Samples[0] = mid + side;
+                Samples[1] = mid - side;
+            }
+        }
+
+        audioChunk.set_sample_count(SamplesWritten / 2);
+
+        {
+            const unsigned int Head = _SamplesPlayed;
+            const unsigned int Tail = SamplesWritten;
+
+            if ((_Length != 0) && (Tail + _Fade > _Length))
+            {
+                audio_sample * Samples = audioChunk.get_data();
+
+                if (Samples)
                 {
-                    for (unsigned int n = d_start; n < d_end; n += 2)
-                    {
-                        if (n > _Length)
-                        {
-                            *foo++ = 0.0;
-                            *foo++ = 0.0;
-                        }
-                        else
-                        {
-                            const audio_sample bleh = (audio_sample)(_Length - n) * factor;
+                    ScaleFactor = 1.0 / _Fade;
 
-                            *foo++ *= bleh;
-                            *foo++ *= bleh;
+                    {
+                        for (unsigned int Index = Head; Index < Tail; Index += 2)
+                        {
+                            if (Index > _Length)
+                            {
+                                *Samples++ = 0.0;
+                                *Samples++ = 0.0;
+                            }
+                            else
+                            {
+                                const audio_sample bleh = (audio_sample)(_Length - Index) * ScaleFactor;
+
+                                *Samples++ *= bleh;
+                                *Samples++ *= bleh;
+                            }
                         }
                     }
                 }
             }
         }
+
+        _SamplesPlayed += SamplesWritten;
 
         return true;
     }
@@ -848,11 +882,11 @@ public:
     {
         _IsFirstBlock = true;
 
-        unsigned samples = unsigned(audio_math::time_to_samples(p_seconds, dSrate));
+        unsigned samples = unsigned(audio_math::time_to_samples(p_seconds, _SampleRate));
 
         samples *= 2;
 
-        if (samples < played)
+        if (samples < _SamplesPlayed)
         {
             decode_initialize(_Tune->getInfo()->currentSong(), input_flag_playback | (_Length ? input_flag_no_looping : 0), p_abort);
         }
@@ -860,18 +894,18 @@ public:
         pfc::array_t<t_int16> sample_buffer;
 
         sample_buffer.grow_size((t_size)10240 * 2);
-        eof = false;
+        _IsEOF = false;
 /*
         unsigned remain = ( samples - played ) % 32;
         played /= 32;
         samples /= 32;
         m_engine->fastForward( 100 * 32 );
 */
-        while (played < samples)
+        while (_SamplesPlayed < samples)
         {
             p_abort.check();
 
-            unsigned todo = samples - played;
+            unsigned todo = samples - _SamplesPlayed;
 
             if (todo > 10240 * 2)
                 todo = 10240 * 2;
@@ -886,11 +920,11 @@ public:
                 if (_Engine->error())
                     throw exception_io_data(_Engine->error());
 
-                eof = true;
+                _IsEOF = true;
                 break;
             }
 
-            played += todo;
+            _SamplesPlayed += todo;
         }
 /*
         played *= 32;
@@ -911,7 +945,7 @@ public:
         if (!_IsFirstBlock)
             return false;
 
-        fileInfo.info_set_int("samplerate", dSrate);
+        fileInfo.info_set_int("samplerate", _SampleRate);
 
         timestampDelta = 0.0;
         _IsFirstBlock = false;
@@ -960,20 +994,18 @@ public:
     }
 
 private:
-    int dSrate, dBps, stereo_separation;
+    int _SampleRate, _BPS, _StereoSeparation;
 
     unsigned int _Length;
-    unsigned int played;
-    unsigned int fade;
-
-    bool eof;
+    unsigned int _SamplesPlayed;
+    unsigned int _Fade;
 
     bool _IsFirstBlock;
+    bool _IsEOF;
 
-    SidTuneMod * _Tune;
-
-    sidplayfp * _Engine;
-    sidbuilder * _Builder;
+    std::unique_ptr<SidTuneMod> _Tune;
+    std::unique_ptr<sidplayfp> _Engine;
+    std::unique_ptr<sidbuilder> _Builder;
 
     pfc::array_t<t_int16> _SampleBuffer;
 
@@ -981,14 +1013,19 @@ private:
     t_filestats2 _FileStats2;
 };
 
+#pragma endregion
+
+#pragma region("Preferences")
+
+const char * parseTime(const char * str, int_least32_t & result); // From "SidDatabase.cpp"
+
 static cfg_dropdown_history cfg_history_rate(guid_cfg_history_rate, 16);
 
-static const int srate_tab[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
+static const unsigned int _SampleRates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
 
 class CMyPreferences : public CDialogImpl<CMyPreferences>, public preferences_page_instance
 {
 public:
-    //Constructor - invoked by preferences_page_impl helpers - don't do Create() in here, preferences_page_impl does this for us
     CMyPreferences(preferences_page_callback::ptr callback) : _PageCallback(callback)
     {
     }
@@ -1001,17 +1038,17 @@ public:
     {
         IDD = IDD_CONFIG
     };
+
     // preferences_page_instance methods (not all of them - get_wnd() is supplied by preferences_page_impl helpers)
     t_uint32 get_state() override;
-    void apply();
-    void reset();
+    void apply() override;
+    void reset() override;
 
-    //WTL message map
     BEGIN_MSG_MAP(CMyPreferences)
         MSG_WM_INITDIALOG(OnInitDialog)
         COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
-        COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnDBPathSet)
-        COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnDBPathClear)
+        COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnSetDatabasePath)
+        COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnClearDatabasePath)
         COMMAND_HANDLER_EX(IDC_DLENGTH, EN_CHANGE, OnEditChange)
         COMMAND_HANDLER_EX(IDC_FADE, EN_CHANGE, OnEditChange)
         COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_EDITCHANGE, OnEditChange)
@@ -1020,7 +1057,7 @@ public:
         COMMAND_HANDLER_EX(IDC_CLOCK_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
         COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
         MSG_WM_HSCROLL(OnHScroll);
-    DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, cfg_history_rate)
+        DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, cfg_history_rate)
     END_MSG_MAP()
 
 private:
@@ -1028,13 +1065,13 @@ private:
     void OnEditChange(UINT, int, CWindow);
     void OnSelectionChange(UINT, int, CWindow);
     void OnButtonClick(UINT, int, CWindow);
-    void OnDBPathSet(UINT, int, CWindow);
-    void OnDBPathClear(UINT, int, CWindow);
+    void OnSetDatabasePath(UINT, int, CWindow);
+    void OnClearDatabasePath(UINT, int, CWindow);
     void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar);
     bool HasChanged();
     void OnChanged();
 
-    void update_db_status();
+    void UpdateDatabaseStatusText() const noexcept;
 
 private:
     const preferences_page_callback::ptr _PageCallback;
@@ -1046,50 +1083,152 @@ private:
     CTrackBarCtrl _SliderSsep;
 };
 
-void CMyPreferences::update_db_status()
+t_uint32 CMyPreferences::get_state()
 {
-    insync(db_lock);
-    pfc::string8 status;
-    if (db_loaded)
-    {
-        status << "Database loaded.";
-    }
-    else
-    {
-        status << "Not loaded.";
-    }
-    uSetDlgItemText(m_hWnd, IDC_DB_STATUS, status);
+    t_uint32 state = preferences_state::resettable | preferences_state::dark_mode_supported;
+
+    if (HasChanged())
+        state |= preferences_state::changed;
+
+    return state;
 }
 
-const char * parseTime(const char * str, int_least32_t & result);
+void CMyPreferences::reset()
+{
+    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, default_cfg_infinite);
+    SendDlgItemMessage(IDC_SID_BUILDER, CB_SETCURSEL, default_cfg_sid_builder);
+    SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override);
+    SendDlgItemMessage(IDC_SID_OVERRIDE, CB_SETCURSEL, default_cfg_sid_override);
+
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) default_cfg_deflength / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
+
+    SetDlgItemInt(IDC_SAMPLERATE, default_cfg_rate, FALSE);
+    SetDlgItemInt(IDC_FADE, default_cfg_fade, FALSE);
+
+    _Slider6581.SetPos(default_cfg_sid_filter_6581);
+    pfc::string8_fast temp = pfc::format_float(default_cfg_sid_filter_6581 / 256., 0, 2);
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
+
+    _Slider8580.SetPos(default_cfg_sid_filter_8580);
+    temp = pfc::format_float(default_cfg_sid_filter_8580 / 256., 0, 2);
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
+
+    _SliderSsep.SetPos(default_cfg_stereo_separation);
+    temp = pfc::format_int(default_cfg_stereo_separation);
+    temp += "%";
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
+
+    OnChanged();
+}
+
+void CMyPreferences::apply()
+{
+    {
+        int SampleRate = GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE);
+
+        if (SampleRate < 6000)
+            SampleRate = 6000;
+        else
+        if (SampleRate > 192000)
+            SampleRate = 192000;
+
+        SetDlgItemInt(IDC_SAMPLERATE, SampleRate, FALSE);
+
+        char temp[16];
+
+        ::_itoa_s(SampleRate, temp, _countof(temp), 10);
+
+        cfg_history_rate.add_item(temp);
+
+        cfg_SampleRate = SampleRate;
+    }
+
+    {
+        pfc::string8 out;
+
+        ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, out);
+
+        pfc::string8 DatabaseFilePath;
+
+        SanitizeDatabasePathName(out, false, DatabaseFilePath);
+
+        _CfgDatabaseFilePath = DatabaseFilePath;
+
+        {
+            insync(_DatabaseLock);
+
+            UnloadDatabase();
+            LoadDatabase();
+        }
+
+        UpdateDatabaseStatusText();
+    }
+
+    {
+        pfc::string8 LengthString;
+
+        ::uGetDlgItemText(m_hWnd, IDC_DLENGTH, LengthString);
+
+        int_least32_t Timestamp = 0;
+
+        try
+        {
+            const char * bar = LengthString.get_ptr();
+
+            ::parseTime(bar, Timestamp);
+        }
+        catch (...)
+        {
+        }
+
+        if (Timestamp)
+            cfg_deflength = Timestamp;
+        else
+            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
+    }
+
+    cfg_fade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
+    cfg_infinite = (t_int32)SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
+    cfg_clock_override = (t_int32)SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
+    cfg_sid_override = (t_int32)SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
+    cfg_sid_builder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
+    cfg_sid_filter_6581 = _Slider6581.GetPos();
+    cfg_sid_filter_8580 = _Slider8580.GetPos();
+    cfg_stereo_separation = _SliderSsep.GetPos();
+
+    OnChanged();
+}
 
 BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 {
     SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, cfg_infinite);
 
-    uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
-    uSetDlgItemText(m_hWnd, IDC_DB_PATH, cfg_db_path);
-    update_db_status();
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath);
+
+    UpdateDatabaseStatusText();
 
     {
         CWindow w;
+
         {
             char temp[16];
-            int n;
 
             SetDlgItemInt(IDC_FADE, cfg_fade, FALSE);
-            uSendMessage(GetDlgItem(IDC_FADE), EM_LIMITTEXT, 3, 0);
 
-            for (n = tabsize(srate_tab); n--;)
+            ::uSendMessage(GetDlgItem(IDC_FADE), EM_LIMITTEXT, 3, 0);
+
+            for (int n = _countof(_SampleRates); n--;)
             {
-                if (srate_tab[n] != cfg_rate)
+                if (_SampleRates[n] != cfg_SampleRate)
                 {
-                    _itoa_s(srate_tab[n], temp, _countof(temp), 10);
+                    _itoa_s(_SampleRates[n], temp, _countof(temp), 10);
                     cfg_history_rate.add_item(temp);
                 }
             }
 
-            _itoa_s(cfg_rate, temp, _countof(temp), 10);
+            _itoa_s(cfg_SampleRate, temp, _countof(temp), 10);
 
             cfg_history_rate.add_item(temp);
 
@@ -1100,20 +1239,23 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         }
 
         w = GetDlgItem(IDC_SID_BUILDER);
-        uSendMessageText(w, CB_ADDSTRING, 0, "ReSID");
-        uSendMessageText(w, CB_ADDSTRING, 0, "ReSIDfp");
+
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "ReSID");
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "ReSIDfp");
         ::SendMessage(w, CB_SETCURSEL, cfg_sid_builder, 0);
 
         w = GetDlgItem(IDC_CLOCK_OVERRIDE);
-        uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
-        uSendMessageText(w, CB_ADDSTRING, 0, "Force PAL");
-        uSendMessageText(w, CB_ADDSTRING, 0, "Force NTSC");
+
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "Force PAL");
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "Force NTSC");
         ::SendMessage(w, CB_SETCURSEL, cfg_clock_override, 0);
 
         w = GetDlgItem(IDC_SID_OVERRIDE);
-        uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
-        uSendMessageText(w, CB_ADDSTRING, 0, "Force 6581");
-        uSendMessageText(w, CB_ADDSTRING, 0, "Force 8580");
+
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "Force 6581");
+        ::uSendMessageText(w, CB_ADDSTRING, 0, "Force 8580");
         ::SendMessage(w, CB_SETCURSEL, cfg_sid_override, 0);
     }
 
@@ -1123,8 +1265,11 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _Slider6581.SetRangeMin(0);
     _Slider6581.SetRangeMax(256);
     _Slider6581.SetPos(cfg_sid_filter_6581);
+
     temp = pfc::format_float(cfg_sid_filter_6581 / 256., 0, 2);
-    uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
+
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
+
     if (cfg_sid_builder != sid_builder_residfp)
         _Slider6581.EnableWindow(FALSE);
 
@@ -1132,8 +1277,11 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _Slider8580.SetRangeMin(0);
     _Slider8580.SetRangeMax(256);
     _Slider8580.SetPos(cfg_sid_filter_8580);
+
     temp = pfc::format_float(cfg_sid_filter_8580 / 256., 0, 2);
-    uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
+
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
+
     if (cfg_sid_builder != sid_builder_residfp)
         _Slider8580.EnableWindow(FALSE);
 
@@ -1141,9 +1289,11 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _SliderSsep.SetRangeMin(0);
     _SliderSsep.SetRangeMax(150);
     _SliderSsep.SetPos(cfg_stereo_separation);
+
     temp = pfc::format_int(cfg_stereo_separation);
     temp += "%";
-    uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
+
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
 
     _DarkModeHooks.AddDialogWithControls(*this);
 
@@ -1159,10 +1309,12 @@ void CMyPreferences::OnSelectionChange(UINT, int, CWindow wnd)
 {
     if (wnd == GetDlgItem(IDC_SID_BUILDER))
     {
-        BOOL enable = wnd.SendMessage(CB_GETCURSEL) == sid_builder_residfp;
-        _Slider6581.EnableWindow(enable);
-        _Slider8580.EnableWindow(enable);
+        const BOOL Enable = wnd.SendMessage(CB_GETCURSEL) == sid_builder_residfp;
+
+        _Slider6581.EnableWindow(Enable);
+        _Slider8580.EnableWindow(Enable);
     }
+
     OnChanged();
 }
 
@@ -1174,216 +1326,180 @@ void CMyPreferences::OnButtonClick(UINT, int, CWindow)
 void CMyPreferences::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar)
 {
     pfc::string8_fast temp;
+
     if (pScrollBar.m_hWnd == _Slider6581.m_hWnd)
     {
         temp = pfc::format_float(_Slider6581.GetPos() / 256., 0, 2);
-        uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
     }
-    else if (pScrollBar.m_hWnd == _Slider8580.m_hWnd)
+    else
+    if (pScrollBar.m_hWnd == _Slider8580.m_hWnd)
     {
         temp = pfc::format_float(_Slider8580.GetPos() / 256., 0, 2);
-        uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
     }
-    else if (pScrollBar.m_hWnd == _SliderSsep.m_hWnd)
+    else
+    if (pScrollBar.m_hWnd == _SliderSsep.m_hWnd)
     {
         temp = pfc::format_int(_SliderSsep.GetPos());
         temp += "%";
-        uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
     }
+
     OnChanged();
 }
 
-void CMyPreferences::OnDBPathSet(UINT, int, CWindow)
+void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
 {
-    pfc::string8 out;
-    uGetDlgItemText(m_hWnd, IDC_DB_PATH, out);
-    pfc::string8 path;
-    convert_db_path(out, path, true);
+    pfc::string8 NewDatabaseFilePath;
 
-    pfc::string8 directory(path);
-    directory.truncate(directory.scan_filename());
-    if (uGetOpenFileName(core_api::get_main_window(), "Song length database|Songlengths.md5",
-        1, 0, "Choose SidPlay Song-Lengths Database...", directory, path, false))
+    ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, NewDatabaseFilePath);
+
+    pfc::string8 DatabaseFilePath;
+
+    ::SanitizeDatabasePathName(NewDatabaseFilePath, true, DatabaseFilePath);
+
+    pfc::string8 DatabaseDirectoryPathName(DatabaseFilePath);
+
+    DatabaseDirectoryPathName.truncate(DatabaseDirectoryPathName.scan_filename());
+
+    if (::uGetOpenFileName(core_api::get_main_window(), "Song length database|Songlengths.md5", 1, 0, "Choose SidPlay Song-Lengths Database...", DatabaseDirectoryPathName, DatabaseFilePath, false))
     {
-        pfc::string8 new_path;
-        convert_db_path(path, new_path, false);
-        uSetDlgItemText(m_hWnd, IDC_DB_PATH, new_path);
+        ::SanitizeDatabasePathName(DatabaseFilePath, false, NewDatabaseFilePath);
+
+        ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, NewDatabaseFilePath);
+
         OnChanged();
     }
 }
 
-void CMyPreferences::OnDBPathClear(UINT, int, CWindow)
+void CMyPreferences::OnClearDatabasePath(UINT, int, CWindow)
 {
-    uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
-    OnChanged();
-}
-
-t_uint32 CMyPreferences::get_state()
-{
-    t_uint32 state = preferences_state::resettable | preferences_state::dark_mode_supported;
-
-    if (HasChanged())
-        state |= preferences_state::changed;
-
-    return state;
-}
-
-void CMyPreferences::reset()
-{
-    pfc::string8_fast temp;
-    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, default_cfg_infinite);
-    SendDlgItemMessage(IDC_SID_BUILDER, CB_SETCURSEL, default_cfg_sid_builder);
-    SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_SETCURSEL, default_cfg_clock_override);
-    SendDlgItemMessage(IDC_SID_OVERRIDE, CB_SETCURSEL, default_cfg_sid_override);
-    uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) default_cfg_deflength / 1000.0));
-    uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
-    SetDlgItemInt(IDC_SAMPLERATE, default_cfg_rate, FALSE);
-    SetDlgItemInt(IDC_FADE, default_cfg_fade, FALSE);
-    _Slider6581.SetPos(default_cfg_sid_filter_6581);
-    temp = pfc::format_float(default_cfg_sid_filter_6581 / 256., 0, 2);
-    uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
-    _Slider8580.SetPos(default_cfg_sid_filter_8580);
-    temp = pfc::format_float(default_cfg_sid_filter_8580 / 256., 0, 2);
-    uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
-    _SliderSsep.SetPos(default_cfg_stereo_separation);
-    temp = pfc::format_int(default_cfg_stereo_separation);
-    temp += "%";
-    uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
-
-    OnChanged();
-}
-
-void CMyPreferences::apply()
-{
-    char temp[16];
-    int t = GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE);
-
-    if (t < 6000)
-        t = 6000;
-    else
-    if (t > 192000)
-        t = 192000;
-
-    SetDlgItemInt(IDC_SAMPLERATE, t, FALSE);
-    _itoa_s(t, temp, _countof(temp), 10);
-
-    cfg_history_rate.add_item(temp);
-    cfg_rate = t;
-
-    pfc::string8 out;
-    uGetDlgItemText(m_hWnd, IDC_DB_PATH, out);
-    pfc::string8 db_path;
-    convert_db_path(out, db_path, false);
-
-    cfg_db_path = db_path;
-    {
-        insync(db_lock);
-        db_unload();
-        db_load();
-    }
-
-    update_db_status();
-    {
-        pfc::string8 foo;
-        uGetDlgItemText(m_hWnd, IDC_DLENGTH, foo);
-        int_least32_t timestamp = 0;
-        const char * bar = foo.get_ptr();
-
-        try
-        {
-            parseTime(bar, timestamp);
-        }
-        catch (...)
-        {
-        }
-        if (timestamp)
-            cfg_deflength = timestamp;
-        else
-            uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
-    }
-    cfg_fade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
-    cfg_infinite = (t_int32)SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
-    cfg_clock_override = (t_int32)SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
-    cfg_sid_override = (t_int32)SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
-    cfg_sid_builder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
-    cfg_sid_filter_6581 = _Slider6581.GetPos();
-    cfg_sid_filter_8580 = _Slider8580.GetPos();
-    cfg_stereo_separation = _SliderSsep.GetPos();
-
+    ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
     OnChanged();
 }
 
 bool CMyPreferences::HasChanged()
 {
-    //returns whether our dialog content is different from the current configuration (whether the apply button should be enabled or not)
-    bool changed = false;
-    if (!changed && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != cfg_rate) changed = true;
-    if (!changed && GetDlgItemInt(IDC_FADE, NULL, FALSE) != cfg_fade) changed = true;
-    if (!changed && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != cfg_infinite) changed = true;
-    if (!changed && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != cfg_clock_override) changed = true;
-    if (!changed && SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != cfg_sid_override) changed = true;
-    if (!changed && SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != cfg_sid_builder) changed = true;
-    if (!changed && _Slider6581.GetPos() != cfg_sid_filter_6581) changed = true;
-    if (!changed && _Slider8580.GetPos() != cfg_sid_filter_8580) changed = true;
-    if (!changed && _SliderSsep.GetPos() != cfg_stereo_separation) changed = true;
-    if (!changed)
+    bool IsChanged = false;
+
+    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != cfg_SampleRate)
+        IsChanged = true;
+
+    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != cfg_fade)
+        IsChanged = true;
+
+    if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != cfg_infinite)
+        IsChanged = true;
+
+    if (!IsChanged && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != cfg_clock_override)
+        IsChanged = true;
+
+    if (!IsChanged && SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != cfg_sid_override)
+        IsChanged = true;
+
+    if (!IsChanged && SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != cfg_sid_builder)
+        IsChanged = true;
+
+    if (!IsChanged && _Slider6581.GetPos() != cfg_sid_filter_6581)
+        IsChanged = true;
+
+    if (!IsChanged && _Slider8580.GetPos() != cfg_sid_filter_8580)
+        IsChanged = true;
+
+    if (!IsChanged && _SliderSsep.GetPos() != cfg_stereo_separation)
+        IsChanged = true;
+
+    if (!IsChanged)
     {
-        pfc::string8 out;
-        uGetDlgItemText(m_hWnd, IDC_DB_PATH, out);
-        pfc::string8 db_path;
-        convert_db_path(out, db_path, false);
-        if (stricmp_utf8(db_path, cfg_db_path)) changed = true;
+        pfc::string8 Text;
+
+        ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
+
+        pfc::string8 DatabaseFilePath;
+
+        ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
+
+        IsChanged = (::stricmp_utf8(DatabaseFilePath, _CfgDatabaseFilePath) != 0);
     }
-    if (!changed)
+
+    if (!IsChanged)
     {
-        pfc::string8 foo;
-        uGetDlgItemText(m_hWnd, IDC_DLENGTH, foo);
-        int_least32_t timestamp = 0;
-        const char * bar = foo.get_ptr();
-        const char * end;
+        pfc::string8 Text;
+
+        uGetDlgItemText(m_hWnd, IDC_DLENGTH, Text);
+
+        int_least32_t Timestamp = 0;
+
         try
         {
-            end = parseTime(bar, timestamp);
+            const char * bar = Text.get_ptr();
+
+            const char * end = ::parseTime(bar, Timestamp);
         }
         catch (...)
         {
         }
-        if (timestamp && timestamp != cfg_deflength) changed = true;
+
+        IsChanged = (Timestamp && Timestamp != cfg_deflength);
     }
-    return changed;
+
+    return IsChanged;
 }
+
 void CMyPreferences::OnChanged()
 {
     //tell the host that our state has changed to enable/disable the apply button appropriately.
     _PageCallback->on_state_changed();
 }
 
-class preferences_page_myimpl : public preferences_page_impl<CMyPreferences>
+void CMyPreferences::UpdateDatabaseStatusText() const noexcept
 {
-    // preferences_page_impl<> helper deals with instantiation of our dialog; inherits from preferences_page_v3.
+    insync(_DatabaseLock);
+
+    ::uSetDlgItemText(m_hWnd, IDC_DB_STATUS, _IsDatabaseLoaded ? "Database loaded.": "Database not loaded.");
+}
+
+#pragma endregion
+
+#pragma region("Preferences Page")
+
+class PreferencePage : public preferences_page_impl<CMyPreferences>
+{
 public:
-    const char * get_name()
+    PreferencePage() noexcept { };
+    PreferencePage(const PreferencePage&) = delete;
+    PreferencePage(const PreferencePage&&) = delete;
+    PreferencePage& operator=(const PreferencePage&) = delete;
+    PreferencePage& operator=(PreferencePage&&) = delete;
+    virtual ~PreferencePage() { }
+
+    const char * get_name() noexcept override
     {
-        return input_sid::g_get_name();
+        return InputHandler::g_get_name();
     }
-    GUID get_guid()
+
+    GUID get_guid() noexcept override
     {
-        return input_sid::g_get_preferences_guid();
+        return InputHandler::g_get_preferences_guid();
     }
-    GUID get_parent_guid()
+
+    GUID get_parent_guid() noexcept override
     {
         return guid_input;
     }
 };
 
+#pragma endregion
+
 DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
 
-static input_factory_t<input_sid> g_input_sid_factory;
-static preferences_page_factory_t<preferences_page_myimpl> g_config_sid_factory;
-static initquit_factory_t<initquit_upgrade_vars> g_initquit_sid_factory;
+static initquit_factory_t<InitQuitHandler> _InitQuitFactory;
+static input_factory_t<InputHandler> _InputFactory;
+static preferences_page_factory_t<PreferencePage> _PreferencePageFactory;
 
 #include "Patrons.h"
 
-DECLARE_COMPONENT_VERSION("sidplay2", MYVERSION, "Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54\n\n" MY_PATRONS);
+DECLARE_COMPONENT_VERSION("sidplay", MYVERSION, "Based on residfp.\n\nLicensed under the GNU GPL, see COPYING.txt.\n\nhttps://www.patreon.com/kode54\n\n" MY_PATRONS);
 
 VALIDATE_COMPONENT_FILENAME("foo_sid.dll");

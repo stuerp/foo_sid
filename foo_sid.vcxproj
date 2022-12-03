@@ -292,8 +292,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

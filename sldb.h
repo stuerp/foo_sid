@@ -1,37 +1,42 @@
-#ifndef __SLDB_H__
-#define __SLDB_H__
+#pragma once
 
 class SidTuneMod;
 
 class sldb_sum
 {
-private:
-	unsigned char          digest[16];
-	pfc::array_t<t_uint32> lengths;
 public:
-	bool set_digest(const char * digest_string);
-	bool check_digest(const void * song_digest);
+    bool set_digest(const char * digest_string);
+    bool check_digest(const void * song_digest);
 
-	void add_length(unsigned length);
-	unsigned get_length(unsigned index);
+    void add_length(unsigned length);
+    unsigned get_length(unsigned index);
+
+private:
+    unsigned char digest[16];
+    pfc::array_t<t_uint32> lengths;
 };
 
 class sldb
 {
-private:
-	critical_section sync;
-	pfc::ptr_list_t<sldb_sum> sums;
 public:
-	sldb() {}
-	~sldb() { unload(); }
+    sldb() 
+    {
+    }
 
-	bool load(const char * path, abort_callback & p_abort);
-	bool loaded();
-	void unload();
+    ~sldb()
+    {
+        unload();
+    }
 
-	unsigned get_count();
+    bool load(const char * path, abort_callback & p_abort);
+    bool loaded();
+    void unload();
 
-	unsigned find(SidTuneMod * tune, unsigned index);
+    unsigned get_count();
+
+    unsigned find(SidTuneMod * tune, unsigned index);
+
+private:
+    critical_section sync;
+    pfc::ptr_list_t<sldb_sum> sums;
 };
-
-#endif
