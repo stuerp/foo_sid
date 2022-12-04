@@ -78,6 +78,10 @@ branch. Pull requests are warmly welcome.
 
 ## Change Log
 
+v1.91.0.2, 2022-12-04, *"Revenge of the SID"*
+
+* Bug fix: MUS and MUS+STR files play again.
+
 v1.91.0.1, 2022-12-03, *"Scratchin' the itch"*
 
 * Initial release of a x64 version for [foobar2000](https://www.foobar2000.org/) v2.0.
