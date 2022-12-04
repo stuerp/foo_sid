@@ -3,7 +3,7 @@
 #define STR_COMMENTS            TEXT("Written by Christopher Snowhill, Peter Stuer")
 #define STR_COPYRIGHT           TEXT("Copyright (C) 2003-2022")
 
-#define STR_FILE_VERSION        TEXT("1.91.0.1")
+#define STR_FILE_VERSION        TEXT("1.91.0.2")
 #define NUM_FILE_VERSION        1
 #define NUM_FILE_REVISION       91
 #define NUM_FILE_BUILD          0

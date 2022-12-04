@@ -1,7 +1,16 @@
-#define MYVERSION "1.91.0.1"
+#define MYVERSION "1.91.0.2"
 
 /*
     changelog
+
+2022-12-04 00:00 UTC - stuerp
+- Fix MUS and MUS+STR playback
+- Version is now 1.91.0.2
+
+2022-12-03 00:00 UTC - stuerp
+- Created x64 version compatible with foobar2000 v2.0.
+- Added Dark Mode support for foobar2000 v2.0.
+- Version is now 1.91.0.1
 
 2022-02-14 00:03 UTC - kode54
 - Sync lock RESIDfp creation
