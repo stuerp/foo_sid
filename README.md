@@ -7,8 +7,8 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 ## Features
 
-* Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID or .MUS or .MUS+.STR formats.
-* Supports supports up to 3SID rips.
+* Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID, .MUS or .MUS+.STR formats.
+* Supports up to 3SID rips.
 * Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database.
 * Supports dark mode.
 
