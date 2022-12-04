@@ -62,9 +62,9 @@ public:
 
                 file->seek(0, AbortHandler);
 
-                Item._Data.resize(FileSize);
+                Item._Data.resize((size_t)FileSize);
 
-                file->read_object(&Item._Data[0], FileSize, AbortHandler);
+                file->read_object(&Item._Data[0], (t_size)FileSize, AbortHandler);
 
                 Item._ReferenceCount++;
             }
@@ -141,9 +141,9 @@ void SidTuneMod::MyLoaderFunc(const char * filePath, std::vector<uint8_t>& buffe
 
             const t_filesize FileSize = File->get_size_ex(AbortHandler);
 
-            bufferRef.resize(FileSize);
+            bufferRef.resize((size_t)FileSize);
 
-            File->read_object(&bufferRef[0], FileSize, AbortHandler);
+            File->read_object(&bufferRef[0], (t_size)FileSize, AbortHandler);
         }
         catch (...)
         {
