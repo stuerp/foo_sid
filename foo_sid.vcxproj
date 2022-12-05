@@ -97,7 +97,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
@@ -135,7 +135,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
@@ -177,7 +177,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -222,7 +222,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../3rdParty/libsidplayfp/src;../3rdParty/libsidplayfp-projects;../3rdParty/libsidplayfp/src/builders/resid-builder;../3rdParty/libsidplayfp/src/builders/residfp-builder;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
