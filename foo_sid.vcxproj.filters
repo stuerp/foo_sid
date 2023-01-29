@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="roms.cpp" />
-    <ClCompile Include="sid.cpp" />
+    <ClCompile Include="foo_sid.cpp" />
     <ClCompile Include="SidTuneMod.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -10,14 +10,16 @@
     <ClInclude Include="roms.hpp" />
     <ClInclude Include="SidTuneMod.h" />
     <ClInclude Include="Patrons.h" />
+    <ClInclude Include="History.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="sid.rc" />
+    <ResourceCompile Include="foo_sid.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Build-FB2KComponent.ps1" />
     <None Include="README.md" />
     <None Include=".gitignore" />
+    <None Include=".gitattributes" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.txt" />

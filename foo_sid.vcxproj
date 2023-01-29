@@ -260,7 +260,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
-    <ClCompile Include="sid.cpp">
+    <ClCompile Include="foo_sid.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
@@ -271,9 +271,10 @@
     <ClCompile Include="SidTuneMod.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="sid.rc" />
+    <ResourceCompile Include="foo_sid.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="History.h" />
     <ClInclude Include="Patrons.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="roms.hpp" />
@@ -306,6 +307,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
     <None Include="README.md" />

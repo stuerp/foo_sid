@@ -12,12 +12,10 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 * Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database.
 * Supports dark mode.
 
-* Compatible with foobar2000 1.6.13 and foobar2000 2.0 or later (32 and 64-bit version).
-
 ## Requirements
 
 * Tested on Microsoft Windows 10 or later.
-* [foobar2000](https://www.foobar2000.org/download) v1.6.13 or later. ![foobar2000](https://www.foobar2000.org/button-small.png)
+* [foobar2000](https://www.foobar2000.org/download) v1.6.13 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
 
 ## Getting started
 
@@ -33,12 +31,16 @@ The code builds out-of-the box with Visual Studio.
 
 ### Requirements
 
-To build the code:
+To build the code you need:
 
-* [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/)
-* [foobar2000 SDK](https://www.foobar2000.org/SDK)
+* [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
+* [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-01-18
 * [Windows Template Library (WTL)](https://github.com/Win32-WTL/WTL) 10.0.10320
 * [xa](http://www.floodgap.com/retrotech/xa/)
+
+The following libraries are included in the code:
+
+* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) 2.4.2
 
 To create the deployment package:
 
@@ -77,6 +79,11 @@ If you'd like to contribute, please fork the repository and use a feature
 branch. Pull requests are warmly welcome.
 
 ## Change Log
+
+v1.92.0.0, 2023-01-29, *"Stayin' Alive"*
+
+* Upgraded libsidplayfp to 2.4.2.
+* Builds with foobar2000 SDK 2023-01-18.
 
 v1.91.0.2, 2022-12-04, *"Revenge of the SID"*
 

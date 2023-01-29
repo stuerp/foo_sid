@@ -236,15 +236,15 @@ int Integrator6581::solve(int vi) const
     const int nVg = static_cast<int>(fmc->getVcr_nVg((nVddt_Vw_2 + (Vgdt_2 >> 1)) >> 16));
 #ifdef SLOPE_FACTOR
     const double nVp = static_cast<double>(nVg - nVt) / n; // Pinch-off voltage
-    const int kVgt = static_cast<int>(nVp + 0.5) - nVmin;
+    const int kVg = static_cast<int>(nVp + 0.5) - nVmin;
 #else
-    const int kVgt = (nVg - nVt) - nVmin;
+    const int kVg = (nVg - nVt) - nVmin;
 #endif
 
     // VCR voltages for EKV model table lookup.
-    const int kVgt_Vs = (vx < kVgt) ? kVgt - vx : 0;
+    const int kVgt_Vs = (vx < kVg) ? kVg - vx : 0;
     assert(kVgt_Vs < (1 << 16));
-    const int kVgt_Vd = (vi < kVgt) ? kVgt - vi : 0;
+    const int kVgt_Vd = (vi < kVg) ? kVg - vi : 0;
     assert(kVgt_Vd < (1 << 16));
 
     // VCR current, scaled by m*2^15*2^15 = m*2^30
@@ -252,7 +252,7 @@ int Integrator6581::solve(int vi) const
     const unsigned int Ir = static_cast<unsigned int>(fmc->getVcr_n_Ids_term(kVgt_Vd)) << 15;
 #ifdef SLOPE_FACTOR
     const double iVcr = static_cast<double>(If - Ir);
-    const int n_I_vcr = static_cast<int>((iVcr * n) + 0.5);
+    const int n_I_vcr = static_cast<int>(iVcr * n);
 #else
     const int n_I_vcr = If - Ir;
 #endif

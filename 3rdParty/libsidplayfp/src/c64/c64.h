@@ -1,7 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- * Copyright 2011-2022 Leandro Nini <drfiemost@users.sourceforge.net>
+ * Copyright 2011-2023 Leandro Nini <drfiemost@users.sourceforge.net>
  * Copyright 2007-2010 Antti Lankila
  * Copyright 2000 Simon White
  *
@@ -193,6 +193,7 @@ private:
 
 public:
     c64();
+    ~c64();
 
     /**
      * Get C64's event scheduler
@@ -201,10 +202,9 @@ public:
      */
     EventScheduler *getEventScheduler() { return &eventScheduler; }
 
-    uint_least32_t getTimeMs() const
-    {
-        return static_cast<uint_least32_t>((eventScheduler.getTime(EVENT_CLOCK_PHI1) * 1000) / cpuFrequency);
-    }
+    uint_least32_t getTime() const { return getTimeMs() / 1000; }
+
+    uint_least32_t getTimeMs() const { return static_cast<uint_least32_t>((eventScheduler.getTime(EVENT_CLOCK_PHI1) * 1000) / cpuFrequency); }
 
     /**
      * Clock the emulation.

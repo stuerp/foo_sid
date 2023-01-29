@@ -1,8 +1,5 @@
-#ifndef PATRONS_H
-#define PATRONS_H
+#pragma once
 
-#define MY_PATRONS \
-"Thanks to my patrons:\n" \
+#define KODE54_PATRONS \
+"Thanks to kode54's patrons:\n" \
 "Joseph DeVore, Hongfei Gu"
-
-#endif
