@@ -1,5 +1,5 @@
 
-/** $VER: sid.rc (2023.01.29) **/
+/** $VER: sid.rc (2023.05.01) **/
 
 #include "Resource.h"
 
@@ -12,7 +12,7 @@ language LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 IDD_CONFIG dialogex 0, 0, 255, 229
 style DS_SETFONT | WS_CHILD
-font 8, "MS Shell Dlg", 400, 0, 0x0
+font 8, "Segoe UI", 400, 0, 1
 {
     GROUPBOX        "Quality",IDC_STATIC,5,5,244,40
     RTEXT           "Sample rate:",IDC_STATIC,23,15,44,8

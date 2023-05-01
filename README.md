@@ -14,7 +14,7 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 ## Requirements
 
-* Tested on Microsoft Windows 10 or later.
+* Tested on Microsoft Windows 10 and later.
 * [foobar2000](https://www.foobar2000.org/download) v1.6.13 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
 
 ## Getting started
@@ -79,6 +79,11 @@ If you'd like to contribute, please fork the repository and use a feature
 branch. Pull requests are warmly welcome.
 
 ## Change Log
+
+v1.93.0.0, 2023-xx-xx, *""*
+
+* The Preferences page is now DPI-aware.
+* Builds with foobar2000 SDK 2023-04-18.
 
 v1.92.0.0, 2023-01-29, *"Stayin' Alive"*
 
