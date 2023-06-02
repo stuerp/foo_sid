@@ -29,9 +29,11 @@ jobs:
       run: |
         export HOMEBREW_NO_INSTALL_CLEANUP=1
         brew update
+        brew upgrade || true
         brew install \
           autoconf \
           automake \
+          pkg-config \
           coreutils \
           gnu-sed \
           libgcrypt \

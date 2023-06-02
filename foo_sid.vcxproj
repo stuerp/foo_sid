@@ -109,6 +109,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <SDLCheck>true</SDLCheck>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/d2notypeopt</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -147,6 +148,7 @@
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/d2notypeopt</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -181,8 +183,7 @@
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <AdditionalOptions>/d2notypeopt</AdditionalOptions>
       <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -226,8 +227,7 @@
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <AdditionalOptions>/d2notypeopt</AdditionalOptions>
       <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>

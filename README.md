@@ -15,7 +15,7 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 ## Requirements
 
 * Tested on Microsoft Windows 10 and later.
-* [foobar2000](https://www.foobar2000.org/download) v1.6.13 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
+* [foobar2000](https://www.foobar2000.org/download) v1.6.16 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
 
 ## Getting started
 
@@ -27,24 +27,24 @@ or
 
 ## Developing
 
-The code builds out-of-the box with Visual Studio.
+The code builds out-of-the box with Visual Studio 2022.
 
 ### Requirements
 
 To build the code you need:
 
 * [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
-* [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-01-18
+* [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-05-10
 * [Windows Template Library (WTL)](https://github.com/Win32-WTL/WTL) 10.0.10320
 * [xa](http://www.floodgap.com/retrotech/xa/)
 
 The following libraries are included in the code:
 
-* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) 2.4.2
+* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) 2.5.0
 
 To create the deployment package:
 
-* [PowerShell 7.2](https://github.com/PowerShell/PowerShell)
+* [PowerShell 7.2](https://github.com/PowerShell/PowerShell) or later
 
 ### Setup
 
@@ -80,10 +80,11 @@ branch. Pull requests are warmly welcome.
 
 ## Change Log
 
-v1.93.0.0, 2023-xx-xx, *""*
+v1.93.0.0, 2023-06-02
 
 * The Preferences page is now DPI-aware.
-* Builds with foobar2000 SDK 2023-04-18.
+* Upgraded libsidplayfp to 2.5.0.
+* Builds with foobar2000 SDK 2023-05-10.
 
 v1.92.0.0, 2023-01-29, *"Stayin' Alive"*
 

@@ -28,6 +28,7 @@
 
 #include "array.h"
 #include "Dac.h"
+#include "Integrator6581.h"
 #include "Filter6581.h"
 #include "Filter8580.h"
 #include "Potentiometer.h"
@@ -226,7 +227,8 @@ void SID::setChipModel(ChipModel model)
     this->model = model;
 
     // calculate waveform-related tables
-    matrix_t* tables = WaveformCalculator::getInstance()->buildTable(model);
+    matrix_t* wavetables = WaveformCalculator::getInstance()->getWaveTable();
+    matrix_t* pulldowntables = WaveformCalculator::getInstance()->buildPulldownTable(model);
 
     // calculate envelope DAC table
     {
@@ -261,7 +263,8 @@ void SID::setChipModel(ChipModel model)
         voice[i]->setEnvDAC(envDAC);
         voice[i]->setWavDAC(oscDAC);
         voice[i]->wave()->setModel(is6581);
-        voice[i]->wave()->setWaveformModels(tables);
+        voice[i]->wave()->setWaveformModels(wavetables);
+        voice[i]->wave()->setPulldownModels(pulldowntables);
     }
 }
 

@@ -1,6 +1,6 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [4])
-m4_define([lib_level], [2])
+m4_define([lib_minor], [5])
+m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_INIT([libsidplayfp],[lib_version],[],[],[https://github.com/libsidplayfp/libsidplayfp/])
@@ -36,10 +36,12 @@ AC_PROG_CXX
 dnl Use C++ for tests.
 AC_LANG([C++])
 
-AX_CXX_COMPILE_STDCXX_14([noext], [optional])
-AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
-    AX_CXX_COMPILE_STDCXX_11([noext], [optional]),
-    AC_DEFINE([HAVE_CXX11])
+AX_CXX_COMPILE_STDCXX_17([noext], [optional])
+AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"],
+    AX_CXX_COMPILE_STDCXX_14([noext], [optional])
+    AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
+        AX_CXX_COMPILE_STDCXX_11([noext], [optional])
+    )
 )
 
 dnl check for hidden visibility support
@@ -64,24 +66,18 @@ AS_IF([test "x${ac_cv_header_stdint_h}" != "xyes"],
   [AC_MSG_ERROR([Required header stdint.h not found])]
 )
 
+AC_OPENMP
+
 dnl Checks for non-standard functions.
 
 AC_CHECK_DECL(
     [strcasecmp],
-    [AC_CHECK_FUNCS([strcasecmp])],
-    [AC_CHECK_DECL(
-        [stricmp],
-        [AC_CHECK_FUNCS([stricmp])]
-    )]
+    [AC_CHECK_FUNCS([strcasecmp])]
 )
 
 AC_CHECK_DECL(
     [strncasecmp],
-    [AC_CHECK_FUNCS([strncasecmp])],
-    [AC_CHECK_DECL(
-        [strnicmp],
-        [AC_CHECK_FUNCS([strnicmp])]
-    )]
+    [AC_CHECK_FUNCS([strncasecmp])]
 )
 
 
@@ -96,7 +92,7 @@ dnl libtool-style version-info number
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
 LIBSIDPLAYCUR=9
-LIBSIDPLAYREV=26
+LIBSIDPLAYREV=27
 LIBSIDPLAYAGE=3
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 

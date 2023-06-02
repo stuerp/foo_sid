@@ -333,7 +333,8 @@ CIA/ciavarious/cia13
 CIA/ciavarious/cia14
 CIA/ciavarious/cia15
 CIA/dd0drw/dd0drw
-CIA/dd0dtest/dd0dtest
+CIA/dd0dtest/dd0dtest                                --cia old
+CIA/dd0dtest/dd0dtest                                --cia new
 CIA/mirrors/ciamirrors
 CIA/irqdelay/irqdelay                                --cia old
 CIA/irqdelay/irqdelay-new                            --cia new
@@ -438,6 +439,7 @@ CIA/tod/hzsync2
 CIA/tod/hzsync3
 CIA/tod/hzsync4
 CIA/tod/hzsync5
+CIA/tod/hzsync6
 CIA/tod/powerup
 CIA/tod/read-latch
 CIA/tod/stability
@@ -572,8 +574,10 @@ interrupts/irq-ackn-bug/cia2                         --cia old
 interrupts/irq-ackn-bug/cia2new                      --cia new
 # sprite collision, won't work
 #interrupts/irq-ackn-bug/irq-ack-vicii
-interrupts/irqdma/nmitest6
-interrupts/irqdma/nmitest6b
+interrupts/irqdma/nmitest6                           --cia old
+interrupts/irqdma/nmitest6                           --cia new
+interrupts/irqdma/nmitest6b                          --cia old
+interrupts/irqdma/nmitest6b                          --cia new
 interrupts/irqdma/test1
 interrupts/irqdma/test1b
 interrupts/irqdma/test2
@@ -585,7 +589,8 @@ interrupts/irqdma/test4b
 interrupts/irqdma/test5
 interrupts/irqdma/test5b
 interrupts/irqdma/test6
-interrupts/irqdma/test6b
+interrupts/irqdma/test6b                             --cia old
+interrupts/irqdma/test6b                             --cia new
 interrupts/irqdma/test7
 interrupts/irqdma/test7b
 interrupts/irqdummy/irqdummy

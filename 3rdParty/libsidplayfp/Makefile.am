@@ -20,7 +20,7 @@ else
 endif
 
 if HAVE_VISIBILITY
-  AM_CXXFLAGS = -fvisibility=hidden -fvisibility-inlines-hidden
+  VISIBILITY_CXXFLAGS = -fvisibility=hidden -fvisibility-inlines-hidden
 endif
 
 AM_CPPFLAGS = -I $(top_builddir)/src/builders/residfp-builder \
@@ -35,6 +35,8 @@ $(EXSID_CFLAGS) \
 $(PTHREAD_CFLAGS) \
 $(FTDI_CFLAGS) \
 @debug_flags@
+
+AM_CXXFLAGS = $(VISIBILITY_CXXFLAGS) $(OPENMP_CXXFLAGS)
 
 #=========================================================
 EXTRA_DIST = \
@@ -111,7 +113,6 @@ src/poweron.bin \
 src/reloc65.cpp \
 src/reloc65.h \
 src/sidcxx11.h \
-src/sidcxx14.h \
 src/sidmd5.h \
 src/sidmemory.h \
 src/SidInfoImpl.h \
