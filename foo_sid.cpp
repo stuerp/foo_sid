@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2023.01.29) **/
+/** $VER: foo_sid.cpp (2023.07.06) **/
 
 #pragma warning(disable: 26434 26481 26482 26485 26493)
 
@@ -87,17 +87,17 @@ enum
     default_cfg_stereo_separation = 50
 };
 
-static cfg_int cfg_infinite(guid_cfg_infinite, default_cfg_infinite);
-static cfg_int cfg_deflength(guid_cfg_deflength, default_cfg_deflength);
-static cfg_int cfg_fade(guid_cfg_fade, default_cfg_fade);
-static cfg_int cfg_SampleRate(guid_cfg_rate, default_cfg_rate);
+static cfg_int CfgLoopForever(guid_cfg_infinite, default_cfg_infinite);
+static cfg_int CfgDefaultLength(guid_cfg_deflength, default_cfg_deflength);
+static cfg_int CfgFade(guid_cfg_fade, default_cfg_fade);
+static cfg_int CfgSampleRate(guid_cfg_rate, default_cfg_rate);
 static cfg_int cfg_clock_override(guid_cfg_clock_override, default_cfg_clock_override);
 static cfg_int cfg_sid_override(guid_cfg_sid_override, default_cfg_sid_override);
 static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581, default_cfg_sid_filter_6581);
 static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580, default_cfg_sid_filter_8580);
 static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
 static cfg_int cfg_sid_builder(guid_cfg_sid_builder, default_cfg_sid_builder);
-static cfg_int cfg_StereoSeparation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
+static cfg_int CfgStereoSeparation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
 //static cfg_int cfg_bps("sid_bps",16);
 
 #pragma region("InitQuit")
@@ -255,6 +255,9 @@ static void SanitizeDatabasePathName(const char * in, bool fromConfig, pfc::stri
     }
 }
 
+/// <summary>
+/// Loads the database.
+/// </summary>
 static void LoadDatabase()
 {
     pfc::string8 FilePath;
@@ -264,9 +267,24 @@ static void LoadDatabase()
     if (FilePath.length() == 0)
         return;
 
+    const DWORD Attributes = ::GetFileAttributesA(FilePath);
+
+    if (Attributes == INVALID_FILE_ATTRIBUTES)
+    {
+        console::print("Database file \"", FilePath, "\" not found.");
+
+        return;
+    }
+
     _IsDatabaseLoaded = _Database.open(pfc::stringcvt::string_wide_from_utf8(FilePath));
+
+    if (!_IsDatabaseLoaded)
+        console::print("Failed to load HSVC database: ", _Database.error());
 }
 
+/// <summary>
+/// Unloads the database.
+/// </summary>
 static void UnloadDatabase()
 {
     _Database.close();
@@ -278,8 +296,8 @@ static void UnloadDatabase()
 
 #pragma region("Input")
 
-static const char * extListEmpty[] = { NULL };
-static const char * extListStr[] = { ".str", NULL };
+static const char * _NoExtensions[] = { nullptr };
+static const char * _Extensions[] = { ".str", nullptr };
 
 static critical_section g_residfp_lock;
 
@@ -287,12 +305,15 @@ class InputHandler : public input_stubs
 {
 public:
     InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _Length(0), _SamplesPlayed(0), _Fade(0), _IsFirstBlock(false), _IsEOF(false) { }
+
     InputHandler(const InputHandler&) = delete;
     InputHandler(const InputHandler&&) = delete;
     InputHandler& operator=(const InputHandler&) = delete;
     InputHandler& operator=(InputHandler&&) = delete;
+
     virtual ~InputHandler() { };
 
+    #pragma region("input_impl")
     void open(service_ptr_t<file> file, const char * filePath, t_input_open_reason reason, abort_callback & abortHandler)
     {
         if (reason == input_open_info_write)
@@ -308,18 +329,45 @@ public:
         if ((_FileStats2.m_size == 0) || (_FileStats2.m_size > (t_filesize)1 << 30))
             throw exception_io_unsupported_format();
 
-        const char ** extList = (pfc::stricmp_ascii(pfc::string_extension(filePath), "mus") == 0) ? extListStr : extListEmpty;
+        const char ** Extensions = (pfc::stricmp_ascii(pfc::string_extension(filePath), "mus") == 0) ? _Extensions : _NoExtensions;
 
-        _Tune = std::make_unique<SidTuneMod>(file, std::string(filePath), extList);
+        _Tune = std::make_unique<SidTuneMod>(file, std::string(filePath), Extensions);
 
-        if (!_Tune->getStatus())
+        if (_Tune->getStatus() == 0)
             throw exception_io_unsupported_format();
 
-        _SampleRate = cfg_SampleRate;
+        _SampleRate = CfgSampleRate;
     //  _BPS = cfg_BPS;
-        _StereoSeparation = cfg_StereoSeparation;
+        _StereoSeparation = CfgStereoSeparation;
     }
 
+    static bool g_is_our_content_type(const char *) noexcept
+    {
+        return false;
+    }
+
+    static bool g_is_our_path(const char *, const char * p_extension) noexcept
+    {
+        return !_stricmp(p_extension, "sid") || !_stricmp(p_extension, "mus");
+    }
+
+    static GUID g_get_guid() noexcept
+    {
+        return { 0x7fff51a2, 0x5130, 0x4307, { 0x95, 0x22, 0x16, 0xf9, 0x74, 0xd, 0x61, 0xde } };
+    }
+
+    static const char * g_get_name() noexcept
+    {
+        return STR_COMPONENT_NAME;
+    }
+
+    static GUID g_get_preferences_guid() noexcept
+    {
+        return { 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
+    }
+    #pragma endregion
+
+    #pragma region("input_info_reader")
     unsigned get_subsong_count()
     {
         return _Tune->getInfo()->songs();
@@ -330,68 +378,22 @@ public:
         return subSongIndex;
     }
 
-    size_t extended_param(const GUID& type, size_t arg1, void *, size_t)
-    {
-        if (type == input_params::set_preferred_sample_rate)
-        {
-            _SampleRate = (int) arg1;
-            return 1;
-        }
-        else
-        if (type == input_params::seeking_expensive)
-            return 1;
-        else
-            return 0;
-    }
-
-    void get_info(t_uint32 subSongIndex, file_info& fileInfo, abort_callback&)
+    /// <summary>
+    /// Retrieves information about specified subsong.
+    /// </summary>
+    void get_info(t_uint32 subSongIndex, file_info & fileInfo, abort_callback &)
     {
         const SidTuneInfo * TuneInfo = _Tune->getInfo();
 
         if (TuneInfo == nullptr)
             return;
 
-    //  fileInfo.info_set_int("samplerate", _SampleRate);
-        fileInfo.info_set("encoding", "synthesized");
+        // General tags
         fileInfo.info_set_int("channels", 2);
-        fileInfo.info_set_int("sid_chip_count", TuneInfo->sidChips());
+        fileInfo.info_set("encoding", "synthesized");
 
         {
-            const unsigned int InfoStringCount = TuneInfo->numberOfInfoStrings();
-
-            if (InfoStringCount >= 1 && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
-                fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
-
-            if (InfoStringCount >= 2 && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
-                fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(1)));
-
-            if (InfoStringCount >= 3 && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
-                fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(2)));
-
-            for (unsigned int j = 3; j < InfoStringCount; ++j)
-            {
-                if (TuneInfo->infoString(j) && TuneInfo->infoString(j)[0])
-                    fileInfo.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(j)));
-            }
-        }
-
-        {
-            const unsigned int CommentCount = TuneInfo->numberOfCommentStrings();
-
-            for (unsigned int CommentIndex = 0; CommentIndex < CommentCount; ++CommentIndex)
-            {
-                if (TuneInfo->commentString(CommentIndex) && TuneInfo->commentString(CommentIndex)[0] && strcmp(TuneInfo->commentString(CommentIndex), "--- SAVED WITH SIDPLAY ---"))
-                    fileInfo.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->commentString(CommentIndex)));
-            }
-        }
-
-        if (TuneInfo->clockSpeed() && (TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC || TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_PAL))
-            fileInfo.info_set("clock_speed", TuneInfo->clockSpeed() == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
-
-        fileInfo.info_set("sid_model", TuneInfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
-
-        {
-            unsigned int Length = (unsigned int) cfg_deflength;
+            unsigned int Length = (unsigned int) CfgDefaultLength;
 
             {
                 insync(_DatabaseLock);
@@ -409,23 +411,106 @@ public:
                 const int LengthFromDatabase = _Database.lengthMs(md5, subSongIndex + 1);
 
                 if (LengthFromDatabase > 0)
-                    Length = (unsigned int)LengthFromDatabase;
+                    Length = (unsigned int) LengthFromDatabase;
             }
 
             fileInfo.set_length(double(Length) / 1000.0);
         }
+
+        // Specific tags
+        {
+            fileInfo.info_set_int("sid_chip_count", TuneInfo->sidChips());
+
+            const clock_t ClockSpeed = TuneInfo->clockSpeed();
+
+            if (ClockSpeed == SidTuneInfo::CLOCK_NTSC || ClockSpeed == SidTuneInfo::CLOCK_PAL)
+                fileInfo.info_set("clock_speed", ClockSpeed == SidTuneInfo::CLOCK_NTSC ? "NTSC" : "PAL");
+
+            fileInfo.info_set("sid_model", TuneInfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
+        }
+
+        {
+            const unsigned int InfoCount = TuneInfo->numberOfInfoStrings();
+
+            if ((InfoCount >= 1) && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
+                fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
+
+            if ((InfoCount >= 2) && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
+                fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(1)));
+
+            if ((InfoCount >= 3) && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
+                fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(2)));
+
+            for (unsigned int i = 3; i < InfoCount; ++i)
+            {
+                const char * Info = TuneInfo->infoString(i);
+
+                if ((Info != nullptr) && (Info[0] != '\0'))
+                    fileInfo.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(Info));
+            }
+
+            const unsigned int CommentCount = TuneInfo->numberOfCommentStrings();
+
+            for (unsigned int i = 0; i < CommentCount; ++i)
+            {
+                const char * Comment = TuneInfo->commentString(i);
+
+                if ((Comment != nullptr) && (Comment[0] != '\0') && (::strcmp(Comment, "--- SAVED WITH SIDPLAY ---") != 0))
+                    fileInfo.meta_add("comment", pfc::stringcvt::string_utf8_from_ansi(Comment));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Provides means for communication of context specific data with the decoder. The decoder should do nothing and return 0 if it does not recognize the passed arguments.
+    /// </summary>
+    size_t extended_param(const GUID & type, size_t arg1, void *, size_t)
+    {
+        if (type == input_params::set_preferred_sample_rate)
+        {
+            _SampleRate = (int) arg1;
+
+            return 1;
+        }
+
+        if (type == input_params::seeking_expensive)
+            return 1;
+
+
+        return 0;
+    }
+    #pragma endregion
+
+    #pragma region("input_info_reader_v2")
+    t_filestats2 get_stats2(uint32_t, abort_callback &) noexcept
+    {
+        return _FileStats2;
     }
 
     t_filestats get_file_stats(abort_callback &) noexcept
     {
         return _FileStats;
     }
+    #pragma endregion
 
-    t_filestats2 get_stats2(uint32_t, abort_callback &) noexcept
+    #pragma region("input_info_writer")
+    void retag_set_info(t_uint32, const file_info &, abort_callback &)
     {
-        return _FileStats2;
+        throw exception_tagging_unsupported();
     }
 
+    void retag_commit(abort_callback&)
+    {
+        throw exception_tagging_unsupported();
+    }
+
+    void remove_tags(abort_callback&)
+    {
+        throw exception_tagging_unsupported();
+    }
+    #pragma endregion
+
+    #pragma region("input_decoder")
     void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback &)
     {
         _IsFirstBlock = true;
@@ -435,7 +520,7 @@ public:
 //      const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
         {
-            _Length = (unsigned int) cfg_deflength;
+            _Length = (unsigned int) CfgDefaultLength;
 
             {
                 insync(_DatabaseLock);
@@ -539,10 +624,10 @@ public:
 
         _IsEOF = false;
 
-        if (!cfg_infinite || (flags & input_flag_no_looping))
+        if (!CfgLoopForever || (flags & input_flag_no_looping))
         {
             _Length = (unsigned int)((__int64) _Length * _SampleRate / 1000) * 2;
-            _Fade = (unsigned int)(cfg_fade * _SampleRate / 1000) * 2;
+            _Fade = (unsigned int)(CfgFade * _SampleRate / 1000) * 2;
         }
         else
         {
@@ -556,12 +641,12 @@ public:
     {
         abortHandler.check();
 
-        if (_IsEOF || (_Length && _SamplesPlayed >= _Length))
+        if (_IsEOF || ((_Length != 0) && (_SamplesPlayed >= _Length)))
             return false;
 
         int SampleCount = _Length - _SamplesPlayed;
 
-        if (!_Length || (SampleCount > MaxSamples * 2))
+        if ((_Length == 0) || (SampleCount > MaxSamples * 2))
             SampleCount = MaxSamples * 2;
 
         audioChunk.grow_data_size(SampleCount);
@@ -716,46 +801,7 @@ public:
 
         return true;
     }
-
-    void retag_set_info(t_uint32, const file_info &, abort_callback &)
-    {
-        throw exception_tagging_unsupported();
-    }
-
-    void retag_commit(abort_callback&)
-    {
-        throw exception_tagging_unsupported();
-    }
-
-    void remove_tags(abort_callback&)
-    {
-        throw exception_tagging_unsupported();
-    }
-
-    static bool g_is_our_content_type(const char *) noexcept
-    {
-        return false;
-    }
-
-    static bool g_is_our_path(const char *, const char * p_extension) noexcept
-    {
-        return !_stricmp(p_extension, "sid") || !_stricmp(p_extension, "mus");
-    }
-
-    static GUID g_get_guid() noexcept
-    {
-        return { 0x7fff51a2, 0x5130, 0x4307, { 0x95, 0x22, 0x16, 0xf9, 0x74, 0xd, 0x61, 0xde } };
-    }
-
-    static const char * g_get_name() noexcept
-    {
-        return STR_COMPONENT_NAME;
-    }
-
-    static GUID g_get_preferences_guid() noexcept
-    {
-        return { 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
-    }
+    #pragma endregion
 
 private:
     int _SampleRate, _BPS, _StereoSeparation;
@@ -910,7 +956,7 @@ void CMyPreferences::apply()
 
         cfg_history_rate.add_item(temp);
 
-        cfg_SampleRate = SampleRate;
+        CfgSampleRate = SampleRate;
     }
 
     {
@@ -952,28 +998,28 @@ void CMyPreferences::apply()
         }
 
         if (Timestamp)
-            cfg_deflength = Timestamp;
+            CfgDefaultLength = Timestamp;
         else
-            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
+            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLength / 1000.0));
     }
 
-    cfg_fade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
-    cfg_infinite = (t_int32)SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
+    CfgFade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
+    CfgLoopForever = (t_int32)SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
     cfg_clock_override = (t_int32)SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
     cfg_sid_override = (t_int32)SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
     cfg_sid_builder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
     cfg_sid_filter_6581 = _Slider6581.GetPos();
     cfg_sid_filter_8580 = _Slider8580.GetPos();
-    cfg_StereoSeparation = _SliderSsep.GetPos();
+    CfgStereoSeparation = _SliderSsep.GetPos();
 
     OnChanged();
 }
 
 BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 {
-    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, cfg_infinite);
+    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, CfgLoopForever);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) cfg_deflength / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLength / 1000.0));
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath);
 
     UpdateDatabaseStatusText();
@@ -984,20 +1030,20 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         {
             char temp[16];
 
-            SetDlgItemInt(IDC_FADE, cfg_fade, FALSE);
+            SetDlgItemInt(IDC_FADE, CfgFade, FALSE);
 
             ::uSendMessage(GetDlgItem(IDC_FADE), EM_LIMITTEXT, 3, 0);
 
             for (int n = _countof(_SampleRates); n--;)
             {
-                if (_SampleRates[n] != (unsigned int)cfg_SampleRate)
+                if (_SampleRates[n] != (unsigned int)CfgSampleRate)
                 {
                     _itoa_s(_SampleRates[n], temp, _countof(temp), 10);
                     cfg_history_rate.add_item(temp);
                 }
             }
 
-            _itoa_s(cfg_SampleRate, temp, _countof(temp), 10);
+            _itoa_s(CfgSampleRate, temp, _countof(temp), 10);
 
             cfg_history_rate.add_item(temp);
 
@@ -1057,9 +1103,9 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
     _SliderSsep.SetRangeMin(0);
     _SliderSsep.SetRangeMax(150);
-    _SliderSsep.SetPos(cfg_StereoSeparation);
+    _SliderSsep.SetPos(CfgStereoSeparation);
 
-    temp = pfc::format_int(cfg_StereoSeparation);
+    temp = pfc::format_int(CfgStereoSeparation);
     temp += "%";
 
     ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
@@ -1152,13 +1198,13 @@ bool CMyPreferences::HasChanged()
 {
     bool IsChanged = false;
 
-    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != (UINT)cfg_SampleRate)
+    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != (UINT) CfgSampleRate)
         IsChanged = true;
 
-    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != (UINT)cfg_fade)
+    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != (UINT) CfgFade)
         IsChanged = true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != cfg_infinite)
+    if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != CfgLoopForever)
         IsChanged = true;
 
     if (!IsChanged && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != cfg_clock_override)
@@ -1176,7 +1222,7 @@ bool CMyPreferences::HasChanged()
     if (!IsChanged && _Slider8580.GetPos() != cfg_sid_filter_8580)
         IsChanged = true;
 
-    if (!IsChanged && _SliderSsep.GetPos() != cfg_StereoSeparation)
+    if (!IsChanged && _SliderSsep.GetPos() != CfgStereoSeparation)
         IsChanged = true;
 
     if (!IsChanged)
@@ -1210,7 +1256,7 @@ bool CMyPreferences::HasChanged()
         {
         }
 
-        IsChanged = (Timestamp && Timestamp != cfg_deflength);
+        IsChanged = (Timestamp && Timestamp != CfgDefaultLength);
     }
 
     return IsChanged;
