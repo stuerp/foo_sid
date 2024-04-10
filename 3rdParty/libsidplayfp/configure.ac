@@ -1,8 +1,9 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [5])
+m4_define([lib_minor], [7])
 m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
+AC_PREREQ([2.62])
 AC_INIT([libsidplayfp],[lib_version],[],[],[https://github.com/libsidplayfp/libsidplayfp/])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4 src/builders/exsid-builder/driver/m4])
@@ -37,12 +38,12 @@ dnl Use C++ for tests.
 AC_LANG([C++])
 
 AX_CXX_COMPILE_STDCXX_17([noext], [optional])
-AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"],
+AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
     AX_CXX_COMPILE_STDCXX_14([noext], [optional])
     AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
         AX_CXX_COMPILE_STDCXX_11([noext], [optional])
     )
-)
+])
 
 dnl check for hidden visibility support
 AX_CHECK_COMPILE_FLAG([-fvisibility=hidden -fvisibility-inlines-hidden], [has_visibility=yes], [has_visibility=no])
@@ -80,6 +81,14 @@ AC_CHECK_DECL(
     [AC_CHECK_FUNCS([strncasecmp])]
 )
 
+AC_CHECK_PROGS([XA], [xa])
+
+# od on macOS doesn't support the -w parameter
+AC_CACHE_CHECK([for od that supports -w], [ac_cv_path_OD],
+  [AC_PATH_PROGS_FEATURE_CHECK([OD], [od god],
+    [[$ac_path_OD -w > /dev/null 2>&1 && ac_cv_path_OD=$ac_path_OD ac_path_OD_found=:]])]
+)
+AC_SUBST([OD], [$ac_cv_path_OD])
 
 dnl libtool-style version-info number
 #
@@ -91,9 +100,9 @@ dnl libtool-style version-info number
 #
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
-LIBSIDPLAYCUR=9
-LIBSIDPLAYREV=27
-LIBSIDPLAYAGE=3
+LIBSIDPLAYCUR=10
+LIBSIDPLAYREV=30
+LIBSIDPLAYAGE=4
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
@@ -243,14 +252,17 @@ AC_ARG_ENABLE([tests],
   [AS_HELP_STRING([--enable-tests],
     [enable unit tests [default=no]]
   )],
-  [[echo Enabling unit tests]
-    PKG_CHECK_MODULES(UNITTEST, [UnitTest++])
-    [am_unittest=true]
-  ],
-  [am_unittest=false]
+  [],
+  [enable_tests=no]
 )
 
-AM_CONDITIONAL([ENABLE_TEST], [test x$am_unittest = xtrue])
+AS_IF([test "x$enable_tests" != "xno"],
+  [[echo Enabling unit tests]
+    PKG_CHECK_MODULES(UNITTEST, [UnitTest++])
+  ]
+)
+
+AM_CONDITIONAL([ENABLE_TEST], [test x$enable_tests = xyes])
 
 
 AC_ARG_WITH([gcrypt], AS_HELP_STRING([--with-gcrypt], [Build with the gcrypt library]))

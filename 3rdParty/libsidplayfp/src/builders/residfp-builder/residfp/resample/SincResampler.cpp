@@ -41,6 +41,9 @@
 #elif defined(HAVE_ARM_NEON_H)
 #  include <arm_neon.h>
 #endif
+#ifdef HAVE_CXX11
+#  include <mutex>
+#endif
 
 namespace reSIDfp
 {
@@ -49,11 +52,14 @@ typedef std::map<std::string, matrix_t> fir_cache_t;
 
 /// Cache for the expensive FIR table computation results.
 fir_cache_t FIR_CACHE;
+#ifdef HAVE_CXX11
+std::mutex FIR_CACHE_Lock;
+#endif
 
 /// Maximum error acceptable in I0 is 1e-6, or ~96 dB.
-const double I0E = 1e-6;
+constexpr double I0E = 1e-6;
 
-const int BITS = 16;
+constexpr int BITS = 16;
 
 /**
  * Compute the 0th order modified Bessel function of the first kind.
@@ -119,7 +125,7 @@ int convolve(const short* a, const short* b, int bLength)
         for (int i = 0; i < n; i++)
         {
             const __m128i tmp = _mm_madd_epi16(*(__m128i*)a, *(__m128i*)b);
-            acc = _mm_add_epi16(acc, tmp);
+            acc = _mm_add_epi32(acc, tmp);
             a += 8;
             b += 8;
         }
@@ -208,9 +214,9 @@ int convolve(const short* a, const short* b, int bLength)
     bLength &= 3;
 #else
     int32x4_t acc = vdupq_n_s32(0);
-    
+
     const int n = bLength / 4;
-    
+
     for (int i = 0; i < n; i++)
     {
         const int16x4_t h_vec = vld1_s16(a);
@@ -219,12 +225,12 @@ int convolve(const short* a, const short* b, int bLength)
         a += 4;
         b += 4;
     }
-    
+
     int out = vgetq_lane_s32(acc, 0) +
               vgetq_lane_s32(acc, 1) +
               vgetq_lane_s32(acc, 2) +
               vgetq_lane_s32(acc, 3);
-    
+
     bLength &= 3;
 #endif
 #else
@@ -313,6 +319,11 @@ SincResampler::SincResampler(double clockFrequency, double samplingFrequency, do
     std::ostringstream o;
     o << firN << "," << firRES << "," << cyclesPerSampleD;
     const std::string firKey = o.str();
+
+#ifdef HAVE_CXX11
+    std::lock_guard<std::mutex> lock(FIR_CACHE_Lock);
+#endif
+
     fir_cache_t::iterator lb = FIR_CACHE.lower_bound(firKey);
 
     // The FIR computation is expensive and we set sampling parameters often, but

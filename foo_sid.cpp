@@ -65,7 +65,7 @@ static const GUID guid_cfg_sid_builder = { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0
 static const GUID guid_cfg_stereo_separation = { 0x278879d, 0x7c46, 0x41a4, { 0x9f, 0x42, 0x27, 0x86, 0xd3, 0x2b, 0x5b, 0xbe } };
 #pragma endregion
 
-constexpr int MaxSamples = 10240;
+constexpr int MaxSIDSamples = 10240;
 
 enum
 {
@@ -88,7 +88,7 @@ enum
 };
 
 static cfg_int CfgLoopForever(guid_cfg_infinite, default_cfg_infinite);
-static cfg_int CfgDefaultLength(guid_cfg_deflength, default_cfg_deflength);
+static cfg_int CfgDefaultLengthInMS(guid_cfg_deflength, default_cfg_deflength);
 static cfg_int CfgFade(guid_cfg_fade, default_cfg_fade);
 static cfg_int CfgSampleRate(guid_cfg_rate, default_cfg_rate);
 static cfg_int cfg_clock_override(guid_cfg_clock_override, default_cfg_clock_override);
@@ -304,7 +304,7 @@ static critical_section g_residfp_lock;
 class InputHandler : public input_stubs
 {
 public:
-    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _Length(0), _SamplesPlayed(0), _Fade(0), _IsFirstBlock(false), _IsEOF(false) { }
+    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _TotalSIDSamples(0), _TotalSIDSamplesRendered(0), _NumSIDSamplesToFade(0), _IsFirstBlock(false), _IsEOF(false) { }
 
     InputHandler(const InputHandler&) = delete;
     InputHandler(const InputHandler&&) = delete;
@@ -388,12 +388,8 @@ public:
         if (TuneInfo == nullptr)
             return;
 
-        // General tags
-        fileInfo.info_set_int("channels", 2);
-        fileInfo.info_set("encoding", "synthesized");
-
         {
-            unsigned int Length = (unsigned int) CfgDefaultLength;
+            unsigned int Length = (unsigned int) CfgDefaultLengthInMS;
 
             {
                 insync(_DatabaseLock);
@@ -417,6 +413,10 @@ public:
             fileInfo.set_length(double(Length) / 1000.0);
         }
 
+        // General tags
+        fileInfo.info_set_int("channels", 2);
+        fileInfo.info_set("encoding", "synthesized");
+
         // Specific tags
         {
             fileInfo.info_set_int("sid_chip_count", TuneInfo->sidChips());
@@ -429,6 +429,7 @@ public:
             fileInfo.info_set("sid_model", TuneInfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
         }
 
+        // Metadata tags
         {
             const unsigned int InfoCount = TuneInfo->numberOfInfoStrings();
 
@@ -482,12 +483,12 @@ public:
     #pragma endregion
 
     #pragma region("input_info_reader_v2")
-    t_filestats2 get_stats2(uint32_t, abort_callback &) noexcept
+    t_filestats2 get_stats2(uint32_t, abort_callback &) const noexcept
     {
         return _FileStats2;
     }
 
-    t_filestats get_file_stats(abort_callback &) noexcept
+    t_filestats get_file_stats(abort_callback &) const noexcept
     {
         return _FileStats;
     }
@@ -519,9 +520,9 @@ public:
 
 //      const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
-        {
-            _Length = (unsigned int) CfgDefaultLength;
+        uint32_t LengthInMS = (unsigned int) CfgDefaultLengthInMS;
 
+        {
             {
                 insync(_DatabaseLock);
 
@@ -534,7 +535,7 @@ public:
                 const int LengthFromDatabase = _Database.lengthMs(*_Tune);
 
                 if (LengthFromDatabase > 0)
-                    _Length = (unsigned int)LengthFromDatabase;
+                    LengthInMS = (uint32_t) LengthFromDatabase;
             }
         }
 
@@ -567,7 +568,7 @@ public:
                     }
 
                     if (!NewBuilder->getStatus())
-                        throw exception_io_data();
+                        throw exception_io_data(NewBuilder->error());
 
                     _Builder = std::move(NewBuilder);
                 }
@@ -586,7 +587,7 @@ public:
                         NewBuilder->filter(true);
 
                     if (!NewBuilder->getStatus())
-                        throw exception_io_data();
+                        throw exception_io_data(NewBuilder->error());
 
                     _Builder = std::move(NewBuilder);
                 }
@@ -620,67 +621,63 @@ public:
                 throw exception_io_data(_Engine->error());
         }
 
-        _SamplesPlayed = 0;
-
         _IsEOF = false;
 
         if (!CfgLoopForever || (flags & input_flag_no_looping))
         {
-            _Length = (unsigned int)((__int64) _Length * _SampleRate / 1000) * 2;
-            _Fade = (unsigned int)(CfgFade * _SampleRate / 1000) * 2;
+            _TotalSIDSamples     = (uint32_t)((__int64) LengthInMS * _SampleRate / 1000) * 2;
+            _NumSIDSamplesToFade = (uint32_t)(          CfgFade    * _SampleRate / 1000) * 2;
         }
         else
         {
-            _Length = 0;
+            _TotalSIDSamples = 0;
+            _NumSIDSamplesToFade = 0;
         }
 
-        _SampleBuffer.set_count((t_size)MaxSamples * 2);
+        _TotalSIDSamplesRendered = 0;
+
+        _SampleBuffer.set_count((t_size)MaxSIDSamples * 2);
     }
 
     bool decode_run(audio_chunk & audioChunk, abort_callback & abortHandler)
     {
         abortHandler.check();
 
-        if (_IsEOF || ((_Length != 0) && (_SamplesPlayed >= _Length)))
+        if (_IsEOF || ((_TotalSIDSamples != 0) && (_TotalSIDSamplesRendered >= _TotalSIDSamples)))
             return false;
 
-        int SampleCount = _Length - _SamplesPlayed;
+        int NumSIDSamplesToRender = _TotalSIDSamples - _TotalSIDSamplesRendered;
 
-        if ((_Length == 0) || (SampleCount > MaxSamples * 2))
-            SampleCount = MaxSamples * 2;
+        if ((_TotalSIDSamples == 0) || (NumSIDSamplesToRender > MaxSIDSamples * 2))
+            NumSIDSamplesToRender = MaxSIDSamples * 2;
 
-        audioChunk.grow_data_size(SampleCount);
+        // Render an audio chunk.
+        audioChunk.grow_data_size(NumSIDSamplesToRender);
         audioChunk.set_srate(_SampleRate);
         audioChunk.set_channels(2);
 
         audio_sample * Samples = audioChunk.get_data();
 
-        if (Samples == nullptr)
-            return false;
+        const int NumSamplesRendered = _Engine->play(_SampleBuffer.get_ptr(), NumSIDSamplesToRender);
 
-        // Render an audio chunk.
-        const int SamplesWritten = _Engine->play(_SampleBuffer.get_ptr(), SampleCount);
-
-        // Convert the samples from 16-bit signed integer to audio_sample format.
+        if (NumSamplesRendered < NumSIDSamplesToRender)
         {
-            audio_math::convert_from_int16(_SampleBuffer.get_ptr(), SamplesWritten, Samples, (audio_sample)1.0);
+            if (_Engine->error())
+                throw exception_io_data(_Engine->error());
 
-            if (SamplesWritten < SampleCount)
-            {
-                if (_Engine->error())
-                    throw exception_io_data(_Engine->error());
-
-                _IsEOF = true;
-            }
+            _IsEOF = true;
         }
 
-        audio_sample ScaleFactor = (audio_sample) _StereoSeparation * (audio_sample)0.005; /* percent, pre-scaled by half */
+        // Convert the samples from 16-bit signed integer to audio_sample format.
+        audio_math::convert_from_int16(_SampleBuffer.get_ptr(), NumSamplesRendered, Samples, (audio_sample) 1.0);
 
         // Convert to mid-side. Scale side difference according to user setting.
         {
+            const audio_sample ScaleFactor = (audio_sample) _StereoSeparation * (audio_sample) 0.005; // percent, pre-scaled by half
+
             audio_sample * p = Samples;
 
-            for (int i = 0; i < SamplesWritten; i += 2)
+            for (int i = 0; i < NumSamplesRendered; i += 2)
             {
                 const audio_sample mid  = (p[0] + p[1]) * (audio_sample)0.5;
                 const audio_sample side = (p[0] - p[1]) * ScaleFactor;
@@ -690,39 +687,37 @@ public:
             }
         }
 
-        audioChunk.set_sample_count(SamplesWritten / 2);
-
         {
-            const unsigned int Head = _SamplesPlayed;
-            const unsigned int Tail = SamplesWritten;
+            const unsigned int Head = _TotalSIDSamplesRendered;
+            const unsigned int Tail = NumSamplesRendered;
 
-            if ((_Length != 0) && (Tail + _Fade > _Length))
+            if ((_TotalSIDSamples != 0) && (Tail + _NumSIDSamplesToFade > _TotalSIDSamples))
             {
+                const audio_sample ScaleFactor = (audio_sample) 1.0 / _NumSIDSamplesToFade;
+
                 audio_sample * p = Samples;
 
-                ScaleFactor = (audio_sample)1.0 / _Fade;
-
+                for (uint32_t i = Head; i < Tail; i += 2)
                 {
-                    for (unsigned int Index = Head; Index < Tail; Index += 2)
+                    if (i > _TotalSIDSamples)
                     {
-                        if (Index > _Length)
-                        {
-                            *p++ = (audio_sample)0.0;
-                            *p++ = (audio_sample)0.0;
-                        }
-                        else
-                        {
-                            const audio_sample bleh = (audio_sample)(_Length - Index) * ScaleFactor;
+                        *p++ = (audio_sample)0.0;
+                        *p++ = (audio_sample)0.0;
+                    }
+                    else
+                    {
+                        const audio_sample bleh = (audio_sample)(_TotalSIDSamples - i) * ScaleFactor;
 
-                            *p++ *= bleh;
-                            *p++ *= bleh;
-                        }
+                        *p++ *= bleh;
+                        *p++ *= bleh;
                     }
                 }
             }
         }
 
-        _SamplesPlayed += SamplesWritten;
+        audioChunk.set_sample_count(NumSamplesRendered / 2);
+
+        _TotalSIDSamplesRendered += NumSamplesRendered;
 
         return true;
     }
@@ -735,14 +730,14 @@ public:
 
         samples *= 2;
 
-        if (samples < _SamplesPlayed)
+        if (samples < _TotalSIDSamplesRendered)
         {
-            decode_initialize(_Tune->getInfo()->currentSong(), input_flag_playback | (_Length ? input_flag_no_looping : 0), p_abort);
+            decode_initialize(_Tune->getInfo()->currentSong(), input_flag_playback | (_TotalSIDSamples ? input_flag_no_looping : 0), p_abort);
         }
 
         pfc::array_t<t_int16> sample_buffer;
 
-        sample_buffer.grow_size((t_size)MaxSamples * 2);
+        sample_buffer.grow_size((t_size)MaxSIDSamples * 2);
         _IsEOF = false;
 /*
         unsigned remain = ( samples - played ) % 32;
@@ -750,14 +745,14 @@ public:
         samples /= 32;
         m_engine->fastForward( 100 * 32 );
 */
-        while (_SamplesPlayed < samples)
+        while (_TotalSIDSamplesRendered < samples)
         {
             p_abort.check();
 
-            unsigned todo = samples - _SamplesPlayed;
+            unsigned todo = samples - _TotalSIDSamplesRendered;
 
-            if (todo > MaxSamples * 2)
-                todo = MaxSamples * 2;
+            if (todo > MaxSIDSamples * 2)
+                todo = MaxSIDSamples * 2;
 
             unsigned done;
             {
@@ -773,7 +768,7 @@ public:
                 break;
             }
 
-            _SamplesPlayed += todo;
+            _TotalSIDSamplesRendered += todo;
         }
 /*
         played *= 32;
@@ -806,9 +801,9 @@ public:
 private:
     int _SampleRate, _BPS, _StereoSeparation;
 
-    unsigned int _Length;
-    unsigned int _SamplesPlayed;
-    unsigned int _Fade;
+    uint32_t _TotalSIDSamples;
+    uint32_t _TotalSIDSamplesRendered;
+    uint32_t _NumSIDSamplesToFade;
 
     bool _IsFirstBlock;
     bool _IsEOF;
@@ -998,9 +993,9 @@ void CMyPreferences::apply()
         }
 
         if (Timestamp)
-            CfgDefaultLength = Timestamp;
+            CfgDefaultLengthInMS = Timestamp;
         else
-            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLength / 1000.0));
+            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1000.0));
     }
 
     CfgFade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
@@ -1019,7 +1014,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 {
     SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, CfgLoopForever);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLength / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1000.0));
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath);
 
     UpdateDatabaseStatusText();
@@ -1256,7 +1251,7 @@ bool CMyPreferences::HasChanged()
         {
         }
 
-        IsChanged = (Timestamp && Timestamp != CfgDefaultLength);
+        IsChanged = (Timestamp && Timestamp != CfgDefaultLengthInMS);
     }
 
     return IsChanged;

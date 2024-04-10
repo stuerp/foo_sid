@@ -25,7 +25,12 @@
 #include "Integrator8580.h"
 #include "OpAmp.h"
 
+#include "sidcxx11.h"
 
+#ifdef HAVE_CXX11
+#  include <mutex>
+#endif
+ 
 namespace reSIDfp
 {
 
@@ -110,8 +115,16 @@ const Spline::Point opamp_voltage[OPAMP_SIZE] =
 
 std::unique_ptr<FilterModelConfig8580> FilterModelConfig8580::instance(nullptr);
 
+#ifdef HAVE_CXX11
+std::mutex Instance8580_Lock;
+#endif
+
 FilterModelConfig8580* FilterModelConfig8580::getInstance()
 {
+#ifdef HAVE_CXX11
+    std::lock_guard<std::mutex> lock(Instance8580_Lock);
+#endif
+
     if (!instance.get())
     {
         instance.reset(new FilterModelConfig8580());
@@ -122,7 +135,7 @@ FilterModelConfig8580* FilterModelConfig8580::getInstance()
 
 FilterModelConfig8580::FilterModelConfig8580() :
     FilterModelConfig(
-        0.30,   // voice voltage range FIXME measure
+        0.24,   // voice voltage range FIXME measure
         4.84,   // voice DC voltage FIXME measure
         22e-9,  // capacitor value
         9.09,   // Vdd
@@ -156,27 +169,7 @@ FilterModelConfig8580::FilterModelConfig8580() :
                 vmin,
                 vmax);
 #endif
-            // The filter summer operates at n ~ 1, and has 5 fundamentally different
-            // input configurations (2 - 6 input "resistors").
-            //
-            // Note that all "on" transistors are modeled as one. This is not
-            // entirely accurate, since the input for each transistor is different,
-            // and transistors are not linear components. However modeling all
-            // transistors separately would be extremely costly.
-            for (int i = 0; i < 5; i++)
-            {
-                const int idiv = 2 + i;        // 2 - 6 input "resistors".
-                const int size = idiv << 16;
-                const double n = idiv;
-                opampModel.reset();
-                summer[i] = new unsigned short[size];
-
-                for (int vi = 0; vi < size; vi++)
-                {
-                    const double vin = vmin + vi / N16 / idiv; /* vmin .. vmax */
-                    summer[i][vi] = getNormalizedValue(opampModel.solve(n, vin));
-                }
-            }
+            buildSummerTable(opampModel);
         }
 
         #pragma omp section
@@ -190,25 +183,7 @@ FilterModelConfig8580::FilterModelConfig8580() :
                 vmin,
                 vmax);
 #endif
-            // The audio mixer operates at n ~ 8/5, and has 8 fundamentally different
-            // input configurations (0 - 7 input "resistors").
-            //
-            // All "on", transistors are modeled as one - see comments above for
-            // the filter summer.
-            for (int i = 0; i < 8; i++)
-            {
-                const int idiv = (i == 0) ? 1 : i;
-                const int size = (i == 0) ? 1 : i << 16;
-                const double n = i * 8.0 / 5.0;
-                opampModel.reset();
-                mixer[i] = new unsigned short[size];
-
-                for (int vi = 0; vi < size; vi++)
-                {
-                    const double vin = vmin + vi / N16 / idiv; /* vmin .. vmax */
-                    mixer[i][vi] = getNormalizedValue(opampModel.solve(n, vin));
-                }
-            }
+            buildMixerTable(opampModel, 8.0 / 5.0);
         }
 
         #pragma omp section
@@ -222,24 +197,7 @@ FilterModelConfig8580::FilterModelConfig8580() :
                 vmin,
                 vmax);
 #endif
-            // 4 bit "resistor" ladders in the audio output gain
-            // necessitate 16 gain tables.
-            // From die photographs of the volume "resistor" ladders
-            // it follows that gain ~ vol/16 (assuming ideal
-            // op-amps and ideal "resistors").
-            for (int n8 = 0; n8 < 16; n8++)
-            {
-                const int size = 1 << 16;
-                const double n = n8 / 16.0;
-                opampModel.reset();
-                gain_vol[n8] = new unsigned short[size];
-
-                for (int vi = 0; vi < size; vi++)
-                {
-                    const double vin = vmin + vi / N16; /* vmin .. vmax */
-                    gain_vol[n8][vi] = getNormalizedValue(opampModel.solve(n, vin));
-                }
-            }
+            buildVolumeTable(opampModel, 16.0);
         }
 
         #pragma omp section
@@ -253,30 +211,14 @@ FilterModelConfig8580::FilterModelConfig8580() :
                 vmin,
                 vmax);
 #endif
-            // 4 bit "resistor" ladders in the bandpass resonance gain
-            // necessitate 16 gain tables.
-            // From die photographs of the bandpass "resistor" ladders
-            // it follows that 1/Q ~ 2^((4 - res)/8) (assuming ideal
-            // op-amps and ideal "resistors").
-            for (int n8 = 0; n8 < 16; n8++)
-            {
-                const int size = 1 << 16;
-                opampModel.reset();
-                gain_res[n8] = new unsigned short[size];
-
-                for (int vi = 0; vi < size; vi++)
-                {
-                    const double vin = vmin + vi / N16; /* vmin .. vmax */
-                    gain_res[n8][vi] = getNormalizedValue(opampModel.solve(resGain[n8], vin));
-                }
-            }
+            buildResonanceTable(opampModel, resGain);
         }
     }
 }
 
-std::unique_ptr<Integrator8580> FilterModelConfig8580::buildIntegrator()
+Integrator* FilterModelConfig8580::buildIntegrator()
 {
-    return MAKE_UNIQUE(Integrator8580, this);
+    return new Integrator8580(this);
 }
 
 } // namespace reSIDfp

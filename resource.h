@@ -1,45 +1,53 @@
 
-/** $VER: Resource.h (2023.05.01) **/
+/** $VER: Resource.h (2024.04.10) **/
 
 #pragma once
 
 #define TOSTRING_IMPL(x) #x
 #define TOSTRING(x) TOSTRING_IMPL(x)
 
-/** Component specific **/
-
-#define STR_COMPONENT_NAME      "SID Player"
-#define STR_COMPONENT_VERSION   TOSTRING(NUM_FILE_MAJOR) "." TOSTRING(NUM_FILE_MINOR) "." TOSTRING(NUM_FILE_PATCH) "." TOSTRING(NUM_FILE_PRERELEASE)
-#define STR_COMPONENT_BASENAME  "foo_sid"
-#define STR_COMPONENT_FILENAME  STR_COMPONENT_BASENAME ".dll"
-
-/** Generic **/
-
-#define STR_COMPANY_NAME        TEXT("LoSno.co")
-#define STR_INTERNAL_NAME       TEXT(STR_COMPONENT_BASENAME)
-#define STR_COMMENTS            TEXT("Written by Christopher Snowhill, Peter Stuer")
-#define STR_COPYRIGHT           TEXT("Copyright (c) 2003-2023 ") STR_COMPANY_NAME TEXT(". All rights reserved.")
-
 #define NUM_FILE_MAJOR          1
-#define NUM_FILE_MINOR          93
+#define NUM_FILE_MINOR          95
 #define NUM_FILE_PATCH          0
 #define NUM_FILE_PRERELEASE     0
 
-#define STR_FILE_NAME           TEXT(STR_COMPONENT_FILENAME)
-#define STR_FILE_VERSION        TOSTRING(NUM_FILE_MAJOR) TEXT(".") TOSTRING(NUM_FILE_MINOR) TEXT(".") TOSTRING(NUM_FILE_PATCH) TEXT(".") TOSTRING(NUM_FILE_PRERELEASE)
-#define STR_FILE_DESCRIPTION    TEXT("Adds playback of SID files to foobar2000")
-
 #define NUM_PRODUCT_MAJOR       1
-#define NUM_PRODUCT_MINOR       93
+#define NUM_PRODUCT_MINOR       95
 #define NUM_PRODUCT_PATCH       0
 #define NUM_PRODUCT_PRERELEASE  0
 
-#define STR_PRODUCT_NAME        STR_INTERNAL_NAME
-#define STR_PRODUCT_VERSION     TOSTRING(NUM_PRODUCT_MAJOR) TEXT(".") TOSTRING(NUM_PRODUCT_MINOR) TEXT(".") TOSTRING(NUM_PRODUCT_PATCH) TEXT(".") TOSTRING(NUM_PRODUCT_PRERELEASE)
+/** Component specific **/
 
-#define STR_ABOUT_NAME          STR_INTERNAL_NAME
-#define STR_ABOUT_WEB           TEXT("")
-#define STR_ABOUT_EMAIL         TEXT("")
+#define STR_COMPONENT_NAME          "SID Player"
+#define STR_COMPONENT_VERSION       TOSTRING(NUM_FILE_MAJOR) "." TOSTRING(NUM_FILE_MINOR) "." TOSTRING(NUM_FILE_PATCH) "." TOSTRING(NUM_FILE_PRERELEASE)
+#define STR_COMPONENT_BASENAME      "foo_sid"
+#define STR_COMPONENT_FILENAME      STR_COMPONENT_BASENAME ".dll"
+#define STR_COMPONENT_COMPANY_NAME  "LoSno.co"
+
+#define STR_COMPONENT_COPYRIGHT     "Copyright (c) 2003-2023 ") STR_COMPONENT_COMPANY_NAME ". All rights reserved."
+#define STR_COMPONENT_COMMENTS      "Written by Christopher Snowhill, Peter Stuer"
+
+#define STR_COMPONENT_DESCRIPTION   "Adds playback of SID files to foobar2000"
+#define STR_COMPONENT_COMMENT       ""
+
+/** Generic **/
+
+#define STR_COMPANY_NAME            TEXT(STR_COMPONENT_COMPANY_NAME)
+#define STR_INTERNAL_NAME           TEXT(STR_COMPONENT_NAME)
+#define STR_COMMENTS                TEXT(STR_COMPONENT_COMMENTS)
+
+#define STR_COPYRIGHT               TEXT(STR_COMPONENT_COPYRIGHT)
+
+#define STR_FILE_NAME               TEXT(STR_COMPONENT_FILENAME)
+#define STR_FILE_VERSION            TOSTRING(NUM_FILE_MAJOR) TEXT(".") TOSTRING(NUM_FILE_MINOR) TEXT(".") TOSTRING(NUM_FILE_PATCH) TEXT(".") TOSTRING(NUM_FILE_PRERELEASE)
+#define STR_FILE_DESCRIPTION        TEXT(STR_COMPONENT_DESCRIPTION)
+
+#define STR_PRODUCT_NAME            STR_INTERNAL_NAME
+#define STR_PRODUCT_VERSION         TOSTRING(NUM_PRODUCT_MAJOR) TEXT(".") TOSTRING(NUM_PRODUCT_MINOR) TEXT(".") TOSTRING(NUM_PRODUCT_PATCH) TEXT(".") TOSTRING(NUM_PRODUCT_PRERELEASE)
+
+#define STR_ABOUT_NAME              STR_INTERNAL_NAME
+#define STR_ABOUT_WEB               TEXT("")
+#define STR_ABOUT_EMAIL             TEXT("")
 
 #define IDD_CONFIG                      101
 #define IDC_SAMPLERATE                  1000

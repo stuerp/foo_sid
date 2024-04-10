@@ -228,7 +228,7 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <AdditionalOptions>/d2notypeopt</AdditionalOptions>
-      <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDLL;NDEBUG;HAVE_CXX11;RESID_INLINING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>

@@ -1,5 +1,5 @@
 
-/** $VER: sid.rc (2023.05.01) **/
+/** $VER: sid.rc (2024.04.10) **/
 
 #include "Resource.h"
 
@@ -24,8 +24,7 @@ font 8, "Segoe UI", 400, 0, 1
     CONTROL         "",IDC_SLIDER_SSEP,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,67,29,51,10
     RTEXT           "%",IDC_TEXT_SSEP,120,29,37,8
     GROUPBOX        "Length",IDC_STATIC,5,49,244,93
-    CONTROL         "Force all songs to play indefinitely",IDC_INFINITE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,59,121,10
+    CONTROL         "Force all songs to play indefinitely", IDC_INFINITE, "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,59,124,10
     RTEXT           "Default length is:",IDC_STATIC,9,87,58,8
     EDITTEXT        IDC_DLENGTH,71,85,47,12,ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
     LTEXT           "m:s.ms",IDC_STATIC,120,87,24,8

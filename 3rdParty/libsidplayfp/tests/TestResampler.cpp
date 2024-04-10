@@ -1,7 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- *  Copyright 2014-2022 Leandro Nini
+ *  Copyright (C) 2024 Leandro Nini
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,40 +18,28 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SIDCXX_H
-#define SIDCXX_H
+#include "UnitTest++/UnitTest++.h"
+#include "UnitTest++/TestReporter.h"
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define private public
 
+#include "../src/builders/residfp-builder/residfp/resample/Resampler.h"
 
-#ifdef HAVE_CXX17
-#  define HAVE_CXX14
-#  define MAYBE_UNUSED [[ maybe_unused ]]
-#else
-#  define MAYBE_UNUSED
-#endif
+#include <limits>
 
-#ifdef HAVE_CXX14
-#  define HAVE_CXX11
-#  define MAKE_UNIQUE(type, ...) std::make_unique<type>(__VA_ARGS__)
-#else
-#  define MAKE_UNIQUE(type, ...) std::unique_ptr<type>(new type(__VA_ARGS__))
-#endif
+using namespace UnitTest;
+using namespace reSIDfp;
 
-#ifndef HAVE_CXX11
-#  define nullptr    0
-#  define override
-#  define final
-#  define constexpr const
-#  define unique_ptr auto_ptr
-#  define DEFAULT {}
-#  define DELETE {}
-#else
-#  define DEFAULT = default
-#  define DELETE  = delete
-#endif
+SUITE(Resampler)
+{
 
+TEST(TestSoftClip)
+{
+    CHECK(Resampler::softClipImpl(0) == 0);
+    CHECK(Resampler::softClipImpl(28000) == 28000);
+    CHECK(Resampler::softClipImpl(std::numeric_limits<int>::max()) <= 32767);
+    CHECK(Resampler::softClipImpl(-28000) == -28000);
+    CHECK(Resampler::softClipImpl(std::numeric_limits<int>::min()+1) >= -32768);
+}
 
-#endif
+}

@@ -1,3 +1,27 @@
+2.7.0 2024-03-29
+* residfp: refactor residfp filter (#109)
+* residfp: added ability to adjust the uCox parameter at runtime (#101)
+* residfp: allow setting the combined waveforms strength (#110)
+* resid/residfp: emulate oscillator leakage (#102)
+
+
+
+2.6.0 2024-01-01
+* residfp is now thread-safe (#71)
+* residfp: fixed SSE2 version of convolve (#105)
+* residfp: updated combined waveforms model (#97)
+* residfp: amplify the output by a model dependent scale factor (#78, #79)
+* a couple of autotools fixes (#103, #104, #108)
+
+
+
+2.5.1 2023-12-23
+* Check for {g,}od at configure time (#87)
+* residfp: fix a 6581 filter bug where values could actually go negative
+* Sync resid with upstream
+
+
+
 2.5.0 2023-06-02
 * residfp: reworked the combined waveforms model by separating pulldown effect from waveform generation
 * residfp: tweaked the 8580 filter parameters for increased volume and less distortion (#45)

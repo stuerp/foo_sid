@@ -26,9 +26,10 @@
 
 #include <limits>
 
+#include "sidcxx11.h"
+
 #include "array.h"
 #include "Dac.h"
-#include "Integrator6581.h"
 #include "Filter6581.h"
 #include "Filter8580.h"
 #include "Potentiometer.h"
@@ -39,8 +40,8 @@
 namespace reSIDfp
 {
 
-const unsigned int ENV_DAC_BITS = 8;
-const unsigned int OSC_DAC_BITS = 12;
+constexpr unsigned int ENV_DAC_BITS = 8;
+constexpr unsigned int OSC_DAC_BITS = 12;
 
 /**
  * The waveform D/A converter introduces a DC offset in the signal
@@ -107,8 +108,8 @@ const unsigned int OSC_DAC_BITS = 12;
  * On my 6581R4AR has 0x3A as the only value giving the same output level as 1.prg
  */
 //@{
-unsigned int constexpr OFFSET_6581 = 0x380;
-unsigned int constexpr OFFSET_8580 = 0x9c0;
+constexpr unsigned int OFFSET_6581 = 0x380;
+constexpr unsigned int OFFSET_8580 = 0x9c0;
 //@}
 
 /**
@@ -129,8 +130,8 @@ unsigned int constexpr OFFSET_8580 = 0x9c0;
  * [2]: http://noname.c64.org/csdb/forums/?roomid=11&topicid=29025&showallposts=1
  */
 //@{
-int constexpr BUS_TTL_6581 = 0x01d00;
-int constexpr BUS_TTL_8580 = 0xa2000;
+constexpr int BUS_TTL_6581 = 0x01d00;
+constexpr int BUS_TTL_8580 = 0xa2000;
 //@}
 
 SID::SID() :
@@ -139,7 +140,8 @@ SID::SID() :
     externalFilter(new ExternalFilter()),
     resampler(nullptr),
     potX(new Potentiometer()),
-    potY(new Potentiometer())
+    potY(new Potentiometer()),
+    cws(AVERAGE)
 {
     voice[0].reset(new Voice());
     voice[1].reset(new Voice());
@@ -153,12 +155,21 @@ SID::SID() :
 
 SID::~SID()
 {
-    // Needed to delete auto_ptr with complete type
+    delete filter6581;
+    delete filter8580;
+    delete externalFilter;
+    delete potX;
+    delete potY;
 }
 
 void SID::setFilter6581Curve(double filterCurve)
 {
     filter6581->setFilterCurve(filterCurve);
+}
+
+void SID::setFilter6581Range(double adjustment)
+{
+    filter6581->setFilterRange(adjustment);
 }
 
 void SID::setFilter8580Curve(double filterCurve)
@@ -211,12 +222,14 @@ void SID::setChipModel(ChipModel model)
     switch (model)
     {
     case MOS6581:
-        filter = filter6581.get();
+        filter = filter6581;
+        scaleFactor = 3;
         modelTTL = BUS_TTL_6581;
         break;
 
     case MOS8580:
-        filter = filter8580.get();
+        filter = filter8580;
+        scaleFactor = 5;
         modelTTL = BUS_TTL_8580;
         break;
 
@@ -228,7 +241,7 @@ void SID::setChipModel(ChipModel model)
 
     // calculate waveform-related tables
     matrix_t* wavetables = WaveformCalculator::getInstance()->getWaveTable();
-    matrix_t* pulldowntables = WaveformCalculator::getInstance()->buildPulldownTable(model);
+    matrix_t* pulldowntables = WaveformCalculator::getInstance()->buildPulldownTable(model, cws);
 
     // calculate envelope DAC table
     {
@@ -264,6 +277,30 @@ void SID::setChipModel(ChipModel model)
         voice[i]->setWavDAC(oscDAC);
         voice[i]->wave()->setModel(is6581);
         voice[i]->wave()->setWaveformModels(wavetables);
+        voice[i]->wave()->setPulldownModels(pulldowntables);
+    }
+}
+
+void SID::setCombinedWaveforms(CombinedWaveforms cws)
+{
+    switch (cws)
+    {
+    case AVERAGE:
+    case WEAK:
+    case STRONG:
+        break;
+
+    default:
+        throw SIDError("Unknown combined waveforms type");
+    }
+
+    this->cws = cws;
+
+    // rebuild waveform-related tables
+    matrix_t* pulldowntables = WaveformCalculator::getInstance()->buildPulldownTable(model, cws);
+
+    for (int i = 0; i < 3; i++)
+    {
         voice[i]->wave()->setPulldownModels(pulldowntables);
     }
 }
