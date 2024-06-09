@@ -151,11 +151,11 @@ static bool _IsDatabaseLoaded = false;
 /// <summary>
 /// Replaces parts of the database path with pseudo variables.
 /// </summary>
-static void SanitizeDatabasePathName(const char * in, bool fromConfig, pfc::string_base & out)
+static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::string_base & dst)
 {
-    out.reset();
+    dst.reset();
 
-    if (in == nullptr || (in && *in == '\0'))
+    if (src == nullptr || (src && *src == '\0'))
         return;
 
     pfc::string8 ModulePathName;
@@ -177,80 +177,80 @@ static void SanitizeDatabasePathName(const char * in, bool fromConfig, pfc::stri
 
     if (fromConfig)
     {
-        while (*in)
+        while (*src)
         {
-            t_size Index = pfc::string_find_first(in, '<');
+            t_size Index = pfc::string_find_first(src, '<');
 
-            out.add_string(in, Index);
+            dst.add_string(src, Index);
 
             if (Index != pfc::infinite_size)
             {
-                if (!pfc::strcmp_partial(in + Index, "<player path>"))
-                    out += ModulePathName;
+                if (!pfc::strcmp_partial(src + Index, "<player path>"))
+                    dst += ModulePathName;
                 else
-                if (!pfc::strcmp_partial(in + Index, "<profile path>"))
-                    out += ProfilePathName;
+                if (!pfc::strcmp_partial(src + Index, "<profile path>"))
+                    dst += ProfilePathName;
                 else
-                if (!pfc::strcmp_partial(in + Index, "<component path>"))
-                    out += ComponentPathName;
+                if (!pfc::strcmp_partial(src + Index, "<component path>"))
+                    dst += ComponentPathName;
 
-                Index = pfc::string_find_first(in, '>', Index);
+                Index = pfc::string_find_first(src, '>', Index);
 
                 if (Index != pfc::infinite_size)
                     ++Index;
             }
 
             if (Index == pfc::infinite_size)
-                Index = ::strlen(in);
+                Index = ::strlen(src);
 
-            in += Index;
+            src += Index;
         }
     }
     else
     {
-        while (*in)
+        while (*src)
         {
-            const size_t ModulePathNameIndex = pfc::string_find_first(in, ModulePathName);
+            const size_t ModulePathNameIndex = pfc::string_find_first(src, ModulePathName);
 
             t_size Index = ModulePathNameIndex;
 
-            const size_t ComponentPathNameIndex = pfc::string_find_first(in, ComponentPathName);
+            const size_t ComponentPathNameIndex = pfc::string_find_first(src, ComponentPathName);
 
             if (ComponentPathNameIndex < Index)
                 Index = ComponentPathNameIndex;
 
-            const size_t ProfilePathNameIndex = pfc::string_find_first(in, ProfilePathName);
+            const size_t ProfilePathNameIndex = pfc::string_find_first(src, ProfilePathName);
 
             if (ProfilePathNameIndex < Index)
                 Index = ProfilePathNameIndex;
 
-            out.add_string(in, Index);
+            dst.add_string(src, Index);
 
             if (Index != pfc::infinite_size)
             {
                 if (Index == ComponentPathNameIndex)
                 {
-                    out += "<component path>";
-                    in += Index + ComponentPathName.length();
+                    dst += "<component path>";
+                    src += Index + ComponentPathName.length();
                 }
                 else
                 if (Index == ProfilePathNameIndex)
                 {
-                    out += "<profile path>";
-                    in += Index + ProfilePathName.length();
+                    dst += "<profile path>";
+                    src += Index + ProfilePathName.length();
                 }
                 else
                 if (Index == ModulePathNameIndex)
                 {
-                    out += "<player path>";
-                    in += Index + ModulePathName.length();
+                    dst += "<player path>";
+                    src += Index + ModulePathName.length();
                 }
             }
 
             if (Index == pfc::infinite_size)
-                Index = ::strlen(in);
+                Index = ::strlen(src);
 
-            in += Index;
+            src += Index;
         }
     }
 }
@@ -267,7 +267,9 @@ static void LoadDatabase()
     if (FilePath.length() == 0)
         return;
 
-    const DWORD Attributes = ::GetFileAttributesA(FilePath);
+    auto FilePathW = pfc::stringcvt::string_wide_from_utf8(FilePath);
+
+    const DWORD Attributes = ::GetFileAttributesW(FilePathW);
 
     if (Attributes == INVALID_FILE_ATTRIBUTES)
     {
@@ -276,7 +278,7 @@ static void LoadDatabase()
         return;
     }
 
-    _IsDatabaseLoaded = _Database.open(pfc::stringcvt::string_wide_from_utf8(FilePath));
+    _IsDatabaseLoaded = _Database.open(FilePathW);
 
     if (!_IsDatabaseLoaded)
         console::print("Failed to load HSVC database: ", _Database.error());
@@ -955,13 +957,13 @@ void CMyPreferences::apply()
     }
 
     {
-        pfc::string8 out;
+        pfc::string8 Text;
 
-        ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, out);
+        ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
         pfc::string8 DatabaseFilePath;
 
-        SanitizeDatabasePathName(out, false, DatabaseFilePath);
+        SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
         _CfgDatabaseFilePath = DatabaseFilePath;
 
@@ -1161,13 +1163,13 @@ void CMyPreferences::OnHScroll(UINT, UINT, CScrollBar pScrollBar)
 
 void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
 {
-    pfc::string8 NewDatabaseFilePath;
+    pfc::string8 Text;
 
-    ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, NewDatabaseFilePath);
+    ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
     pfc::string8 DatabaseFilePath;
 
-    ::SanitizeDatabasePathName(NewDatabaseFilePath, true, DatabaseFilePath);
+    ::SanitizeDatabasePathName(Text, true, DatabaseFilePath);
 
     pfc::string8 DatabaseDirectoryPathName(DatabaseFilePath);
 
@@ -1175,9 +1177,9 @@ void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
 
     if (::uGetOpenFileName(core_api::get_main_window(), "Song length database|Songlengths.md5", 1, 0, "Choose SidPlay Song-Lengths Database...", DatabaseDirectoryPathName, DatabaseFilePath, false))
     {
-        ::SanitizeDatabasePathName(DatabaseFilePath, false, NewDatabaseFilePath);
+        ::SanitizeDatabasePathName(DatabaseFilePath, false, Text);
 
-        ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, NewDatabaseFilePath);
+        ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
         OnChanged();
     }

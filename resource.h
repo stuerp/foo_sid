@@ -1,5 +1,5 @@
 
-/** $VER: Resource.h (2024.04.10) **/
+/** $VER: Resource.h (2024.06.09) **/
 
 #pragma once
 
@@ -7,12 +7,12 @@
 #define TOSTRING(x) TOSTRING_IMPL(x)
 
 #define NUM_FILE_MAJOR          1
-#define NUM_FILE_MINOR          95
+#define NUM_FILE_MINOR          96
 #define NUM_FILE_PATCH          0
 #define NUM_FILE_PRERELEASE     0
 
 #define NUM_PRODUCT_MAJOR       1
-#define NUM_PRODUCT_MINOR       95
+#define NUM_PRODUCT_MINOR       96
 #define NUM_PRODUCT_PATCH       0
 #define NUM_PRODUCT_PRERELEASE  0
 
@@ -24,7 +24,7 @@
 #define STR_COMPONENT_FILENAME      STR_COMPONENT_BASENAME ".dll"
 #define STR_COMPONENT_COMPANY_NAME  "LoSno.co"
 
-#define STR_COMPONENT_COPYRIGHT     "Copyright (c) 2003-2023 ") STR_COMPONENT_COMPANY_NAME ". All rights reserved."
+#define STR_COMPONENT_COPYRIGHT     "Copyright (c) 2003-2024 ") STR_COMPONENT_COMPANY_NAME ". All rights reserved."
 #define STR_COMPONENT_COMMENTS      "Written by Christopher Snowhill, Peter Stuer"
 
 #define STR_COMPONENT_DESCRIPTION   "Adds playback of SID files to foobar2000"

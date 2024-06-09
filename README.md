@@ -66,11 +66,10 @@ To build the code:
 * [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
 * [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-09-23
 * [Windows Template Library (WTL)](https://github.com/Win32-WTL/WTL) 10.0.10320
-* [xa](http://www.floodgap.com/retrotech/xa/)
 
 The following library is included:
 
-* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) 2.5.0
+* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp)
 
 To create the deployment package:
 
@@ -105,6 +104,12 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
+v1.96.0.0, 2024-06-09
+
+* Upgraded libsidplayfp to 2.7.1.
+* Fixed: The song length database could not be loaded from paths containing non-ASCII characters.
+* Fixed: A couple of labels on the Preferences page were cut-off.
+
 v1.95.0.0, 2024-04-10
 
 * Upgraded libsidplayfp to 2.7.0.
@@ -127,7 +132,7 @@ v1.92.0.0, 2023-01-29, *"Stayin' Alive"*
 
 v1.91.0.2, 2022-12-04, *"Revenge of the SID"*
 
-* Bug fix: MUS and MUS+STR files play again.
+* Fixed: MUS and MUS+STR files play again.
 
 v1.91.0.1, 2022-12-03, *"Scratchin' the itch"*
 
