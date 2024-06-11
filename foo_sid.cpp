@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2023.07.06) **/
+/** $VER: foo_sid.cpp (2024.06.09) **/
 
 #pragma warning(disable: 26434 26481 26482 26485 26493)
 
@@ -1317,10 +1317,10 @@ DECLARE_COMPONENT_VERSION
     STR_COMPONENT_NAME,
     STR_COMPONENT_VERSION,
     STR_COMPONENT_BASENAME " " STR_COMPONENT_VERSION "\n"
-        "Copyright (c) 2003-2023 LoSno.co. All rights reserved.\n"
-        "Written by kode54, P. Stuer\n"
+        STR_COMPONENT_COPYRIGHT "\n"
+        STR_COMPONENT_COMMENTS "\n"
         "\n"
-        "Adds playback of SID files.\n"
+        STR_COMPONENT_DESCRIPTION "\n"
         "\n"
         "Built with foobar2000 SDK " TOSTRING(FOOBAR2000_SDK_VERSION) "\n"
         "on " __DATE__ " " __TIME__ ".\n"

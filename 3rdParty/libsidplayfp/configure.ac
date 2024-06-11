@@ -1,6 +1,6 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [7])
-m4_define([lib_level], [1])
+m4_define([lib_minor], [8])
+m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -41,7 +41,7 @@ AX_CXX_COMPILE_STDCXX_17([noext], [optional])
 AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
     AX_CXX_COMPILE_STDCXX_14([noext], [optional])
     AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
-        AX_CXX_COMPILE_STDCXX_11([noext], [optional])
+        [AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])]
     )
 ])
 
@@ -101,12 +101,12 @@ dnl libtool-style version-info number
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
 LIBSIDPLAYCUR=10
-LIBSIDPLAYREV=31
+LIBSIDPLAYREV=32
 LIBSIDPLAYAGE=4
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
-LIBSTILVIEWREV=4
+LIBSTILVIEWREV=5
 LIBSTILVIEWAGE=0
 LIBSTILVIEWVERSION=$LIBSTILVIEWCUR:$LIBSTILVIEWREV:$LIBSTILVIEWAGE
 
@@ -142,7 +142,7 @@ AS_IF([test x"$enable_inline" != "xno"],
 
 AC_ARG_WITH(
     [simd],
-    [AS_HELP_STRING([--with-simd], [Build with SIMD optimizations [@<:@sse2/mmx/neon/none, default=none@:>@]])],
+    [AS_HELP_STRING([--with-simd], [Build with SIMD optimizations [@<:@sse4/neon/none, default=none@:>@]])],
     [],
     [with_simd=none]
 )
@@ -157,8 +157,7 @@ AS_IF([test x"$with_simd" != xnone],
     CPPFLAGS="$CPPFLAGS $CXXFLAGS"
 
     AS_CASE([$with_simd],
-        [sse2], [AC_CHECK_HEADERS([emmintrin.h])],
-        [mmx],  [AC_CHECK_HEADERS([mmintrin.h])],
+        [sse4], [AC_CHECK_HEADERS([smmintrin.h])],
         [neon], [AC_CHECK_HEADERS([arm_neon.h])],
         [AC_MSG_ERROR([Unrecognized SIMD specified])]
     )
