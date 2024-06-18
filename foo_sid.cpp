@@ -31,6 +31,8 @@
 #include <sidplayfp/sidplayfp.h>
 
 #include <utils/SidDatabase.h>
+#include <utils/STILview/stil.h>
+#include <regex>
 
 #include "resource.h"
 
@@ -147,6 +149,11 @@ static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
 static SidDatabase _Database;
 static critical_section _DatabaseLock;
 static bool _IsDatabaseLoaded = false;
+
+static STIL _Stil;
+static pfc::string8 _StilBaseDir;
+static critical_section _StilLock;
+static bool _IsStilLoaded = false;
 
 /// <summary>
 /// Replaces parts of the database path with pseudo variables.
@@ -294,6 +301,100 @@ static void UnloadDatabase()
     _IsDatabaseLoaded = false;
 }
 
+static void LoadStil()
+{
+    pfc::string8 FilePath;
+    ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
+
+    pfc::string8 basePath(FilePath);
+
+    // get from path\hvsc\DOCUMENTS\Songlengths.md5 to path\hvsc
+    size_t pos = basePath.lastIndexOf('\\');
+    if (pos != std::string::npos && pos > 0) {
+        pos = basePath.lastIndexOf('\\', pos - 1);
+        if (pos != std::string::npos)
+            basePath = basePath.subString(0, pos);
+    }
+
+    if (basePath.length() == 0)
+        return;
+    _StilBaseDir = basePath;
+    _IsStilLoaded = _Stil.setBaseDir(_StilBaseDir.c_str());
+}
+
+static std::vector<std::string> StilSplitString(const char* s, std::string regexp)
+{
+    std::vector<std::string> list;
+    std::string str(s);
+
+    std::regex r(regexp);
+    std::sregex_iterator rt(str.begin(), str.end(), r), rend;
+    std::string final(s);
+
+    for (; rt != rend; ++rt)
+    {
+        std::string token(rt->prefix());
+        list.push_back(token);
+        final = rt->suffix();
+    }
+    list.push_back(final);
+    return list;
+}
+
+static std::vector<std::string> StilGetMatchGroups(const char* s, std::string regexp)
+{
+    std::vector<std::string> list;
+    std::string str(s);
+
+    std::regex re(regexp, std::regex_constants::icase);
+    std::sregex_iterator next(str.begin(), str.end(), re);
+    std::sregex_iterator end;
+    while (next != end) {
+        std::smatch match = *next;
+        for (size_t group = 1; group < match.size(); group++) {
+            // Process the group stored in match[group]
+            list.push_back(match[group]);
+        }
+        next++;
+    }
+    return list;
+}
+
+static std::string StilTrimEntry(const char* stilValuePtr)
+{
+    pfc::string stilValueStr;
+    if (stilValuePtr && stilValuePtr[0]) {
+
+        stilValueStr = stilValuePtr;
+        // skip '  TITLE: ' etc.
+        if (stilValueStr.length() > 9)
+            stilValueStr = stilValueStr.subString(9);
+
+        // erase final '\n'
+        if (stilValueStr.endsWith('\n'))
+            stilValueStr.truncate_last_char();
+
+        // erase any new lines and leading spaces
+        stilValueStr.replace_string("\n         ", " ");
+    }
+    return stilValueStr.c_str();
+}
+
+static std::string StilGetAbsEntry(const char* absPath, unsigned int subSongIndex, STIL::STILField field)
+{
+    return StilTrimEntry(_Stil.getAbsEntry(absPath, subSongIndex, field));
+}
+
+static std::string StilGetAbsGlobalComment(const char* absPath)
+{
+    return StilTrimEntry(_Stil.getAbsGlobalComment(absPath));
+}
+
+static void UnloadStil()
+{
+    _IsDatabaseLoaded = false;
+}
+
 #pragma endregion
 
 #pragma region("Input")
@@ -435,14 +536,146 @@ public:
         {
             const unsigned int InfoCount = TuneInfo->numberOfInfoStrings();
 
-            if ((InfoCount >= 1) && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
-                fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
+            //if ((InfoCount >= 1) && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
+            //    fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
 
-            if ((InfoCount >= 2) && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
-                fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(1)));
+            //if ((InfoCount >= 2) && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
+            //    fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(1)));
 
-            if ((InfoCount >= 3) && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
-                fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(2)));
+            //if ((InfoCount >= 3) && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
+            //    fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(2)));
+
+            // STIL data
+            {
+                int subSongNo = subSongIndex + 1;
+
+                // get values from TuneInfo
+                std::string sidTrackNo;
+                std::string sidTitle;
+                std::string sidArtist;
+                std::string sidCopyright;
+                std::string sidDate;
+
+                if (TuneInfo->songs() > 1)
+                    sidTrackNo += std::to_string(subSongNo);
+                if (InfoCount >= 1 && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
+                    sidTitle = TuneInfo->infoString(0);
+                if (InfoCount >= 2 && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
+                    sidArtist = TuneInfo->infoString(1);
+                if (InfoCount >= 3 && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
+                    sidCopyright = TuneInfo->infoString(2);
+
+                std::string tempSidDate = std::string(TuneInfo->infoString(2), 0, 4);
+                if (tempSidDate.length() == 4 && strtol(tempSidDate.c_str(), NULL, 10) > 0)
+                    sidDate = tempSidDate;
+
+                // get values from STIL
+                std::string stilName;
+                std::string stilTitle;
+                std::string stilArtist;
+                std::string stilGenre;
+                std::string stilSongComment;
+                std::string stilFileComment;
+                std::string stilGlobalComment;
+
+                {
+                    insync(_StilLock);
+
+                    if (!_IsStilLoaded)
+                        ::LoadStil();
+                }
+
+                if (_IsStilLoaded) {
+                    std::string absPath = std::string(TuneInfo->path());
+                    absPath.replace(absPath.find("file://"), std::string("file://").length(), "");
+                    std::string genre(absPath);
+                    absPath += std::string(TuneInfo->dataFileName());
+
+                    // create genre for file
+                    genre.replace(genre.find(_StilBaseDir), _StilBaseDir.length() + 1, "");
+                    size_t first_slash_idx = genre.find('\\');
+                    if (std::string::npos != first_slash_idx)
+                        stilGenre = genre.substr(0, first_slash_idx);
+                    if (stilGenre.compare("DEMOS") == 0)
+                        stilGenre = "Demos";
+                    if (stilGenre.compare("GAMES") == 0)
+                        stilGenre = "Games";
+                    if (stilGenre.compare("MUSICIANS") == 0)
+                        stilGenre = "Musicians";
+                    stilGenre = "C64 HVSC " + stilGenre;
+
+                    stilName = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::name);
+                    stilTitle = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::title);
+                    stilArtist = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::artist);
+                    stilSongComment = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::comment);
+                    stilFileComment = StilGetAbsEntry(absPath.c_str(), 0, STIL::comment);
+                    stilGlobalComment = StilGetAbsGlobalComment(absPath.c_str());
+                }
+
+                std::string fooTrackNo(sidTrackNo);
+                std::string fooTitle(sidTitle);
+                std::string fooAlbum(sidTitle);
+                std::string fooArtist(sidArtist);
+                std::string fooCopyright(sidCopyright);
+                std::string fooDate(sidDate);
+                std::string fooGenre(stilGenre);
+                std::string fooOrgTitle(stilTitle);
+                std::string fooOrgArtist(stilArtist);
+                std::string fooSongComment(stilSongComment);
+                std::string fooFileComment(stilFileComment);
+                std::string fooGlobalComment(stilGlobalComment);
+
+                if (stilName.length() > 0) {
+                    fooTitle = stilName;
+                }
+                else if (TuneInfo->songs() > 1) {
+                    fooTitle += " (song " + sidTrackNo + ")";
+                }
+
+                if (fooTrackNo.length() > 0)
+                    fileInfo.meta_add("tracknumber", pfc::stringcvt::string_utf8_from_ansi(fooTrackNo.c_str()));
+                if (fooTitle.length() > 0)
+                    fileInfo.meta_add("title", pfc::stringcvt::string_utf8_from_ansi(fooTitle.c_str()));
+                if (fooAlbum.length() > 0)
+                    fileInfo.meta_add("album", pfc::stringcvt::string_utf8_from_ansi(fooAlbum.c_str()));
+                if (fooCopyright.length() > 0)
+                    fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(fooCopyright.c_str()));
+                if (fooDate.length() > 0)
+                    fileInfo.meta_add("date", pfc::stringcvt::string_utf8_from_ansi(fooDate.c_str()));
+                if (fooGenre.length() > 0)
+                    fileInfo.meta_add("genre", pfc::stringcvt::string_utf8_from_ansi(fooGenre.c_str()));
+
+                // split artists in multiple artists tags
+                if (fooArtist.length() > 0) {
+                    std::vector<std::string> artistList = StilSplitString(fooArtist.c_str(), "( *& *)|( *, *)");
+                    std::vector<std::string> aliasList = StilGetMatchGroups(artistList[0].c_str(), "(.*?) *(?:<\\?>|\\(.*?\\))");
+
+                    // add all listed artists
+                    for (std::vector<std::string>::iterator artist = artistList.begin(); artist != artistList.end(); ++artist) {
+                        std::string tempSingleArtist((*artist).c_str());
+                        fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(tempSingleArtist.c_str()));
+                    }
+
+                    // add album artist
+                    std::string tempAlbumArtist(artistList[0]);
+                    if (!aliasList.empty())
+                        tempAlbumArtist = aliasList[0];
+                    fileInfo.meta_add("album artist", pfc::stringcvt::string_utf8_from_ansi(tempAlbumArtist.c_str()));
+
+                }
+
+                // NB: foobar Selection properties only show 1000 chars in main window
+                if (fooSongComment.length() > 0)
+                    fileInfo.meta_add("stil_song_comment", pfc::stringcvt::string_utf8_from_ansi(fooSongComment.c_str()));
+                if (fooFileComment.length() > 0)
+                    fileInfo.meta_add("stil_file_comment", pfc::stringcvt::string_utf8_from_ansi(fooFileComment.c_str()));
+                if (stilGlobalComment.length() > 0)
+                    fileInfo.meta_add("stil_global_comment", pfc::stringcvt::string_utf8_from_ansi(stilGlobalComment.c_str()));
+                if (fooOrgArtist.length() > 0)
+                    fileInfo.meta_add("stil_original_artist", pfc::stringcvt::string_utf8_from_ansi(fooOrgArtist.c_str()));
+                if (fooOrgTitle.length() > 0)
+                    fileInfo.meta_add("stil_original_title", pfc::stringcvt::string_utf8_from_ansi(fooOrgTitle.c_str()));
+            }
 
             for (unsigned int i = 3; i < InfoCount; ++i)
             {
