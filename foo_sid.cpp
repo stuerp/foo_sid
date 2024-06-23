@@ -1,7 +1,9 @@
 
-/** $VER: foo_sid.cpp (2024.06.09) **/
+/** $VER: foo_sid.cpp (2024.06.23) **/
 
-#pragma warning(disable: 26434 26481 26482 26485 26493)
+#include <CppCoreCheck/Warnings.h>
+
+#pragma warning(disable: 4100 4625 4626 4710 4711 4738 5045 ALL_CPPCORECHECK_WARNINGS)
 
 #include <memory>
 
@@ -100,9 +102,8 @@ static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580, default_cfg_sid_fil
 static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
 static cfg_int cfg_sid_builder(guid_cfg_sid_builder, default_cfg_sid_builder);
 static cfg_int CfgStereoSeparation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
-//static cfg_int cfg_bps("sid_bps",16);
 
-#pragma region("InitQuit")
+#pragma region InitQuit
 
 class InitQuitHandler : public initquit
 {
@@ -143,17 +144,12 @@ public:
 
 #pragma endregion
 
-#pragma region("HVSC")
+#pragma region HVSC
 
 static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
-static SidDatabase _Database;
-static critical_section _DatabaseLock;
-static bool _IsDatabaseLoaded = false;
-
-static STIL _Stil;
-static pfc::string8 _StilBaseDir;
-static critical_section _StilLock;
-static bool _IsStilLoaded = false;
+static SidDatabase _HVSC;
+static critical_section _HVSCLock;
+static bool _IsHVSCLoaded = false;
 
 /// <summary>
 /// Replaces parts of the database path with pseudo variables.
@@ -265,7 +261,7 @@ static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::str
 /// <summary>
 /// Loads the database.
 /// </summary>
-static void LoadDatabase()
+static void LoadHVSC()
 {
     pfc::string8 FilePath;
 
@@ -285,44 +281,58 @@ static void LoadDatabase()
         return;
     }
 
-    _IsDatabaseLoaded = _Database.open(FilePathW);
+    _IsHVSCLoaded = _HVSC.open(FilePathW);
 
-    if (!_IsDatabaseLoaded)
-        console::print("Failed to load HSVC database: ", _Database.error());
+    if (!_IsHVSCLoaded)
+        console::print("Failed to load HSVC database: ", _HVSC.error());
 }
 
 /// <summary>
 /// Unloads the database.
 /// </summary>
-static void UnloadDatabase()
+static void UnloadHVSC()
 {
-    _Database.close();
+    _HVSC.close();
 
-    _IsDatabaseLoaded = false;
+    _IsHVSCLoaded = false;
 }
+
+#pragma endregion
+
+#pragma region STIL
+
+static STIL _STIL;
+static pfc::string8 _StilBaseDir;
+static critical_section _STILLock;
+static bool _IsSTILLoaded = false;
 
 static void LoadStil()
 {
     pfc::string8 FilePath;
+
     ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
 
     pfc::string8 basePath(FilePath);
 
     // get from path\hvsc\DOCUMENTS\Songlengths.md5 to path\hvsc
     size_t pos = basePath.lastIndexOf('\\');
-    if (pos != std::string::npos && pos > 0) {
+
+    if (pos != std::string::npos && pos > 0)
+    {
         pos = basePath.lastIndexOf('\\', pos - 1);
+
         if (pos != std::string::npos)
             basePath = basePath.subString(0, pos);
     }
 
     if (basePath.length() == 0)
         return;
+
     _StilBaseDir = basePath;
-    _IsStilLoaded = _Stil.setBaseDir(_StilBaseDir.c_str());
+    _IsSTILLoaded = _STIL.setBaseDir(_StilBaseDir.c_str());
 }
 
-static std::vector<std::string> StilSplitString(const char* s, std::string regexp)
+static std::vector<std::string> StilSplitString(const char * s, std::string regexp)
 {
     std::vector<std::string> list;
     std::string str(s);
@@ -337,11 +347,13 @@ static std::vector<std::string> StilSplitString(const char* s, std::string regex
         list.push_back(token);
         final = rt->suffix();
     }
+
     list.push_back(final);
+
     return list;
 }
 
-static std::vector<std::string> StilGetMatchGroups(const char* s, std::string regexp)
+static std::vector<std::string> StilGetMatchGroups(const char * s, std::string regexp)
 {
     std::vector<std::string> list;
     std::string str(s);
@@ -349,9 +361,13 @@ static std::vector<std::string> StilGetMatchGroups(const char* s, std::string re
     std::regex re(regexp, std::regex_constants::icase);
     std::sregex_iterator next(str.begin(), str.end(), re);
     std::sregex_iterator end;
-    while (next != end) {
+
+    while (next != end)
+    {
         std::smatch match = *next;
-        for (size_t group = 1; group < match.size(); group++) {
+
+        for (size_t group = 1; group < match.size(); group++)
+        {
             // Process the group stored in match[group]
             list.push_back(match[group]);
         }
@@ -360,12 +376,15 @@ static std::vector<std::string> StilGetMatchGroups(const char* s, std::string re
     return list;
 }
 
-static std::string StilTrimEntry(const char* stilValuePtr)
+static std::string StilTrimEntry(const char * stilValuePtr)
 {
     pfc::string stilValueStr;
-    if (stilValuePtr && stilValuePtr[0]) {
+
+    if (stilValuePtr && stilValuePtr[0])
+    {
 
         stilValueStr = stilValuePtr;
+
         // skip '  TITLE: ' etc.
         if (stilValueStr.length() > 9)
             stilValueStr = stilValueStr.subString(9);
@@ -377,27 +396,28 @@ static std::string StilTrimEntry(const char* stilValuePtr)
         // erase any new lines and leading spaces
         stilValueStr.replace_string("\n         ", " ");
     }
+
     return stilValueStr.c_str();
 }
 
 static std::string StilGetAbsEntry(const char* absPath, unsigned int subSongIndex, STIL::STILField field)
 {
-    return StilTrimEntry(_Stil.getAbsEntry(absPath, subSongIndex, field));
+    return StilTrimEntry(_STIL.getAbsEntry(absPath, subSongIndex, field));
 }
 
 static std::string StilGetAbsGlobalComment(const char* absPath)
 {
-    return StilTrimEntry(_Stil.getAbsGlobalComment(absPath));
+    return StilTrimEntry(_STIL.getAbsGlobalComment(absPath));
 }
 
-static void UnloadStil()
+static void UnloadStil() noexcept
 {
-    _IsDatabaseLoaded = false;
+    _IsHVSCLoaded = false;
 }
 
 #pragma endregion
 
-#pragma region("Input")
+#pragma region Input
 
 static const char * _NoExtensions[] = { nullptr };
 static const char * _Extensions[] = { ".str", nullptr };
@@ -416,7 +436,8 @@ public:
 
     virtual ~InputHandler() { };
 
-    #pragma region("input_impl")
+    #pragma region input_impl
+
     void open(service_ptr_t<file> file, const char * filePath, t_input_open_reason reason, abort_callback & abortHandler)
     {
         if (reason == input_open_info_write)
@@ -468,9 +489,11 @@ public:
     {
         return { 0x206017ac, 0x421, 0x4d37, { 0x9b, 0x1f, 0x99, 0xb9, 0xea, 0xde, 0x74, 0x4e } };
     }
+
     #pragma endregion
 
-    #pragma region("input_info_reader")
+    #pragma region input_info_reader
+
     unsigned get_subsong_count()
     {
         return _Tune->getInfo()->songs();
@@ -495,19 +518,19 @@ public:
             unsigned int Length = (unsigned int) CfgDefaultLengthInMS;
 
             {
-                insync(_DatabaseLock);
+                insync(_HVSCLock);
 
-                if (!_IsDatabaseLoaded)
-                    ::LoadDatabase();
+                if (!_IsHVSCLoaded)
+                    ::LoadHVSC();
             }
 
-            if (_IsDatabaseLoaded)
+            if (_IsHVSCLoaded)
             {
                 char md5[SidTune::MD5_LENGTH + 1];
 
                 _Tune->createMD5New(md5);
 
-                const int LengthFromDatabase = _Database.lengthMs(md5, subSongIndex + 1);
+                const int LengthFromDatabase = _HVSC.lengthMs(md5, subSongIndex + 1);
 
                 if (LengthFromDatabase > 0)
                     Length = (unsigned int) LengthFromDatabase;
@@ -547,7 +570,7 @@ public:
 
             // STIL data
             {
-                int subSongNo = subSongIndex + 1;
+                const int subSongNo = subSongIndex + 1;
 
                 // get values from TuneInfo
                 std::string sidTrackNo;
@@ -558,14 +581,18 @@ public:
 
                 if (TuneInfo->songs() > 1)
                     sidTrackNo += std::to_string(subSongNo);
+
                 if (InfoCount >= 1 && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
                     sidTitle = TuneInfo->infoString(0);
+
                 if (InfoCount >= 2 && TuneInfo->infoString(1) && TuneInfo->infoString(1)[0])
                     sidArtist = TuneInfo->infoString(1);
+
                 if (InfoCount >= 3 && TuneInfo->infoString(2) && TuneInfo->infoString(2)[0])
                     sidCopyright = TuneInfo->infoString(2);
 
                 std::string tempSidDate = std::string(TuneInfo->infoString(2), 0, 4);
+
                 if (tempSidDate.length() == 4 && strtol(tempSidDate.c_str(), NULL, 10) > 0)
                     sidDate = tempSidDate;
 
@@ -579,29 +606,39 @@ public:
                 std::string stilGlobalComment;
 
                 {
-                    insync(_StilLock);
+                    insync(_STILLock);
 
-                    if (!_IsStilLoaded)
+                    if (!_IsSTILLoaded)
                         ::LoadStil();
                 }
 
-                if (_IsStilLoaded) {
+                if (_IsSTILLoaded)
+                {
                     std::string absPath = std::string(TuneInfo->path());
+
                     absPath.replace(absPath.find("file://"), std::string("file://").length(), "");
+
                     std::string genre(absPath);
+
                     absPath += std::string(TuneInfo->dataFileName());
 
                     // create genre for file
                     genre.replace(genre.find(_StilBaseDir), _StilBaseDir.length() + 1, "");
-                    size_t first_slash_idx = genre.find('\\');
+
+                    const size_t first_slash_idx = genre.find('\\');
+
                     if (std::string::npos != first_slash_idx)
                         stilGenre = genre.substr(0, first_slash_idx);
+
                     if (stilGenre.compare("DEMOS") == 0)
                         stilGenre = "Demos";
+
                     if (stilGenre.compare("GAMES") == 0)
                         stilGenre = "Games";
+
                     if (stilGenre.compare("MUSICIANS") == 0)
                         stilGenre = "Musicians";
+
                     stilGenre = "C64 HVSC " + stilGenre;
 
                     stilName = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::name);
@@ -625,54 +662,65 @@ public:
                 std::string fooFileComment(stilFileComment);
                 std::string fooGlobalComment(stilGlobalComment);
 
-                if (stilName.length() > 0) {
+                if (stilName.length() > 0)
                     fooTitle = stilName;
-                }
-                else if (TuneInfo->songs() > 1) {
+                else
+                if (TuneInfo->songs() > 1)
                     fooTitle += " (song " + sidTrackNo + ")";
-                }
 
                 if (fooTrackNo.length() > 0)
                     fileInfo.meta_add("tracknumber", pfc::stringcvt::string_utf8_from_ansi(fooTrackNo.c_str()));
+
                 if (fooTitle.length() > 0)
                     fileInfo.meta_add("title", pfc::stringcvt::string_utf8_from_ansi(fooTitle.c_str()));
+
                 if (fooAlbum.length() > 0)
                     fileInfo.meta_add("album", pfc::stringcvt::string_utf8_from_ansi(fooAlbum.c_str()));
+
                 if (fooCopyright.length() > 0)
                     fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(fooCopyright.c_str()));
+
                 if (fooDate.length() > 0)
                     fileInfo.meta_add("date", pfc::stringcvt::string_utf8_from_ansi(fooDate.c_str()));
+
                 if (fooGenre.length() > 0)
                     fileInfo.meta_add("genre", pfc::stringcvt::string_utf8_from_ansi(fooGenre.c_str()));
 
-                // split artists in multiple artists tags
-                if (fooArtist.length() > 0) {
+                // Split artists in multiple artists tags
+                if (fooArtist.length() > 0)
+                {
                     std::vector<std::string> artistList = StilSplitString(fooArtist.c_str(), "( *& *)|( *, *)");
                     std::vector<std::string> aliasList = StilGetMatchGroups(artistList[0].c_str(), "(.*?) *(?:<\\?>|\\(.*?\\))");
 
                     // add all listed artists
-                    for (std::vector<std::string>::iterator artist = artistList.begin(); artist != artistList.end(); ++artist) {
+                    for (std::vector<std::string>::iterator artist = artistList.begin(); artist != artistList.end(); ++artist)
+                    {
                         std::string tempSingleArtist((*artist).c_str());
                         fileInfo.meta_add("artist", pfc::stringcvt::string_utf8_from_ansi(tempSingleArtist.c_str()));
                     }
 
                     // add album artist
                     std::string tempAlbumArtist(artistList[0]);
+
                     if (!aliasList.empty())
                         tempAlbumArtist = aliasList[0];
-                    fileInfo.meta_add("album artist", pfc::stringcvt::string_utf8_from_ansi(tempAlbumArtist.c_str()));
 
+                    fileInfo.meta_add("album artist", pfc::stringcvt::string_utf8_from_ansi(tempAlbumArtist.c_str()));
                 }
 
                 // NB: foobar Selection properties only show 1000 chars in main window
                 if (fooSongComment.length() > 0)
                     fileInfo.meta_add("stil_song_comment", pfc::stringcvt::string_utf8_from_ansi(fooSongComment.c_str()));
+
                 if (fooFileComment.length() > 0)
                     fileInfo.meta_add("stil_file_comment", pfc::stringcvt::string_utf8_from_ansi(fooFileComment.c_str()));
+
                 if (stilGlobalComment.length() > 0)
                     fileInfo.meta_add("stil_global_comment", pfc::stringcvt::string_utf8_from_ansi(stilGlobalComment.c_str()));
+
                 if (fooOrgArtist.length() > 0)
                     fileInfo.meta_add("stil_original_artist", pfc::stringcvt::string_utf8_from_ansi(fooOrgArtist.c_str()));
+
                 if (fooOrgTitle.length() > 0)
                     fileInfo.meta_add("stil_original_title", pfc::stringcvt::string_utf8_from_ansi(fooOrgTitle.c_str()));
             }
@@ -715,9 +763,11 @@ public:
 
         return 0;
     }
+
     #pragma endregion
 
-    #pragma region("input_info_reader_v2")
+    #pragma region input_info_reader_v2
+
     t_filestats2 get_stats2(uint32_t, abort_callback &) const noexcept
     {
         return _FileStats2;
@@ -727,9 +777,11 @@ public:
     {
         return _FileStats;
     }
+
     #pragma endregion
 
-    #pragma region("input_info_writer")
+    #pragma region input_info_writer
+
     void retag_set_info(t_uint32, const file_info &, abort_callback &)
     {
         throw exception_tagging_unsupported();
@@ -744,9 +796,11 @@ public:
     {
         throw exception_tagging_unsupported();
     }
+
     #pragma endregion
 
-    #pragma region("input_decoder")
+    #pragma region input_decoder
+
     void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback &)
     {
         _IsFirstBlock = true;
@@ -759,15 +813,15 @@ public:
 
         {
             {
-                insync(_DatabaseLock);
+                insync(_HVSCLock);
 
-                if (!_IsDatabaseLoaded)
-                    LoadDatabase();
+                if (!_IsHVSCLoaded)
+                    ::LoadHVSC();
             }
 
-            if (_IsDatabaseLoaded)
+            if (_IsHVSCLoaded)
             {
-                const int LengthFromDatabase = _Database.lengthMs(*_Tune);
+                const int LengthFromDatabase = _HVSC.lengthMs(*_Tune);
 
                 if (LengthFromDatabase > 0)
                     LengthInMS = (uint32_t) LengthFromDatabase;
@@ -892,6 +946,9 @@ public:
         audioChunk.set_channels(2);
 
         audio_sample * Samples = audioChunk.get_data();
+
+        if (Samples == nullptr)
+            return false;
 
         const int NumSamplesRendered = _Engine->play(_SampleBuffer.get_ptr(), NumSIDSamplesToRender);
 
@@ -1031,6 +1088,7 @@ public:
 
         return true;
     }
+
     #pragma endregion
 
 private:
@@ -1055,7 +1113,7 @@ private:
 
 #pragma endregion
 
-#pragma region("Preferences")
+#pragma region Preferences
 
 const char * parseTime(const char * str, int_least32_t & result); // From "SidDatabase.cpp"
 
@@ -1201,10 +1259,17 @@ void CMyPreferences::apply()
         _CfgDatabaseFilePath = DatabaseFilePath;
 
         {
-            insync(_DatabaseLock);
+            insync(_HVSCLock);
 
-            UnloadDatabase();
-            LoadDatabase();
+            ::UnloadHVSC();
+            ::LoadHVSC();
+        }
+
+        {
+            insync(_STILLock);
+
+            ::UnloadStil();
+            ::LoadStil();
         }
 
         UpdateDatabaseStatusText();
@@ -1500,14 +1565,14 @@ void CMyPreferences::OnChanged()
 
 void CMyPreferences::UpdateDatabaseStatusText() const noexcept
 {
-    insync(_DatabaseLock);
+    insync(_HVSCLock);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DB_STATUS, _IsDatabaseLoaded ? "Database loaded.": "Database not loaded.");
+    ::uSetDlgItemText(m_hWnd, IDC_DB_STATUS, _IsHVSCLoaded ? "Database loaded.": "Database not loaded.");
 }
 
 #pragma endregion
 
-#pragma region("Preferences Page")
+#pragma region Preferences Page
 
 class PreferencePage : public preferences_page_impl<CMyPreferences>
 {
