@@ -27,7 +27,9 @@
 
 #include <foobar2000.h>
 
-#pragma warning(disable: 26415 26418 26434 26446 26481 26482 26485 26493)
+#include <CppCoreCheck/Warnings.h>
+
+#pragma warning(disable: 4100 4625 4626 4710 4711 4738 5045 ALL_CPPCORECHECK_WARNINGS)
 
 const char ERR_CANT_OPEN_FILE[] = "SIDTUNE ERROR: Could not open file for binary input";
 const char ERR_EMPTY[] = "SIDTUNE ERROR: No data to load";

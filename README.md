@@ -46,14 +46,23 @@ The following info tags are available:
 
 The following meta data tags are available:
 
-| Name      | Value |
-| --------- | ----- |
-| title     | In case the track only contains 1 song |
-| album     | In case the track contains multiple songs |
-| artist    ||
-| copyright ||
-| info      ||
-| comment   ||
+| Name                 | Value |
+| -------------------- | ----- |
+| tracknumber          ||
+| title                | In case the track only contains 1 song |
+| album                | In case the track contains multiple songs |
+| album artist         ||
+| artist               ||
+| date                 ||
+| genre                ||
+| copyright            ||
+| info                 ||
+| comment              ||
+| stil_song_comment    ||
+| stil_file_comment    ||
+| stil_global_comment  ||
+| stil_original_artist ||
+| stil_original_title  ||
 
 ## Developing
 
@@ -65,7 +74,6 @@ To build the code:
 
 * [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
 * [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-09-23
-* [Windows Template Library (WTL)](https://github.com/Win32-WTL/WTL) 10.0.10320
 
 The following library is included:
 
@@ -79,15 +87,12 @@ To create the deployment package:
 
 Create the following directory structure:
 
-    3rdParty
-        WTL10_10320
     bin
         x86
     foo_sid
     out
     sdk
 
-* `3rdParty/WTL10_10320` contains WTL 10.0.10320.
 * `bin` contains a portable version of foobar2000 64-bit for debugging purposes.
 * `bin/x86` contains a portable version of foobar2000 32-bit for debugging purposes.
 * `foo_sid` contains the [Git](https://github.com/stuerp/foo_sid) repository.
@@ -103,6 +108,14 @@ Open `foo_sid.sln` with Visual Studio and build the solution.
 To create the component first build the x86 configuration and next the x64 configuration.
 
 ## Change Log
+
+v1.98.0.0, 2024-06-23
+
+* New: Support for SID Tune Information List (STIL). Contributed by [mnerec](https://github.com/mnerec)
+
+v1.97.0.0, 2024-06-11
+
+* Upgraded libsidplayfp to 2.8.0.
 
 v1.96.0.0, 2024-06-09
 
