@@ -600,7 +600,6 @@ public:
                 std::string stilName;
                 std::string stilTitle;
                 std::string stilArtist;
-                std::string stilGenre;
                 std::string stilSongComment;
                 std::string stilFileComment;
                 std::string stilGlobalComment;
@@ -618,29 +617,6 @@ public:
 
                     absPath.replace(absPath.find("file://"), std::string("file://").length(), "");
 
-                    std::string genre(absPath);
-
-                    absPath += std::string(TuneInfo->dataFileName());
-
-                    // create genre for file
-                    genre.replace(genre.find(_StilBaseDir), _StilBaseDir.length() + 1, "");
-
-                    const size_t first_slash_idx = genre.find('\\');
-
-                    if (std::string::npos != first_slash_idx)
-                        stilGenre = genre.substr(0, first_slash_idx);
-
-                    if (stilGenre.compare("DEMOS") == 0)
-                        stilGenre = "Demos";
-
-                    if (stilGenre.compare("GAMES") == 0)
-                        stilGenre = "Games";
-
-                    if (stilGenre.compare("MUSICIANS") == 0)
-                        stilGenre = "Musicians";
-
-                    stilGenre = "C64 HVSC " + stilGenre;
-
                     stilName = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::name);
                     stilTitle = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::title);
                     stilArtist = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::artist);
@@ -655,7 +631,6 @@ public:
                 std::string fooArtist(sidArtist);
                 std::string fooCopyright(sidCopyright);
                 std::string fooDate(sidDate);
-                std::string fooGenre(stilGenre);
                 std::string fooOrgTitle(stilTitle);
                 std::string fooOrgArtist(stilArtist);
                 std::string fooSongComment(stilSongComment);
@@ -682,9 +657,6 @@ public:
 
                 if (fooDate.length() > 0)
                     fileInfo.meta_add("date", pfc::stringcvt::string_utf8_from_ansi(fooDate.c_str()));
-
-                if (fooGenre.length() > 0)
-                    fileInfo.meta_add("genre", pfc::stringcvt::string_utf8_from_ansi(fooGenre.c_str()));
 
                 // Split artists in multiple artists tags
                 if (fooArtist.length() > 0)
