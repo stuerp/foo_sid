@@ -1210,17 +1210,20 @@ void CMyPreferences::reset()
     SetDlgItemInt(IDC_FADE, default_cfg_fade, FALSE);
 
     _Slider6581.SetPos(default_cfg_sid_filter_6581);
-    pfc::string8_fast temp = pfc::format_float(default_cfg_sid_filter_6581 / 256., 0, 2);
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
+
+    pfc::string8_fast Text = pfc::format_float((double) default_cfg_sid_filter_6581 / 256., 0, 2);
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, Text);
 
     _Slider8580.SetPos(default_cfg_sid_filter_8580);
-    temp = pfc::format_float(default_cfg_sid_filter_8580 / 256., 0, 2);
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
+
+    Text = pfc::format_float((double) default_cfg_sid_filter_8580 / 256., 0, 2);
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, Text);
 
     _SliderSsep.SetPos(default_cfg_stereo_separation);
-    temp = pfc::format_int(default_cfg_stereo_separation);
-    temp += "%";
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, temp);
+
+    Text = pfc::format_int(default_cfg_stereo_separation);
+    Text += "%";
+    ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Text);
 
     OnChanged();
 }
