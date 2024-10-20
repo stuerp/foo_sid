@@ -28,6 +28,7 @@
 #include "sidcxx11.h"
 
 #include <mutex>
+#include <thread>
 
 namespace reSIDfp
 {
@@ -140,79 +141,79 @@ FilterModelConfig8580::FilterModelConfig8580() :
     )
 {
     // Create lookup tables for gains / summers.
-#ifndef _OPENMP
-    OpAmp opampModel(
-        std::vector<Spline::Point>(
-            std::begin(opamp_voltage),
-            std::end(opamp_voltage)),
-        Vddt,
-        vmin,
-        vmax);
-#endif
 
-    #pragma omp parallel sections
+    //
+    // We spawn four threads to calculate these tables in parallel
+    //
+    auto filterSummer = [this]
     {
-        #pragma omp section
-        {
-#ifdef _OPENMP
-            OpAmp opampModel(
-                std::vector<Spline::Point>(
-                    std::begin(opamp_voltage),
-                    std::end(opamp_voltage)),
-                Vddt,
-                vmin,
-                vmax);
-#endif
-            buildSummerTable(opampModel);
-        }
+        OpAmp opampModel(
+            std::vector<Spline::Point>(
+                std::begin(opamp_voltage),
+                std::end(opamp_voltage)),
+            Vddt,
+            vmin,
+            vmax);
 
-        #pragma omp section
-        {
-#ifdef _OPENMP
-            OpAmp opampModel(
-                std::vector<Spline::Point>(
-                    std::begin(opamp_voltage),
-                    std::end(opamp_voltage)),
-                Vddt,
-                vmin,
-                vmax);
-#endif
-            buildMixerTable(opampModel, 8.0 / 5.0);
-        }
+        buildSummerTable(opampModel);
+    };
 
-        #pragma omp section
-        {
-#ifdef _OPENMP
-            OpAmp opampModel(
-                std::vector<Spline::Point>(
-                    std::begin(opamp_voltage),
-                    std::end(opamp_voltage)),
-                Vddt,
-                vmin,
-                vmax);
-#endif
-            buildVolumeTable(opampModel, 16.0);
-        }
+    auto filterMixer = [this]
+    {
+        OpAmp opampModel(
+            std::vector<Spline::Point>(
+                std::begin(opamp_voltage),
+                std::end(opamp_voltage)),
+            Vddt,
+            vmin,
+            vmax);
 
-        #pragma omp section
-        {
-#ifdef _OPENMP
-            OpAmp opampModel(
-                std::vector<Spline::Point>(
-                    std::begin(opamp_voltage),
-                    std::end(opamp_voltage)),
-                Vddt,
-                vmin,
-                vmax);
-#endif
-            buildResonanceTable(opampModel, resGain);
-        }
-    }
-}
+        buildMixerTable(opampModel, 8.0 / 5.0);
+    };
 
-Integrator* FilterModelConfig8580::buildIntegrator()
-{
-    return new Integrator8580(this);
+    auto filterGain = [this]
+    {
+        OpAmp opampModel(
+            std::vector<Spline::Point>(
+                std::begin(opamp_voltage),
+                std::end(opamp_voltage)),
+            Vddt,
+            vmin,
+            vmax);
+
+        buildVolumeTable(opampModel, 16.0);
+    };
+
+    auto filterResonance = [this]
+    {
+        OpAmp opampModel(
+            std::vector<Spline::Point>(
+                std::begin(opamp_voltage),
+                std::end(opamp_voltage)),
+            Vddt,
+            vmin,
+            vmax);
+
+        buildResonanceTable(opampModel, resGain);
+    };
+
+#if defined(HAVE_CXX20) && defined(__cpp_lib_jthread)
+    using sidThread = std::jthread;
+#else
+    using sidThread = std::thread;
+#endif
+
+    sidThread thdSummer(filterSummer);
+    sidThread thdMixer(filterMixer);
+    sidThread thdGain(filterGain);
+    sidThread thdResonance(filterResonance);
+
+#if !defined(HAVE_CXX20) || !defined(__cpp_lib_jthread)
+    thdSummer.join();
+    thdMixer.join();
+    thdGain.join();
+    thdResonance.join();
+#endif
 }
 
 } // namespace reSIDfp
