@@ -55,7 +55,7 @@ private:
     /// Table of the fir filter coefficients
     matrix_t* firTable;
 
-    int sampleIndex;
+    int sampleIndex = 0;
 
     /// Filter resolution
     int firRES;
@@ -65,9 +65,9 @@ private:
 
     const int cyclesPerSample;
 
-    int sampleOffset;
+    int sampleOffset = 0;
 
-    int outputValue;
+    int outputValue = 0;
 
     int sample[RINGSIZE * 2];
 
@@ -77,25 +77,24 @@ private:
 public:
     /**
      * Use a clock freqency of 985248Hz for PAL C64, 1022730Hz for NTSC C64.
-     * The default end of passband frequency is pass_freq = 0.9*sample_freq/2
-     * for sample frequencies up to ~ 44.1kHz, and 20kHz for higher sample frequencies.
      *
-     * For resampling, the ratio between the clock frequency and the sample frequency
-     * is limited as follows: 125*clock_freq/sample_freq < 16384
+     * For resampling, the ratio between the clock frequency
+     * and the sample frequency is limited as follows:
+     *   125*clock_freq/sample_freq < 16384
+     *
      * E.g. provided a clock frequency of ~ 1MHz, the sample frequency
      * can not be set lower than ~ 8kHz.
-     * A lower sample frequency would make the resampling code overfill its 16k sample ring buffer.
-     *
-     * The end of passband frequency is also limited: pass_freq <= 0.9*sample_freq/2
-     *
-     * E.g. for a 44.1kHz sampling rate the end of passband frequency is limited
-     * to slightly below 20kHz. This constraint ensures that the FIR table is not overfilled.
+     * A lower sample frequency would make the resampling code overfill
+     * its 16k sample ring buffer.
      *
      * @param clockFrequency System clock frequency at Hz
      * @param samplingFrequency Desired output sampling rate
-     * @param highestAccurateFrequency
+     * @param highestAccurateFrequency passband frequency limit
      */
-    SincResampler(double clockFrequency, double samplingFrequency, double highestAccurateFrequency);
+    SincResampler(
+        double clockFrequency,
+        double samplingFrequency,
+        double highestAccurateFrequency);
     ~SincResampler() override;
 
     bool input(int input) override;

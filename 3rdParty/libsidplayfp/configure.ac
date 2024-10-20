@@ -1,6 +1,6 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [8])
-m4_define([lib_level], [0])
+m4_define([lib_minor], [10])
+m4_define([lib_level], [1])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -37,12 +37,15 @@ AC_PROG_CXX
 dnl Use C++ for tests.
 AC_LANG([C++])
 
-AX_CXX_COMPILE_STDCXX_17([noext], [optional])
-AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
-    AX_CXX_COMPILE_STDCXX_14([noext], [optional])
-    AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
-        [AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])]
-    )
+AX_CXX_COMPILE_STDCXX([20], [noext], [optional])
+AS_IF([test $ax_cv_cxx_compile_cxx20__std_cpp20 != "yes"], [
+    AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+    AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
+        AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
+        AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
+            [AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])]
+        )
+    ])
 ])
 
 dnl check for hidden visibility support
@@ -66,8 +69,6 @@ AS_IF([test $ac_cv_sizeof_int -lt 4],
 AS_IF([test "x${ac_cv_header_stdint_h}" != "xyes"],
   [AC_MSG_ERROR([Required header stdint.h not found])]
 )
-
-AC_OPENMP
 
 dnl Checks for non-standard functions.
 
@@ -100,13 +101,13 @@ dnl libtool-style version-info number
 #
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
-LIBSIDPLAYCUR=10
-LIBSIDPLAYREV=32
-LIBSIDPLAYAGE=4
+LIBSIDPLAYCUR=11
+LIBSIDPLAYREV=35
+LIBSIDPLAYAGE=5
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
-LIBSTILVIEWREV=5
+LIBSTILVIEWREV=6
 LIBSTILVIEWAGE=0
 LIBSTILVIEWVERSION=$LIBSTILVIEWCUR:$LIBSTILVIEWREV:$LIBSTILVIEWAGE
 

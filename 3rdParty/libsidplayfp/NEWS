@@ -1,3 +1,26 @@
+2.10.1 2024-10-20
+* residfp: fix digiboost (#157)
+* residfp: fix combined waveforms (#160)
+
+
+
+2.10.0 2024-10-06
+* Add support for c++20 where available
+* residfp: retuned cw parameters after measuring waves RMS (#143)
+* residfp: code refactoring and minor performance optimizations (#145)
+* resid/residfp: scale down filter inputs in the mixer for 6581 (#139)
+* Centralized handling of muted voices and allow muting samples (#136)
+* new API to toggle the filter and deprecated sidplayfp::filter
+
+
+
+2.9.0 2024-08-12
+* residfp: use c++11 threads for building filter tables (#92)
+* residfp: code modernization and minor performance optimizations
+* Performance optimizations (#133, #137)
+
+
+
 2.8.0 2024-06-09
 * Optimized event scheduler (#131)
 * Stop pretendig we support pre-c++11 compilers (#130)

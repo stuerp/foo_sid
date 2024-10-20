@@ -91,42 +91,14 @@ void Filter::writeMODE_VOL(unsigned char mode_vol)
     updateMixing();
 }
 
-Filter::Filter(FilterModelConfig* fmc) :
-    fmc(fmc),
-    mixer(fmc->getMixer()),
-    summer(fmc->getSummer()),
-    resonance(fmc->getResonance()),
-    volume(fmc->getVolume()),
-    hpIntegrator(fmc->buildIntegrator()),
-    bpIntegrator(fmc->buildIntegrator()),
-    currentMixer(nullptr),
-    currentSummer(nullptr),
-    currentResonance(nullptr),
-    currentVolume(nullptr),
-    Vhp(0),
-    Vbp(0),
-    Vlp(0),
-    Ve(0),
-    fc(0),
-    filt1(false),
-    filt2(false),
-    filt3(false),
-    filtE(false),
-    voice3off(false),
-    hp(false),
-    bp(false),
-    lp(false),
-    vol(0),
-    enabled(true),
-    filt(0)
+Filter::Filter(FilterModelConfig& fmc) :
+    mixer(fmc.getMixer()),
+    summer(fmc.getSummer()),
+    resonance(fmc.getResonance()),
+    volume(fmc.getVolume()),
+    fmc(fmc)
 {
     input(0);
-}
-
-Filter::~Filter()
-{
-    delete hpIntegrator;
-    delete bpIntegrator;
 }
 
 void Filter::enable(bool enable)

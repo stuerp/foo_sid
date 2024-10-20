@@ -57,9 +57,12 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{67A11F10-4A33-4C7C-9777-20D64C2D0ACD}</ProjectGuid>
-    <SccProjectName>"$/foobar2000/plugins.root/plugins", CEAAAAAA</SccProjectName>
-    <SccLocalPath>..\..\..\..\..</SccLocalPath>
-    <SccProvider>MSSCCI:Microsoft Visual SourceSafe</SccProvider>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccProvider>
+    </SccProvider>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -9,7 +9,7 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 * Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID, .MUS or .MUS+.STR formats.
 * Supports up to 3SID rips.
-* Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database.
+* Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database and SID Tune Information List (STIL).
 * Supports foobar2000 2.0 and later (32-bit and 64-bit version)
 * Supports dark mode.
 
@@ -108,6 +108,10 @@ Open `foo_sid.sln` with Visual Studio and build the solution.
 To create the component first build the x86 configuration and next the x64 configuration.
 
 ## Change Log
+
+v1.99.0.0, 2024-10-20
+
+* Upgraded libsidplayfp to 2.10.1.
 
 v1.98.0.0, 2024-06-23
 
