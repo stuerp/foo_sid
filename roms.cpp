@@ -1,3 +1,5 @@
+#include <pch.h>
+
 #include "roms.hpp"
 
 const unsigned char kernel[8192] = {

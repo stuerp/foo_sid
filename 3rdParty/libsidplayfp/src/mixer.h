@@ -69,21 +69,26 @@ public:
     /// Maximum number of supported SIDs
     static constexpr unsigned int MAX_SIDS = 3;
 
+private:
     static constexpr int_least32_t SCALE_FACTOR = 1 << 16;
 
-    static constexpr double SQRT_0_5 = 0.70710678118654746;
+    static constexpr double SQRT_2 = 1.41421356237;
+    static constexpr double SQRT_3 = 1.73205080757;
 
-    static constexpr int_least32_t C1 = static_cast<int_least32_t>(1.0 / (1.0 + SQRT_0_5) * SCALE_FACTOR);
-    static constexpr int_least32_t C2 = static_cast<int_least32_t>(SQRT_0_5 / (1.0 + SQRT_0_5) * SCALE_FACTOR);
+    static constexpr int_least32_t SCALE[3] = {
+        SCALE_FACTOR,                                               // 1 chip, no scale
+        static_cast<int_least32_t>((1.0 / SQRT_2) * SCALE_FACTOR),  // 2 chips, scale by sqrt(2)
+        static_cast<int_least32_t>((1.0 / SQRT_3) * SCALE_FACTOR)   // 3 chips, scale by sqrt(3)
+    };
 
 private:
-    typedef int_least32_t (Mixer::*mixer_func_t)() const;
+    using mixer_func_t = int_least32_t (Mixer::*)() const;
 
-    typedef int (Mixer::*scale_func_t)(unsigned int);
+    using scale_func_t = int (Mixer::*)(unsigned int);
 
 public:
     /// Maximum allowed volume, must be a power of 2.
-    static const int_least32_t VOLUME_MAX = 1024;
+    static constexpr int_least32_t VOLUME_MAX = 1024;
 
 private:
     std::vector<sidemu*> m_chips;
@@ -106,6 +111,8 @@ private:
     uint_least32_t m_sampleRate = 0;
 
     bool m_stereo = false;
+
+    bool m_wait = false;
 
     randomLCG<VOLUME_MAX> m_rand;
 
@@ -137,18 +144,13 @@ private:
      * L 1.0
      * R 1.0
      *
-     *   C1   C2
-     * L 1.0  0.0
-     * R 0.0  1.0
+     *   C1    C2
+     * L 1.0   0.5
+     * R 0.5   1.0
      *
-     *   C1       C2           C3
-     * L 1/1.707  0.707/1.707  0.0
-     * R 0.0      0.707/1.707  1/1.707
-     *
-     * FIXME
-     * it seems that scaling down the summed signals is not the correct way of mixing, see:
-     * http://dsp.stackexchange.com/questions/3581/algorithms-to-mix-audio-signals-without-clipping
-     * maybe we should consider some form of soft/hard clipping instead to avoid possible overflows
+     *   C1    C2    C3
+     * L 1.0   1.0   0.5
+     * R 0.5   1.0   1.0
      */
 
     // Mono mixing
@@ -158,17 +160,29 @@ private:
         int_least32_t res = 0;
         for (int i = 0; i < Chips; i++)
             res += m_iSamples[i];
-        return res / Chips;
+        return res * SCALE[Chips-1] / SCALE_FACTOR;
     }
 
     // Stereo mixing
     int_least32_t stereo_OneChip() const { return m_iSamples[0]; }
 
-    int_least32_t stereo_ch1_TwoChips() const { return m_iSamples[0]; }
-    int_least32_t stereo_ch2_TwoChips() const { return m_iSamples[1]; }
+    int_least32_t stereo_ch1_TwoChips() const
+    {
+        return (m_iSamples[0] + 0.5*m_iSamples[1]) * SCALE[1] / SCALE_FACTOR;
+    }
+    int_least32_t stereo_ch2_TwoChips() const
+    {
+        return (0.5*m_iSamples[0] + m_iSamples[1]) * SCALE[1] / SCALE_FACTOR;
+    }
 
-    int_least32_t stereo_ch1_ThreeChips() const { return (C1*m_iSamples[0] + C2*m_iSamples[1]) / SCALE_FACTOR; }
-    int_least32_t stereo_ch2_ThreeChips() const { return (C2*m_iSamples[1] + C1*m_iSamples[2]) / SCALE_FACTOR; }
+    int_least32_t stereo_ch1_ThreeChips() const
+    {
+        return (m_iSamples[0] + m_iSamples[1] + 0.5*m_iSamples[2]) * SCALE[2] / SCALE_FACTOR;
+    }
+    int_least32_t stereo_ch2_ThreeChips() const
+    {
+        return (0.5*m_iSamples[0] + m_iSamples[1] + m_iSamples[2]) * SCALE[2] / SCALE_FACTOR;
+    }
 
 public:
     /**
@@ -258,12 +272,17 @@ public:
     /**
      * Check if the buffer have been filled.
      */
-    bool notFinished() const { return m_sampleIndex != m_sampleCount; }
+    bool notFinished() const { return m_sampleIndex < m_sampleCount; }
 
     /**
      * Get the number of samples generated up to now.
      */
     uint_least32_t samplesGenerated() const { return m_sampleIndex; }
+
+    /*
+     * Wait till we consume the buffer.
+     */
+    bool wait() const { return m_wait; }
 };
 
 }
