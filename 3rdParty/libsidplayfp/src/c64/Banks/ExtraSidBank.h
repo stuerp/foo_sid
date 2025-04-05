@@ -23,7 +23,6 @@
 
 #include "Bank.h"
 #include <vector>
-#include <algorithm>
 
 #include "c64/c64sid.h"
 
@@ -38,7 +37,7 @@ namespace libsidplayfp
 class ExtraSidBank final : public Bank
 {
 private:
-    typedef std::vector<c64sid*> sids_t;
+    using sids_t = std::vector<c64sid*>;
 
 private:
     /**
@@ -65,7 +64,8 @@ public:
 
     void reset()
     {
-        std::for_each(sids.begin(), sids.end(), [](sids_t::value_type &e) { e->reset(0xf); });
+        for (c64sid* sid: sids)
+            sid->reset(0xf);
     }
 
     void resetSIDMapper(Bank *bank)

@@ -35,7 +35,7 @@
 namespace reSIDfp
 {
 
-const unsigned int OPAMP_SIZE = 33;
+constexpr unsigned int OPAMP_SIZE = 33;
 
 /**
  * This is the SID 6581 op-amp voltage transfer function, measured on
@@ -43,7 +43,7 @@ const unsigned int OPAMP_SIZE = 33;
  * All measured chips have op-amps with output voltages (and thus input
  * voltages) within the range of 0.81V - 10.31V.
  */
-const Spline::Point opamp_voltage[OPAMP_SIZE] =
+constexpr Spline::Point opamp_voltage[OPAMP_SIZE] =
 {
   {  0.81, 10.31 },  // Approximate start of actual range
   {  2.40, 10.31 },
@@ -117,12 +117,11 @@ void FilterModelConfig6581::setFilterRange(double adjustment)
 
 FilterModelConfig6581::FilterModelConfig6581() :
     FilterModelConfig(
-        1.5,     // voice voltage range
-        5.075,   // voice DC voltage
-        470e-12, // capacitor value
-        12.18,   // Vdd
-        1.31,    // Vth
-        20e-6,   // uCox
+        1.5,                    // voice voltage range FIXME should theoretically be ~3,571V
+        470e-12,                // capacitor value
+        12. * VOLTAGE_SKEW,     // Vdd
+        1.31,                   // Vth
+        20e-6,                  // uCox
         opamp_voltage,
         OPAMP_SIZE
     ),
@@ -133,6 +132,16 @@ FilterModelConfig6581::FilterModelConfig6581() :
     dac(DAC_BITS)
 {
     dac.kinkedDac(MOS6581);
+
+    {
+        Dac envDac(8);
+        envDac.kinkedDac(MOS6581);
+        for(int i=0; i<256; i++)
+        {
+            const double envI = envDac.getOutput(i);
+            voiceDC[i] = 5. * VOLTAGE_SKEW + (0.2143 * envI);
+        }
+    }
 
     // Create lookup tables for gains / summers.
 

@@ -61,7 +61,7 @@ namespace reSIDfp
  *  E   Rf|R2     RC
  *  F   Rf|R3     RC
  */
-const double resGain[16] =
+constexpr double resGain[16] =
 {
                         1.4/1.0, //      Rf/Ri   1.4
     ((1.4*15.3)/(1.4+15.3))/1.0, // (Rf|R1)/Ri   1.28263
@@ -81,13 +81,13 @@ const double resGain[16] =
       ((1.4*4.7)/(1.4+4.7))/2.8, // (Rf|R3)/RC   0.385246
 };
 
-const unsigned int OPAMP_SIZE = 21;
+constexpr unsigned int OPAMP_SIZE = 21;
 
 /**
  * This is the SID 8580 op-amp voltage transfer function, measured on
  * CAP1B/CAP1A on a chip marked CSG 8580R5 1690 25.
  */
-const Spline::Point opamp_voltage[OPAMP_SIZE] =
+constexpr Spline::Point opamp_voltage[OPAMP_SIZE] =
 {
     {  1.30,  8.91 },  // Approximate start of actual range
     {  4.76,  8.91 },
@@ -130,12 +130,11 @@ FilterModelConfig8580* FilterModelConfig8580::getInstance()
 
 FilterModelConfig8580::FilterModelConfig8580() :
     FilterModelConfig(
-        0.24,   // voice voltage range FIXME measure
-        4.84,   // voice DC voltage FIXME measure
-        22e-9,  // capacitor value
-        9.09,   // Vdd
-        0.80,   // Vth
-        100e-6, // uCox
+        0.24,               // voice voltage range FIXME should theoretically be ~0,474V
+        22e-9,              // capacitor value
+        9. * VOLTAGE_SKEW,  // Vdd
+        0.80,               // Vth
+        100e-6,             // uCox
         opamp_voltage,
         OPAMP_SIZE
     )
