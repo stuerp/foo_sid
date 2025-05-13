@@ -1,5 +1,5 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [12])
+m4_define([lib_minor], [13])
 m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
@@ -37,14 +37,18 @@ AC_PROG_CXX
 dnl Use C++ for tests.
 AC_LANG([C++])
 
-AX_CXX_COMPILE_STDCXX([20], [noext], [optional])
-AS_IF([test $ax_cv_cxx_compile_cxx20__std_cpp20 != "yes"], [
-    AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
-    AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
-        AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
-        AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
-            [AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])]
-        )
+
+AX_CXX_COMPILE_STDCXX([23], [noext], [optional])
+AS_IF([test $ax_cv_cxx_compile_cxx23__std_cpp23 != "yes"], [
+    AX_CXX_COMPILE_STDCXX([20], [noext], [optional])
+    AS_IF([test $ax_cv_cxx_compile_cxx20__std_cpp20 != "yes"], [
+        AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+        AS_IF([test $ax_cv_cxx_compile_cxx17__std_cpp17 != "yes"], [
+            AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
+            AS_IF([test $ax_cv_cxx_compile_cxx14__std_cpp14 != "yes"],
+                [AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])]
+            )
+        ])
     ])
 ])
 
@@ -91,6 +95,8 @@ AC_CACHE_CHECK([for od that supports -w], [ac_cv_path_OD],
 )
 AC_SUBST([OD], [$ac_cv_path_OD])
 
+AX_PTHREAD([], [AC_MSG_ERROR("pthreads not found")])
+
 dnl libtool-style version-info number
 #
 # https://autotools.io/libtool/version.html
@@ -102,7 +108,7 @@ dnl libtool-style version-info number
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
 LIBSIDPLAYCUR=11
-LIBSIDPLAYREV=37
+LIBSIDPLAYREV=38
 LIBSIDPLAYAGE=5
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
@@ -149,22 +155,31 @@ AC_ARG_WITH(
 )
 
 AS_IF([test x"$with_simd" != xnone],
-    # Testing for intrinsic headers requires compiler
-    # support activated by specific flags.
-    # These are most likely defined in CXXFLAGS
-    # but AC_CHECK_HEADERS uses only CPPFLAGS
-    # so we need a workaround.
-    [saveCPPFLAGS=$CPPFLAGS
-    CPPFLAGS="$CPPFLAGS $CXXFLAGS"
+    [AS_CASE([$with_simd],
+        [sse4], [
+            AC_MSG_CHECKING([for sse4.1 support])
+            save_CXXFLAGS="$CXXFLAGS"
+            CXXFLAGS="$CXXFLAGS -msse4.1"
 
-    AS_CASE([$with_simd],
-        [sse4], [AC_CHECK_HEADERS([smmintrin.h])],
-        [neon], [AC_CHECK_HEADERS([arm_neon.h])],
+            AC_COMPILE_IFELSE(
+                [AC_LANG_PROGRAM(
+                    [#include <smmintrin.h>],
+                    [return 0;])],
+                [
+                    SIMD_CFLAGS=-msse4.1
+                    AC_MSG_RESULT([yes])
+                ],
+                [
+                    AC_MSG_RESULT([no])
+                ])
+
+            CXXFLAGS="$save_CXXFLAGS"
+        ],
+        [neon], [AC_MSG_WARN([neon is currently unimplemented])],
         [AC_MSG_ERROR([Unrecognized SIMD specified])]
-    )
-
-    CPPFLAGS=$saveCPPFLAGS]
+    )]
 )
+AC_SUBST([SIMD_CFLAGS])
 
 AC_CACHE_CHECK([for working bool], ac_cv_cxx_bool,
 [AC_COMPILE_IFELSE(

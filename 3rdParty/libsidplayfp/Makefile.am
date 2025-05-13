@@ -30,7 +30,7 @@ $(PTHREAD_CFLAGS) \
 $(FTDI_CFLAGS) \
 @debug_flags@
 
-AM_CXXFLAGS = $(VISIBILITY_CXXFLAGS)
+AM_CXXFLAGS = $(VISIBILITY_CXXFLAGS) $(SIMD_CFLAGS)
 
 #=========================================================
 EXTRA_DIST = \
@@ -207,9 +207,10 @@ src/sidplayfp/sidversion.h
 src_libsidplayfp_la_LIBADD = \
 src/builders/residfp-builder/libsidplayfp-residfp.la \
 src/builders/resid-builder/libsidplayfp-resid.la \
-$(LIBGCRYPT_LIBS)
+$(LIBGCRYPT_LIBS) \
+$(PTHREAD_LIBS)
 
-src_libsidplayfp_la_CPPFLAGS = $(LIBGCRYPT_CFLAGS) $(AM_CPPFLAGS)
+src_libsidplayfp_la_CPPFLAGS = $(LIBGCRYPT_CFLAGS) $(PTHREAD_CFLAGS) $(AM_CPPFLAGS)
 
 if HARDSID
   src_libsidplayfp_la_LIBADD += src/builders/hardsid-builder/libsidplayfp-hardsid.la
