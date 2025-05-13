@@ -61,10 +61,10 @@ void Mixer::doMix()
     {
         // This is a crude boxcar low-pass filter to
         // reduce aliasing during fast forward.
-        for (size_t k = 0; k < m_chips.size(); k++)
+        for (size_t k = 0; k < m_buffers.size(); k++)
         {
             int_least32_t sample = 0;
-            const short *buffer = m_chips[k]->buffer() + i;
+            const short *buffer = m_buffers[k] + i;
             for (int j = 0; j < m_fastForwardFactor; j++)
             {
                 sample += buffer[j];
@@ -90,12 +90,11 @@ void Mixer::doMix()
     const int samplesLeft = sampleCount - i;
     assert(samplesLeft >= 0);
 
-    for (sidemu* chip: m_chips)
-    {
-        short* buffer = chip->buffer();
+    for (short* buffer: m_buffers)
         std::memmove(buffer, buffer+i, samplesLeft*2);
+
+    for (sidemu* chip: m_chips)
         chip->bufferpos(samplesLeft);
-    }
 
     m_wait = static_cast<uint_least32_t>(samplesLeft) > m_sampleCount;
 }
@@ -117,7 +116,7 @@ void Mixer::begin(short *buffer, uint_least32_t count)
 
 void Mixer::updateParams()
 {
-    switch (m_chips.size())
+    switch (m_buffers.size())
     {
     case 1:
         m_mix[0] = m_stereo ? &Mixer::stereo_OneChip : &Mixer::template mono<1>;
@@ -134,13 +133,20 @@ void Mixer::updateParams()
      }
 }
 
+void Mixer::clearSids()
+{
+    m_chips.clear();
+    m_buffers.clear();
+}
+
 void Mixer::addSid(sidemu *chip)
 {
     if (chip != nullptr)
     {
         m_chips.push_back(chip);
+        m_buffers.push_back(chip->buffer());
 
-        m_iSamples.resize(m_chips.size());
+        m_iSamples.resize(m_buffers.size());
 
         if (m_mix.size() > 0)
             updateParams();
@@ -157,6 +163,11 @@ void Mixer::setStereo(bool stereo)
 
         updateParams();
     }
+}
+
+void Mixer::setSamplerate(uint_least32_t rate)
+{
+    m_sampleRate = rate;
 }
 
 bool Mixer::setFastForward(int ff)

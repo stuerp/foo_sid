@@ -84,8 +84,6 @@ private:
 
     sidrandom m_rand;
 
-    uint_least32_t m_startTime = 0;
-
     /// PAL/NTSC switch value
     uint8_t videoSwitch;
 
@@ -147,15 +145,11 @@ public:
 
     uint_least32_t play(short *buffer, uint_least32_t samples);
 
-    void buffers(short** buffers) const;
-
-    int play(unsigned int cycles);
-
     bool isPlaying() const { return m_isPlaying != state_t::STOPPED; }
 
     void stop();
 
-    uint_least32_t timeMs() const { return m_c64.getTimeMs() - m_startTime; }
+    uint_least32_t timeMs() const { return m_c64.getTimeMs(); }
 
     void debug(const bool enable, FILE *out) { m_c64.debug(enable, out); }
 
@@ -172,8 +166,6 @@ public:
     uint_least16_t getCia1TimerA() const { return m_c64.getCia1TimerA(); }
 
     bool getSidStatus(unsigned int sidNum, uint8_t regs[32]);
-
-    unsigned int installedSIDs() const { return m_c64.installedSIDs(); }
 };
 
 }
