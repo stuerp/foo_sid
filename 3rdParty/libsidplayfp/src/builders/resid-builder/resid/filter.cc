@@ -199,6 +199,8 @@ Filter::Filter()
 {
     static bool class_init;
 
+    fc = 0;
+
     if (!class_init) {
         // Temporary table for op-amp transfer function.
         unsigned int* voltages = new unsigned int[1 << 16];
@@ -259,7 +261,7 @@ Filter::Filter()
                 //
                 //   m*2^N*x = x_n - m*2^N*xmin
                 //
-                scaled_voltage[fi.opamp_voltage_size - 1 - i][0] = int(N16*(fi.opamp_voltage[i][1] - fi.opamp_voltage[i][0] + denorm)/2 + 0.5);
+                scaled_voltage[fi.opamp_voltage_size - 1 - i][0] = int((N16*(fi.opamp_voltage[i][1] - fi.opamp_voltage[i][0]) + (1 << 16))/2 + 0.5);
                 scaled_voltage[fi.opamp_voltage_size - 1 - i][1] = N31*(fi.opamp_voltage[i][0] - vmin);
             }
 
@@ -428,6 +430,7 @@ Filter::Filter()
     enable_filter(true);
     set_chip_model(MOS6581);
     set_voice_mask(0x07);
+    adjust_filter_bias(0.);
     input(0);
     reset();
 }

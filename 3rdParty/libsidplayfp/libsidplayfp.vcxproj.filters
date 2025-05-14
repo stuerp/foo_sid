@@ -115,10 +115,12 @@
   <ItemGroup>
     <None Include="src\poweron.bin" />
     <None Include="src\psiddrv.a65" />
-    <None Include="src\psiddrv.bin" />
     <None Include="src\sidtune\sidplayer1.a65" />
     <None Include="src\sidtune\sidplayer2.a65" />
     <None Include="src\sidtune\sidplayer1.bin" />
     <None Include="src\sidtune\sidplayer2.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="src\psiddrv.bin" />
   </ItemGroup>
 </Project>

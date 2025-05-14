@@ -109,7 +109,7 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.101.0.0, 2025-05-13
+v1.101.0.0, 2025-05-14
 
 * Upgraded libsidplayfp to 2.14.0.
 
