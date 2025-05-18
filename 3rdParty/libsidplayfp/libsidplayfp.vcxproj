@@ -269,7 +269,11 @@
   <ItemGroup>
     <None Include="src\poweron.bin" />
     <None Include="src\psiddrv.a65" />
-    <None Include="src\psiddrv.bin" />
+    <CustomBuild Include="src\psiddrv.bin">
+      <FileType>Document</FileType>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">*** Driver source code has been updated. Update psiddrv.bin ***</Message>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)src\psiddrv.a65;%(AdditionalInputs)</AdditionalInputs>
+    </CustomBuild>
     <None Include="src\sidtune\sidplayer1.a65" />
     <None Include="src\sidtune\sidplayer1.bin" />
     <None Include="src\sidtune\sidplayer2.a65" />

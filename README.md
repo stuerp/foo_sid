@@ -109,6 +109,11 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
+v1.101.0.0, 2025-05-18
+
+* Upgraded libsidplayfp to 2.14.0.
+* Fixed: Preferences dialog should adapt to High DPI settings now.
+
 v1.100.0.0, 2025-04-05
 
 * Upgraded libsidplayfp to 2.12.0.

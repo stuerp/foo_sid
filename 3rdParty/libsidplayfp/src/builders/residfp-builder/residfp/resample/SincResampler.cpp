@@ -22,12 +22,9 @@
 
 #include "SincResampler.h"
 
-#ifdef HAVE_CXX20
-#  include <numbers>
-#endif
-
 #include <algorithm>
 #include <iterator>
+#include <numeric>
 #include <cassert>
 #include <cstring>
 #include <cmath>
@@ -37,6 +34,10 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#endif
+
+#if defined(HAVE_CXX20) && defined(__cpp_lib_math_constants)
+#  include <numbers>
 #endif
 
 #ifdef HAVE_SMMINTRIN_H
@@ -61,6 +62,9 @@ constexpr int BITS = 16;
  * @param x evaluate I0 at x
  * @return value of I0 at x.
  */
+#ifdef HAVE_CXX14
+constexpr
+#endif
 double I0(double x)
 {
     double sum = 1.;
@@ -90,6 +94,9 @@ double I0(double x)
  */
 int convolve(const int* a, const short* b, int bLength)
 {
+#if defined(__has_cpp_attribute) && __has_cpp_attribute( assume )
+    [[assume( bLength > 0 )]];
+#endif
 #ifdef HAVE_SMMINTRIN_H
     int out = 0;
 
@@ -220,11 +227,16 @@ int convolve(const int* a, const short* b, int bLength)
 #else
     int out = 0;
 #endif
-
-    for (int i = 0; i < bLength; i++)
+#ifndef __clang__
+    out = std::inner_product(a, a+bLength, b, out);
+#else
+    // Apparently clang is unable to fully optimize the above
+    // feed it some plain ol' c code
+    for (int i=0; i<bLength; i++)
     {
         out += a[i] * static_cast<int>(b[i]);
     }
+#endif
 
     return (out + (1 << 14)) >> 15;
 }
@@ -261,7 +273,7 @@ SincResampler::SincResampler(
         double highestAccurateFrequency) :
     cyclesPerSample(static_cast<int>(clockFrequency / samplingFrequency * 1024.))
 {
-#if defined(HAVE_CXX20) && defined(__cpp_lib_constexpr_cmath)
+#if defined(HAVE_CXX20) && defined(__cpp_lib_math_constants)
     constexpr double PI = std::numbers::pi;
 #else
 #  ifdef M_PI
@@ -315,7 +327,7 @@ SincResampler::SincResampler(
         firTable = new matrix_t(firRES, firN);
 
         // The cutoff frequency is midway through the transition band, in effect the same as nyquist.
-        const double wc = PI;
+        constexpr double wc = PI;
 
         // Calculate the sinc tables.
         const double scale = 32768.0 * wc * inv_cyclesPerSampleD / PI;

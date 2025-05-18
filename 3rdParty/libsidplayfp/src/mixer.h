@@ -92,7 +92,6 @@ public:
 
 private:
     std::vector<sidemu*> m_chips;
-    std::vector<short*> m_buffers;
 
     std::vector<int_least32_t> m_iSamples;
     std::vector<int_least32_t> m_volume;
@@ -222,7 +221,7 @@ public:
     /**
      * Remove all SIDs from the mixer.
      */
-    void clearSids();
+    void clearSids() { m_chips.clear(); }
 
     /**
      * Add a SID to the mixer.
@@ -267,7 +266,7 @@ public:
      *
      * @param rate sample rate in Hertz
      */
-    void setSamplerate(uint_least32_t rate);
+    void setSamplerate(uint_least32_t rate) { m_sampleRate = rate; }
 
     /**
      * Check if the buffer have been filled.
