@@ -13,7 +13,6 @@
     <ClInclude Include="Patrons.h" />
     <ClInclude Include="History.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="framework.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="foo_sid.rc" />
@@ -23,8 +22,9 @@
     <None Include="README.md" />
     <None Include=".gitignore" />
     <None Include=".gitattributes" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="LICENSE.txt" />
+    <Text Include="LICENSE" />
   </ItemGroup>
 </Project>

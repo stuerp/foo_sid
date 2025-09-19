@@ -1,6 +1,6 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [14])
-m4_define([lib_level], [0])
+m4_define([lib_minor], [15])
+m4_define([lib_level], [1])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -53,8 +53,11 @@ AS_IF([test $ax_cv_cxx_compile_cxx23__std_cpp23 != "yes"], [
 ])
 
 dnl check for hidden visibility support
-AX_CHECK_COMPILE_FLAG([-fvisibility=hidden -fvisibility-inlines-hidden], [has_visibility=yes], [has_visibility=no])
-AM_CONDITIONAL([HAVE_VISIBILITY], [test "x$has_visibility" = xyes])
+AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden -fvisibility-inlines-hidden])
+
+dnl enable fast math
+AX_APPEND_COMPILE_FLAGS([-ffast-math -fno-unsafe-math-optimizations], [RESIDFP_CXXFLAGS])
+AC_SUBST([RESIDFP_CXXFLAGS])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_BIGENDIAN
@@ -107,9 +110,9 @@ dnl libtool-style version-info number
 #
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
-LIBSIDPLAYCUR=11
-LIBSIDPLAYREV=40
-LIBSIDPLAYAGE=5
+LIBSIDPLAYCUR=12
+LIBSIDPLAYREV=42
+LIBSIDPLAYAGE=6
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
@@ -147,39 +150,27 @@ AS_IF([test x"$enable_inline" != "xno"],
   [RESID_INLINE=""; RESID_INLINING=0]
 )
 
+dnl define compiler flag to enable SIMD instructions, not required if -march or -mcpu is defined
 AC_ARG_WITH(
     [simd],
-    [AS_HELP_STRING([--with-simd], [Build with SIMD optimizations [@<:@sse4/neon/none, default=none@:>@]])],
+    [AS_HELP_STRING([--with-simd], [Build with SIMD optimizations [@<:@mmx/sse2/sse4/avx2/avx512f/none, default=none@:>@]])],
     [],
     [with_simd=none]
 )
 
 AS_IF([test x"$with_simd" != xnone],
     [AS_CASE([$with_simd],
-        [sse4], [
-            AC_MSG_CHECKING([for sse4.1 support])
-            save_CXXFLAGS="$CXXFLAGS"
-            CXXFLAGS="$CXXFLAGS -msse4.1"
-
-            AC_COMPILE_IFELSE(
-                [AC_LANG_PROGRAM(
-                    [#include <smmintrin.h>],
-                    [return 0;])],
-                [
-                    SIMD_CFLAGS=-msse4.1
-                    AC_MSG_RESULT([yes])
-                ],
-                [
-                    AC_MSG_RESULT([no])
-                ])
-
-            CXXFLAGS="$save_CXXFLAGS"
-        ],
-        [neon], [AC_MSG_WARN([neon is currently unimplemented])],
+        [mmx], [SID_X86_SIMD_SUPPORTS([mmx])],
+        [sse2], [SID_X86_SIMD_SUPPORTS([sse2])],
+        [sse4], [SID_X86_SIMD_SUPPORTS([sse4])],
+        [avx2], [SID_X86_SIMD_SUPPORTS([avx2])],
+        [avx512f], [SID_X86_SIMD_SUPPORTS([avx512f])],
         [AC_MSG_ERROR([Unrecognized SIMD specified])]
     )]
 )
-AC_SUBST([SIMD_CFLAGS])
+
+dnl gcc needs this flag to enable vectorization
+AX_APPEND_COMPILE_FLAGS([-ftree-loop-vectorize])
 
 AC_CACHE_CHECK([for working bool], ac_cv_cxx_bool,
 [AC_COMPILE_IFELSE(
@@ -252,10 +243,11 @@ AC_ARG_ENABLE([testsuite],
 )
 
 AS_IF([test "x$enable_testsuite" != xno],
-  AC_DEFINE_UNQUOTED([VICE_TESTSUITE],
+  [AC_DEFINE_UNQUOTED([VICE_TESTSUITE],
     ["$enable_testsuite"],
     [Path to VICE testsuite.]
   )
+  AC_CONFIG_LINKS([test/testsuite.sh:test/testsuite.sh test/testlist:test/testlist])]
 )
 
 AM_CONDITIONAL([TESTSUITE], [test "x$enable_testsuite" != xno])
@@ -361,7 +353,6 @@ AS_IF([test "x$build_exsid_driver" = xyes],
 
 eval loadable_shrext=$shrext_cmds
 AC_DEFINE_UNQUOTED([SHLIBEXT], ["${loadable_shrext}"], [Shared library extension])
-
 
 AC_CONFIG_FILES([
 Makefile

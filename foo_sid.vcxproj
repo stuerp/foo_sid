@@ -87,6 +87,22 @@
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -98,7 +114,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/resid-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>HAVE_CXX11;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;FILTER_CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -137,7 +153,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/resid-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>HAVE_CXX11;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;FILTER_CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -180,7 +196,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/resid-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/d2notypeopt</AdditionalOptions>
@@ -223,7 +239,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../3rdParty/WTL10_10320/Include;../sdk/foobar2000/sdk;../sdk/foobar2000/shared;../sdk/foobar2000;../sdk;./3rdParty/libsidplayfp/src;./3rdParty/libsidplayfp-projects;./3rdParty/libsidplayfp/src/builders/resid-builder;./3rdParty/libsidplayfp/src/builders/residfp-builder;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/resid-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/d2notypeopt</AdditionalOptions>
@@ -278,7 +294,6 @@
     <ResourceCompile Include="foo_sid.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h" />
     <ClInclude Include="History.h" />
     <ClInclude Include="Patrons.h" />
     <ClInclude Include="pch.h" />
@@ -316,10 +331,11 @@
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
+    <None Include="cpp.hint" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="LICENSE.txt" />
+    <Text Include="LICENSE" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

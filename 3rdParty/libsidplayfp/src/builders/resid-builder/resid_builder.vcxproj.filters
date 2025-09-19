@@ -4,7 +4,6 @@
     <ClInclude Include="resid.h" />
     <ClInclude Include="resid-emu.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="resid\filter8580new.h" />
     <ClInclude Include="resid\dac.h" />
     <ClInclude Include="resid\sid.h" />
     <ClInclude Include="resid\voice.h" />
@@ -14,11 +13,20 @@
     <ClInclude Include="resid\pot.h" />
     <ClInclude Include="resid\spline.h" />
     <ClInclude Include="resid\resid-config.h" />
+    <ClInclude Include="resid\filter.h" />
+    <ClInclude Include="resid\siddefs.h" />
+    <ClInclude Include="resid\wave6581_PST.h" />
+    <ClInclude Include="resid\wave6581_PS_.h" />
+    <ClInclude Include="resid\wave6581_P_T.h" />
+    <ClInclude Include="resid\wave6581__ST.h" />
+    <ClInclude Include="resid\wave8580_PST.h" />
+    <ClInclude Include="resid\wave8580_PS_.h" />
+    <ClInclude Include="resid\wave8580_P_T.h" />
+    <ClInclude Include="resid\wave8580__ST.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="resid-builder.cpp" />
     <ClCompile Include="resid-emu.cpp" />
-    <ClCompile Include="resid\filter8580new.cc" />
     <ClCompile Include="resid\dac.cc" />
     <ClCompile Include="resid\sid.cc" />
     <ClCompile Include="resid\voice.cc" />
@@ -27,5 +35,6 @@
     <ClCompile Include="resid\extfilt.cc" />
     <ClCompile Include="resid\pot.cc" />
     <ClCompile Include="resid\version.cc" />
+    <ClCompile Include="resid\filter.cc" />
   </ItemGroup>
 </Project>
