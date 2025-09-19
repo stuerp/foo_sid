@@ -1,3 +1,19 @@
+2.15.1 2025-09-19
+* resid/residfp: remove accidental DC offset (#205)
+* residfp: clock voice 3 even if muted (#211)
+* resid: fix silenced tunes (#212)
+* fixed load performance regression (#207)
+
+
+
+2.15.0 2025-06-29
+* Compile with fast math, without unsafe optimizations
+* residfp: reworked the SIMD support, removed the intrinsics code leaving the compiler vectorize the loop
+* Extended the new play API
+* Marked old play API functions as deprecated
+
+
+
 2.14.0 2025-05-11
 * Rough approximation of MDAC saturation for the 6581 (#177) (#185)
 * New play API for client side mixing (#41) (#184)

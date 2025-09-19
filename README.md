@@ -109,6 +109,15 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
+v1.102.0.0, 2025-09-19
+
+* Upgraded libsidplayfp to 2.15.1.
+
+v1.101.1.0, 2025-06-16
+
+* New: The libsidplayfp name and version that foo_sid uses is displayed in the foobar2000 console.
+* Fixed: Crash when determining the HVSC genre if a file was played that was not located under the HVSC root directory.
+
 v1.101.0.0, 2025-05-18
 
 * Upgraded libsidplayfp to 2.14.0.

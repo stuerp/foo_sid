@@ -76,6 +76,7 @@
     <ClInclude Include="src\c64\c64env.h" />
     <ClInclude Include="src\c64\c64vic.h" />
     <ClInclude Include="src\c64\mmu.h" />
+    <ClInclude Include="src\simpleMixer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\sidtune\p00.cpp" />
@@ -111,6 +112,7 @@
     <ClCompile Include="src\c64\CPU\mos6510debug.cpp" />
     <ClCompile Include="src\c64\VIC_II\mos656x.cpp" />
     <ClCompile Include="src\c64\mmu.cpp" />
+    <ClCompile Include="src\simpleMixer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\poweron.bin" />

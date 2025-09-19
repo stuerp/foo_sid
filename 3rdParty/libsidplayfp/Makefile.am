@@ -13,10 +13,6 @@ if MINGW32
   W32_LDFLAGS = -no-undefined
 endif
 
-if HAVE_VISIBILITY
-  VISIBILITY_CXXFLAGS = -fvisibility=hidden -fvisibility-inlines-hidden
-endif
-
 AM_CPPFLAGS = -I $(top_builddir)/src/builders/residfp-builder \
 -I $(top_builddir)/src/builders/residfp-builder/residfp \
 -I $(top_builddir)/src/builders/resid-builder \
@@ -29,8 +25,6 @@ $(EXSID_CFLAGS) \
 $(PTHREAD_CFLAGS) \
 $(FTDI_CFLAGS) \
 @debug_flags@
-
-AM_CXXFLAGS = $(VISIBILITY_CXXFLAGS) $(SIMD_CFLAGS)
 
 #=========================================================
 EXTRA_DIST = \
@@ -112,6 +106,8 @@ src/sidcxx11.h \
 src/sidmd5.h \
 src/sidmemory.h \
 src/SidInfoImpl.h \
+src/simpleMixer.cpp \
+src/simpleMixer.h \
 src/romCheck.h \
 src/sidemu.cpp \
 src/sidemu.h \
@@ -212,7 +208,7 @@ src/builders/resid-builder/libsidplayfp-resid.la \
 $(LIBGCRYPT_LIBS) \
 $(PTHREAD_LIBS)
 
-src_libsidplayfp_la_CPPFLAGS = $(LIBGCRYPT_CFLAGS) $(PTHREAD_CFLAGS) $(AM_CPPFLAGS)
+src_libsidplayfp_la_CPPFLAGS = $(LIBGCRYPT_CFLAGS) $(AM_CPPFLAGS)
 
 if HARDSID
   src_libsidplayfp_la_LIBADD += src/builders/hardsid-builder/libsidplayfp-hardsid.la
@@ -269,6 +265,10 @@ src/builders/residfp-builder/residfp/resample/SincResampler.h \
 src/builders/residfp-builder/residfp/resample/TwoPassSincResampler.h \
 src/builders/residfp-builder/residfp/version.cc
 
+
+src_builders_residfp_builder_residfp_libresidfp_la_CXXFLAGS = \
+@RESIDFP_CXXFLAGS@
+
 #=========================================================
 # resid
 
@@ -321,6 +321,9 @@ noinst_SCRIPTS = src/builders/resid-builder/resid/samp2src.pl
 
 .dat.h:
 	$(PERL) $(srcdir)/src/builders/resid-builder/resid/samp2src.pl $* $< $@
+
+src_builders_residfpII_builder_residfpII_libresidfpII_la_CXXFLAGS = \
+@RESIDFP_CXXFLAGS@
 
 #=========================================================
 # builders

@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2024.06.23) **/
+/** $VER: foo_sid.cpp (2025.06.16) **/
 
 #include <pch.h>
 
@@ -38,7 +38,7 @@
 
 #include "roms.hpp"
 
-#pragma region("GUIDs")
+#pragma region GUIDs
 // {7ABA4483-9480-4f9b-ADB5-BA2A495EAB22}
 static const GUID guid_cfg_infinite = { 0x7aba4483, 0x9480, 0x4f9b, { 0xad, 0xb5, 0xba, 0x2a, 0x49, 0x5e, 0xab, 0x22 } };
 // {6228BE43-CBB1-48E4-9488-0F4242091BB7}
@@ -537,11 +537,11 @@ public:
             fileInfo.set_length(double(Length) / 1000.0);
         }
 
-        // General tags
+        // General info
         fileInfo.info_set_int("channels", 2);
         fileInfo.info_set("encoding", "synthesized");
 
-        // Specific tags
+        // Specific info
         {
             fileInfo.info_set_int("sid_chip_count", TuneInfo->sidChips());
 
@@ -553,7 +553,7 @@ public:
             fileInfo.info_set("sid_model", TuneInfo->sidModel(0) == SidTuneInfo::SIDMODEL_8580 ? "8580" : "6581");
         }
 
-        // Metadata tags
+        // Metadata info
         {
             const unsigned int InfoCount = TuneInfo->numberOfInfoStrings();
 
@@ -611,16 +611,48 @@ public:
 
                 if (_IsSTILLoaded)
                 {
-                    std::string absPath = std::string(TuneInfo->path());
+                    std::string FilePath = TuneInfo->path();
 
-                    absPath.replace(absPath.find("file://"), std::string("file://").length(), "");
+                    FilePath.replace(FilePath.find("file://"), std::string("file://").length(), "");
 
-                    stilName = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::name);
-                    stilTitle = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::title);
-                    stilArtist = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::artist);
-                    stilSongComment = StilGetAbsEntry(absPath.c_str(), subSongNo, STIL::comment);
-                    stilFileComment = StilGetAbsEntry(absPath.c_str(), 0, STIL::comment);
-                    stilGlobalComment = StilGetAbsGlobalComment(absPath.c_str());
+                    // Determine the genre of the file.
+                    {
+                        std::string Genre = FilePath;
+
+                        FilePath += std::string(TuneInfo->dataFileName());
+
+                        size_t Index = Genre.find(_StilBaseDir.c_str());
+
+                        if (std::string::npos != Index)
+                        {
+                            Genre.replace(Index, _StilBaseDir.length() + 1, "");
+
+                            Index = Genre.find('\\');
+
+                            if (std::string::npos != Index)
+                            {
+                                    stilGenre = Genre.substr(0, Index);
+
+                                if (stilGenre.compare("DEMOS") == 0)
+                                    stilGenre = "Demos";
+
+                                if (stilGenre.compare("GAMES") == 0)
+                                    stilGenre = "Games";
+
+                                if (stilGenre.compare("MUSICIANS") == 0)
+                                    stilGenre = "Musicians";
+
+                                stilGenre = "C64 HVSC " + stilGenre;
+                            }
+                        }
+                    }
+
+                    stilName = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::name);
+                    stilTitle = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::title);
+                    stilArtist = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::artist);
+                    stilSongComment = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::comment);
+                    stilFileComment = StilGetAbsEntry(FilePath.c_str(), 0, STIL::comment);
+                    stilGlobalComment = StilGetAbsGlobalComment(FilePath.c_str());
                 }
 
                 std::string fooTrackNo(sidTrackNo);
@@ -804,6 +836,10 @@ public:
 
         if (!_Engine->load(_Tune.get()))
             throw exception_io_data(_Engine->error());
+
+        const auto & Info = _Engine->info();
+
+        console::print(STR_COMPONENT_BASENAME " is using ", Info.name(), " ", Info.version(), "(Kernal: ", Info.kernalDesc(), ", BASIC: ", Info.basicDesc(), ", CharGen: ", Info.chargenDesc(), ").");
 
         _Builder = nullptr;
 

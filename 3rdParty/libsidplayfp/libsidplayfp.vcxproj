@@ -68,6 +68,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)out\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)int\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -219,6 +235,7 @@
     <ClInclude Include="src\sidtune\SidTuneInfoImpl.h" />
     <ClInclude Include="src\sidtune\SidTuneTools.h" />
     <ClInclude Include="src\sidtune\SmartPtr.h" />
+    <ClInclude Include="src\simpleMixer.h" />
     <ClInclude Include="src\stringutils.h" />
     <ClInclude Include="src\utils\iMd5.h" />
     <ClInclude Include="src\utils\iniParser.h" />
@@ -260,6 +277,7 @@
     <ClCompile Include="src\sidtune\PSID.cpp" />
     <ClCompile Include="src\sidtune\SidTuneBase.cpp" />
     <ClCompile Include="src\sidtune\SidTuneTools.cpp" />
+    <ClCompile Include="src\simpleMixer.cpp" />
     <ClCompile Include="src\utils\iniParser.cpp" />
     <ClCompile Include="src\utils\md5Factory.cpp" />
     <ClCompile Include="src\utils\MD5\MD5.cpp" />

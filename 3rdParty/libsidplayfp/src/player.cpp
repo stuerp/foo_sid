@@ -147,10 +147,12 @@ void Player::initialise()
         powerOnDelay = (uint_least16_t)((m_rand.next() >> 3) & SidConfig::MAX_POWER_ON_DELAY);
     }
 
-    // Run for calculated number of cycles
-    for (int i = 0; i <= powerOnDelay; i++)
+    powerOnDelay += 8000;
+
+    // Run for ~ [25000,50000] cycles
+    for (int i = 0; i < powerOnDelay; i++)
     {
-        for (int j = 0; j < 100; j++)
+        for (int j = 0; j < 3; j++)
             m_c64.clock();
         m_mixer.clockChips();
         m_mixer.resetBufs();
@@ -218,6 +220,18 @@ void Player::filter(unsigned int sidNum, bool enable)
         s->filter(enable);
 }
 
+void Player::initMixer(bool stereo)
+{
+    short* bufs[Mixer::MAX_SIDS];
+    buffers(bufs);
+    m_simpleMixer.reset(new SimpleMixer(stereo, bufs, installedSIDs()));
+}
+
+unsigned int Player::mix(short *buffer, unsigned int samples)
+{
+    return m_simpleMixer->doMix(buffer, samples);
+}
+
 void Player::buffers(short** buffers) const
 {
     for (unsigned int i = 0; i < Mixer::MAX_SIDS; i++)
@@ -269,6 +283,18 @@ int Player::play(unsigned int cycles)
     {
         m_errorString = "Illegal instruction executed";
         return -1;
+    }
+}
+
+bool Player::reset()
+{
+    try
+    {
+        initialise();
+        return true;
+    }
+    catch (configError const &) {
+        return false;
     }
 }
 
@@ -454,7 +480,6 @@ bool Player::config(const SidConfig &cfg, bool force)
     m_info.m_channels = isStereo ? 2 : 1;
 
     m_mixer.setStereo(isStereo);
-    m_mixer.setSamplerate(cfg.frequency);
     m_mixer.setVolume(cfg.leftVolume, cfg.rightVolume);
 
     // Update Configuration
