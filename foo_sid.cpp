@@ -142,13 +142,6 @@ public:
 
 #pragma endregion
 
-#pragma region HVSC
-
-static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
-static SidDatabase _HVSC;
-static critical_section _HVSCLock;
-static bool _IsHVSCLoaded = false;
-
 /// <summary>
 /// Replaces parts of the database path with pseudo variables.
 /// </summary>
@@ -159,22 +152,21 @@ static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::str
     if (src == nullptr || (src && *src == '\0'))
         return;
 
-    pfc::string8 ModulePathName;
+    pfc::string ModulePathName;
 
     ::uGetModuleFileName(NULL, ModulePathName);
 
     ModulePathName.truncate(ModulePathName.scan_filename() - 1);
 
-    pfc::string8 ComponentPathName = core_api::get_my_full_path();
+    pfc::string ComponentPathName = core_api::get_my_full_path();
 
     ComponentPathName.truncate(ComponentPathName.scan_filename() - 1);
 
-    const char * ProfileURI = core_api::get_profile_path();
+    pfc::string ProfileURI;
 
-    if (!pfc::stricmp_ascii_ex(ProfileURI, 7, "file://", 7))
-        ProfileURI += 7;
+    foobar2000_io::extract_native_path(core_api::get_profile_path(), ProfileURI);
 
-    pfc::string8 ProfilePathName = ProfileURI;
+    pfc::string ProfilePathName = ProfileURI;
 
     if (fromConfig)
     {
@@ -256,12 +248,19 @@ static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::str
     }
 }
 
+#pragma region HVSC
+
+static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
+static SidDatabase _HVSC;
+static critical_section _HVSCLock;
+static bool _IsHVSCLoaded = false;
+
 /// <summary>
-/// Loads the database.
+/// Loads the HSVC database.
 /// </summary>
 static void LoadHVSC()
 {
-    pfc::string8 FilePath;
+    pfc::string FilePath;
 
     ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
 
@@ -300,34 +299,38 @@ static void UnloadHVSC()
 #pragma region STIL
 
 static STIL _STIL;
-static pfc::string8 _StilBaseDir;
+static pfc::string _STILRoot;
 static critical_section _STILLock;
 static bool _IsSTILLoaded = false;
 
-static void LoadStil()
+/// <summary>
+/// Loads the STIL database.
+/// </summary>
+static void LoadSTIL()
 {
-    pfc::string8 FilePath;
+    pfc::string FilePath;
 
     ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
 
-    pfc::string8 basePath(FilePath);
+    if (FilePath.length() == 0)
+        return;
 
     // get from path\hvsc\DOCUMENTS\Songlengths.md5 to path\hvsc
-    size_t pos = basePath.lastIndexOf('\\');
+    size_t pos = FilePath.lastIndexOf('\\');
 
     if (pos != std::string::npos && pos > 0)
     {
-        pos = basePath.lastIndexOf('\\', pos - 1);
+        pos = FilePath.lastIndexOf('\\', pos - 1);
 
         if (pos != std::string::npos)
-            basePath = basePath.subString(0, pos);
+            FilePath = FilePath.subString(0, pos);
     }
 
-    if (basePath.length() == 0)
+    if (FilePath.length() == 0)
         return;
 
-    _StilBaseDir = basePath;
-    _IsSTILLoaded = _STIL.setBaseDir(_StilBaseDir.c_str());
+    _STILRoot = FilePath;
+    _IsSTILLoaded = _STIL.setBaseDir(_STILRoot.c_str());
 }
 
 static std::vector<std::string> StilSplitString(const char * s, std::string regexp)
@@ -607,26 +610,28 @@ public:
                     insync(_STILLock);
 
                     if (!_IsSTILLoaded)
-                        ::LoadStil();
+                        ::LoadSTIL();
                 }
 
                 if (_IsSTILLoaded)
                 {
-                    std::string FilePath = TuneInfo->path();
+                    pfc::string NativePath;
 
-                    FilePath.replace(FilePath.find("file://"), std::string("file://").length(), "");
+                    foobar2000_io::extract_native_path(TuneInfo->path(), NativePath);
+
+                    std::string FilePath = NativePath.c_str();
 
                     // Determine the genre of the file.
                     {
-                        std::string Genre = FilePath;
+                        std::string Genre = FilePath.c_str();
 
                         FilePath += std::string(TuneInfo->dataFileName());
 
-                        size_t Index = Genre.find(_StilBaseDir.c_str());
+                        size_t Index = Genre.find(_STILRoot.c_str());
 
                         if (std::string::npos != Index)
                         {
-                            Genre.replace(Index, _StilBaseDir.length() + 1, "");
+                            Genre.replace(Index, _STILRoot.length() + 1, "");
 
                             Index = Genre.find('\\');
 
@@ -1262,11 +1267,11 @@ void CMyPreferences::apply()
     }
 
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-        pfc::string8 DatabaseFilePath;
+        pfc::string DatabaseFilePath;
 
         SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
@@ -1283,14 +1288,14 @@ void CMyPreferences::apply()
             insync(_STILLock);
 
             ::UnloadStil();
-            ::LoadStil();
+            ::LoadSTIL();
         }
 
         UpdateDatabaseStatusText();
     }
 
     {
-        pfc::string8 LengthString;
+        pfc::string LengthString;
 
         ::uGetDlgItemText(m_hWnd, IDC_DLENGTH, LengthString);
 
@@ -1475,15 +1480,15 @@ void CMyPreferences::OnHScroll(UINT, UINT, CScrollBar pScrollBar)
 
 void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
 {
-    pfc::string8 Text;
+    pfc::string Text;
 
     ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-    pfc::string8 DatabaseFilePath;
+    pfc::string DatabaseFilePath;
 
     ::SanitizeDatabasePathName(Text, true, DatabaseFilePath);
 
-    pfc::string8 DatabaseDirectoryPathName(DatabaseFilePath);
+    pfc::string DatabaseDirectoryPathName(DatabaseFilePath);
 
     DatabaseDirectoryPathName.truncate(DatabaseDirectoryPathName.scan_filename());
 
@@ -1536,11 +1541,11 @@ bool CMyPreferences::HasChanged()
 
     if (!IsChanged)
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-        pfc::string8 DatabaseFilePath;
+        pfc::string DatabaseFilePath;
 
         ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
@@ -1549,7 +1554,7 @@ bool CMyPreferences::HasChanged()
 
     if (!IsChanged)
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         uGetDlgItemText(m_hWnd, IDC_DLENGTH, Text);
 

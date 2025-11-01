@@ -109,6 +109,11 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
+v1.103.0.0, 2025-11-xx
+
+* Upgraded libsidplayfp to 2.15.1.
+* Improved: Handling of foobar2000 file paths.
+
 v1.102.0.0, 2025-09-19
 
 * Upgraded libsidplayfp to 2.15.1.
@@ -184,6 +189,7 @@ v1.91.0.1, 2022-12-03, *"Scratchin' the itch"*
 * Home page: [https://github.com/stuerp/foo_sid](https://github.com/stuerp/foo_sid)
 * Repository: [https://github.com/stuerp/foo_sid.git](https://github.com/stuerp/foo_sid.git)
 * Issue tracker: [https://github.com/stuerp/foo_sid/issues](https://github.com/stuerp/foo_sid.git)
+* Support: [https://hydrogenaudio.org/index.php/topic,128639.0.html](https://hydrogenaudio.org/index.php/topic,128639.0.html).
 
 ## License
 
