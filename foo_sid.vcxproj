@@ -333,6 +333,7 @@
     <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
     <None Include="cpp.hint" />
+    <None Include="docs\History.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
