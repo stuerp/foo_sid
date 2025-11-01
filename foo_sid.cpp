@@ -601,7 +601,6 @@ public:
                 std::string stilName;
                 std::string stilTitle;
                 std::string stilArtist;
-                std::string stilGenre;
                 std::string stilSongComment;
                 std::string stilFileComment;
                 std::string stilGlobalComment;
@@ -667,7 +666,6 @@ public:
                 std::string fooArtist(sidArtist);
                 std::string fooCopyright(sidCopyright);
                 std::string fooDate(sidDate);
-                std::string fooGenre(stilGenre);
                 std::string fooOrgTitle(stilTitle);
                 std::string fooOrgArtist(stilArtist);
                 std::string fooSongComment(stilSongComment);
@@ -694,9 +692,6 @@ public:
 
                 if (fooDate.length() > 0)
                     fileInfo.meta_add("date", pfc::stringcvt::string_utf8_from_ansi(fooDate.c_str()));
-
-                if (fooGenre.length() > 0)
-                    fileInfo.meta_add("genre", pfc::stringcvt::string_utf8_from_ansi(fooGenre.c_str()));
 
                 // Split artists in multiple artists tags
                 if (fooArtist.length() > 0)
