@@ -166,6 +166,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/d2notypeopt</AdditionalOptions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -332,6 +333,7 @@
     <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
     <None Include="cpp.hint" />
+    <None Include="docs\History.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

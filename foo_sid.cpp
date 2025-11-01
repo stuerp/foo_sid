@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2025.06.16) **/
+/** $VER: foo_sid.cpp (2025.11.01) **/
 
 #include <pch.h>
 
@@ -142,13 +142,6 @@ public:
 
 #pragma endregion
 
-#pragma region HVSC
-
-static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
-static SidDatabase _HVSC;
-static critical_section _HVSCLock;
-static bool _IsHVSCLoaded = false;
-
 /// <summary>
 /// Replaces parts of the database path with pseudo variables.
 /// </summary>
@@ -159,22 +152,19 @@ static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::str
     if (src == nullptr || (src && *src == '\0'))
         return;
 
-    pfc::string8 ModulePathName;
+    pfc::string ModulePathName;
 
     ::uGetModuleFileName(NULL, ModulePathName);
 
     ModulePathName.truncate(ModulePathName.scan_filename() - 1);
 
-    pfc::string8 ComponentPathName = core_api::get_my_full_path();
+    pfc::string ComponentPathName = core_api::get_my_full_path();
 
     ComponentPathName.truncate(ComponentPathName.scan_filename() - 1);
 
-    const char * ProfileURI = core_api::get_profile_path();
+    pfc::string ProfilePathName;
 
-    if (!pfc::stricmp_ascii_ex(ProfileURI, 7, "file://", 7))
-        ProfileURI += 7;
-
-    pfc::string8 ProfilePathName = ProfileURI;
+    foobar2000_io::extract_native_path(core_api::get_profile_path(), ProfilePathName);
 
     if (fromConfig)
     {
@@ -256,12 +246,19 @@ static void SanitizeDatabasePathName(const char * src, bool fromConfig, pfc::str
     }
 }
 
+#pragma region HVSC
+
+static cfg_string _CfgDatabaseFilePath(guid_cfg_db_path, "");
+static SidDatabase _HVSC;
+static critical_section _HVSCLock;
+static bool _IsHVSCLoaded = false;
+
 /// <summary>
-/// Loads the database.
+/// Loads the HSVC database.
 /// </summary>
 static void LoadHVSC()
 {
-    pfc::string8 FilePath;
+    pfc::string FilePath;
 
     ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
 
@@ -300,34 +297,38 @@ static void UnloadHVSC()
 #pragma region STIL
 
 static STIL _STIL;
-static pfc::string8 _StilBaseDir;
+static pfc::string _STILRoot;
 static critical_section _STILLock;
 static bool _IsSTILLoaded = false;
 
-static void LoadStil()
+/// <summary>
+/// Loads the STIL database.
+/// </summary>
+static void LoadSTIL()
 {
-    pfc::string8 FilePath;
+    pfc::string FilePath;
 
     ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
 
-    pfc::string8 basePath(FilePath);
+    if (FilePath.length() == 0)
+        return;
 
     // get from path\hvsc\DOCUMENTS\Songlengths.md5 to path\hvsc
-    size_t pos = basePath.lastIndexOf('\\');
+    size_t pos = FilePath.lastIndexOf('\\');
 
     if (pos != std::string::npos && pos > 0)
     {
-        pos = basePath.lastIndexOf('\\', pos - 1);
+        pos = FilePath.lastIndexOf('\\', pos - 1);
 
         if (pos != std::string::npos)
-            basePath = basePath.subString(0, pos);
+            FilePath = FilePath.subString(0, pos);
     }
 
-    if (basePath.length() == 0)
+    if (FilePath.length() == 0)
         return;
 
-    _StilBaseDir = basePath;
-    _IsSTILLoaded = _STIL.setBaseDir(_StilBaseDir.c_str());
+    _STILRoot = FilePath;
+    _IsSTILLoaded = _STIL.setBaseDir(_STILRoot.c_str());
 }
 
 static std::vector<std::string> StilSplitString(const char * s, std::string regexp)
@@ -398,7 +399,7 @@ static std::string StilTrimEntry(const char * stilValuePtr)
     return stilValueStr.c_str();
 }
 
-static std::string StilGetAbsEntry(const char* absPath, unsigned int subSongIndex, STIL::STILField field)
+static std::string StilGetAbsEntry(const char* absPath, uint32_t subSongIndex, STIL::STILField field)
 {
     return StilTrimEntry(_STIL.getAbsEntry(absPath, subSongIndex, field));
 }
@@ -425,7 +426,7 @@ static critical_section g_residfp_lock;
 class InputHandler : public input_stubs
 {
 public:
-    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _TotalSIDSamples(0), _TotalSIDSamplesRendered(0), _NumSIDSamplesToFade(0), _IsFirstBlock(false), _IsEOF(false) { }
+    InputHandler() noexcept : _SampleRate(0), _BPS(0), _StereoSeparation(0), _TotalSIDSamples(0), _TotalSIDSamplesRendered(0), _NumSIDSamplesToFade(0), _IsFirstChunk(false), _IsEOF(false) { }
 
     InputHandler(const InputHandler&) = delete;
     InputHandler(const InputHandler&&) = delete;
@@ -513,7 +514,7 @@ public:
             return;
 
         {
-            unsigned int Length = (unsigned int) CfgDefaultLengthInMS;
+            uint32_t Length = (uint32_t) CfgDefaultLengthInMS;
 
             {
                 insync(_HVSCLock);
@@ -531,7 +532,7 @@ public:
                 const int LengthFromDatabase = _HVSC.lengthMs(md5, subSongIndex + 1);
 
                 if (LengthFromDatabase > 0)
-                    Length = (unsigned int) LengthFromDatabase;
+                    Length = (uint32_t) LengthFromDatabase;
             }
 
             fileInfo.set_length(double(Length) / 1000.0);
@@ -555,7 +556,7 @@ public:
 
         // Metadata info
         {
-            const unsigned int InfoCount = TuneInfo->numberOfInfoStrings();
+            const uint32_t InfoCount = TuneInfo->numberOfInfoStrings();
 
             //if ((InfoCount >= 1) && TuneInfo->infoString(0) && TuneInfo->infoString(0)[0])
             //    fileInfo.meta_add(TuneInfo->songs() > 1 ? "album" : "title", pfc::stringcvt::string_utf8_from_ansi(TuneInfo->infoString(0)));
@@ -591,13 +592,14 @@ public:
 
                 std::string tempSidDate = std::string(TuneInfo->infoString(2), 0, 4);
 
-                if (tempSidDate.length() == 4 && strtol(tempSidDate.c_str(), NULL, 10) > 0)
+                if ((tempSidDate.length() == 4) && (::strtol(tempSidDate.c_str(), nullptr, 10) > 0))
                     sidDate = tempSidDate;
 
                 // get values from STIL
                 std::string stilName;
                 std::string stilTitle;
                 std::string stilArtist;
+                std::string stilGenre;
                 std::string stilSongComment;
                 std::string stilFileComment;
                 std::string stilGlobalComment;
@@ -606,53 +608,56 @@ public:
                     insync(_STILLock);
 
                     if (!_IsSTILLoaded)
-                        ::LoadStil();
+                        ::LoadSTIL();
                 }
 
                 if (_IsSTILLoaded)
                 {
-                    std::string FilePath = TuneInfo->path();
+                    pfc::string NativePath;
 
-                    FilePath.replace(FilePath.find("file://"), std::string("file://").length(), "");
-
-                    // Determine the genre of the file.
+                    if (foobar2000_io::extract_native_path(TuneInfo->path(), NativePath))
                     {
-                        std::string Genre = FilePath;
+                        std::string FilePath = NativePath.c_str();
 
-                        FilePath += std::string(TuneInfo->dataFileName());
-
-                        size_t Index = Genre.find(_StilBaseDir.c_str());
-
-                        if (std::string::npos != Index)
+                        // Determine the genre of the file.
                         {
-                            Genre.replace(Index, _StilBaseDir.length() + 1, "");
+                            std::string Genre = FilePath.c_str();
 
-                            Index = Genre.find('\\');
+                            FilePath += std::string(TuneInfo->dataFileName());
+
+                            size_t Index = Genre.find(_STILRoot.c_str());
 
                             if (std::string::npos != Index)
                             {
-                                    stilGenre = Genre.substr(0, Index);
+                                Genre.replace(Index, _STILRoot.length() + 1, "");
 
-                                if (stilGenre.compare("DEMOS") == 0)
-                                    stilGenre = "Demos";
+                                Index = Genre.find('\\');
 
-                                if (stilGenre.compare("GAMES") == 0)
-                                    stilGenre = "Games";
+                                if (std::string::npos != Index)
+                                {
+                                        stilGenre = Genre.substr(0, Index);
 
-                                if (stilGenre.compare("MUSICIANS") == 0)
-                                    stilGenre = "Musicians";
+                                    if (stilGenre.compare("DEMOS") == 0)
+                                        stilGenre = "Demos";
 
-                                stilGenre = "C64 HVSC " + stilGenre;
+                                    if (stilGenre.compare("GAMES") == 0)
+                                        stilGenre = "Games";
+
+                                    if (stilGenre.compare("MUSICIANS") == 0)
+                                        stilGenre = "Musicians";
+
+                                    stilGenre = "C64 HVSC " + stilGenre;
+                                }
                             }
                         }
-                    }
 
-                    stilName = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::name);
-                    stilTitle = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::title);
-                    stilArtist = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::artist);
-                    stilSongComment = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::comment);
-                    stilFileComment = StilGetAbsEntry(FilePath.c_str(), 0, STIL::comment);
-                    stilGlobalComment = StilGetAbsGlobalComment(FilePath.c_str());
+                        stilName          = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::name);
+                        stilTitle         = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::title);
+                        stilArtist        = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::artist);
+                        stilSongComment   = StilGetAbsEntry(FilePath.c_str(), subSongNo, STIL::comment);
+                        stilFileComment   = StilGetAbsEntry(FilePath.c_str(), 0, STIL::comment);
+                        stilGlobalComment = StilGetAbsGlobalComment(FilePath.c_str());
+                    }
                 }
 
                 std::string fooTrackNo(sidTrackNo);
@@ -661,35 +666,36 @@ public:
                 std::string fooArtist(sidArtist);
                 std::string fooCopyright(sidCopyright);
                 std::string fooDate(sidDate);
+
                 std::string fooOrgTitle(stilTitle);
                 std::string fooOrgArtist(stilArtist);
                 std::string fooSongComment(stilSongComment);
                 std::string fooFileComment(stilFileComment);
                 std::string fooGlobalComment(stilGlobalComment);
 
-                if (stilName.length() > 0)
+                if (!stilName.empty())
                     fooTitle = stilName;
                 else
                 if (TuneInfo->songs() > 1)
                     fooTitle += " (song " + sidTrackNo + ")";
 
-                if (fooTrackNo.length() > 0)
+                if (!fooTrackNo.empty())
                     fileInfo.meta_add("tracknumber", pfc::stringcvt::string_utf8_from_ansi(fooTrackNo.c_str()));
 
-                if (fooTitle.length() > 0)
+                if (!fooTitle.empty())
                     fileInfo.meta_add("title", pfc::stringcvt::string_utf8_from_ansi(fooTitle.c_str()));
 
-                if (fooAlbum.length() > 0)
+                if (!fooAlbum.empty())
                     fileInfo.meta_add("album", pfc::stringcvt::string_utf8_from_ansi(fooAlbum.c_str()));
 
-                if (fooCopyright.length() > 0)
+                if (!fooCopyright.empty())
                     fileInfo.meta_add("copyright", pfc::stringcvt::string_utf8_from_ansi(fooCopyright.c_str()));
 
-                if (fooDate.length() > 0)
+                if (!fooDate.empty())
                     fileInfo.meta_add("date", pfc::stringcvt::string_utf8_from_ansi(fooDate.c_str()));
 
                 // Split artists in multiple artists tags
-                if (fooArtist.length() > 0)
+                if (!fooArtist.empty())
                 {
                     std::vector<std::string> artistList = StilSplitString(fooArtist.c_str(), "( *& *)|( *, *)");
                     std::vector<std::string> aliasList = StilGetMatchGroups(artistList[0].c_str(), "(.*?) *(?:<\\?>|\\(.*?\\))");
@@ -711,23 +717,23 @@ public:
                 }
 
                 // NB: foobar Selection properties only show 1000 chars in main window
-                if (fooSongComment.length() > 0)
+                if (!fooSongComment.empty())
                     fileInfo.meta_add("stil_song_comment", pfc::stringcvt::string_utf8_from_ansi(fooSongComment.c_str()));
 
-                if (fooFileComment.length() > 0)
+                if (!fooFileComment.empty())
                     fileInfo.meta_add("stil_file_comment", pfc::stringcvt::string_utf8_from_ansi(fooFileComment.c_str()));
 
-                if (stilGlobalComment.length() > 0)
+                if (!stilGlobalComment.empty())
                     fileInfo.meta_add("stil_global_comment", pfc::stringcvt::string_utf8_from_ansi(stilGlobalComment.c_str()));
 
-                if (fooOrgArtist.length() > 0)
+                if (!fooOrgArtist.empty())
                     fileInfo.meta_add("stil_original_artist", pfc::stringcvt::string_utf8_from_ansi(fooOrgArtist.c_str()));
 
-                if (fooOrgTitle.length() > 0)
+                if (!fooOrgTitle.empty())
                     fileInfo.meta_add("stil_original_title", pfc::stringcvt::string_utf8_from_ansi(fooOrgTitle.c_str()));
             }
 
-            for (unsigned int i = 3; i < InfoCount; ++i)
+            for (uint32_t i = 3; i < InfoCount; ++i)
             {
                 const char * Info = TuneInfo->infoString(i);
 
@@ -735,9 +741,9 @@ public:
                     fileInfo.meta_add("info", pfc::stringcvt::string_utf8_from_ansi(Info));
             }
 
-            const unsigned int CommentCount = TuneInfo->numberOfCommentStrings();
+            const uint32_t CommentCount = TuneInfo->numberOfCommentStrings();
 
-            for (unsigned int i = 0; i < CommentCount; ++i)
+            for (uint32_t i = 0; i < CommentCount; ++i)
             {
                 const char * Comment = TuneInfo->commentString(i);
 
@@ -805,13 +811,13 @@ public:
 
     void decode_initialize(t_uint32 subSongIndex, unsigned flags, abort_callback &)
     {
-        _IsFirstBlock = true;
+        _IsFirstChunk = true;
 
         _Tune->selectSong(subSongIndex + 1);
 
 //      const int RequiredChipCount = _Tune->getInfo()->sidChips();
 
-        uint32_t LengthInMS = (unsigned int) CfgDefaultLengthInMS;
+        uint32_t LengthInMS = (uint32_t) CfgDefaultLengthInMS;
 
         {
             {
@@ -969,7 +975,7 @@ public:
         // Convert the samples from 16-bit signed integer to audio_sample format.
         audio_math::convert_from_int16(_SampleBuffer.get_ptr(), NumSamplesRendered, Samples, (audio_sample) 1.0);
 
-        // Convert to mid-side. Scale side difference according to user setting.
+        // Convert to mid/side. Scale side difference according to user setting.
         {
             const audio_sample ScaleFactor = (audio_sample) _StereoSeparation * (audio_sample) 0.005; // percent, pre-scaled by half
 
@@ -977,17 +983,17 @@ public:
 
             for (int i = 0; i < NumSamplesRendered; i += 2)
             {
-                const audio_sample mid  = (p[0] + p[1]) * (audio_sample)0.5;
-                const audio_sample side = (p[0] - p[1]) * ScaleFactor;
+                const audio_sample Mid  = (p[0] + p[1]) * (audio_sample) 0.5;
+                const audio_sample Side = (p[0] - p[1]) * ScaleFactor;
 
-                *p++ = mid + side;
-                *p++ = mid - side;
+                *p++ = Mid + Side;
+                *p++ = Mid - Side;
             }
         }
 
         {
-            const unsigned int Head = _TotalSIDSamplesRendered;
-            const unsigned int Tail = NumSamplesRendered;
+            const uint32_t Head = _TotalSIDSamplesRendered;
+            const uint32_t Tail = NumSamplesRendered;
 
             if ((_TotalSIDSamples != 0) && (Tail + _NumSIDSamplesToFade > _TotalSIDSamples))
             {
@@ -999,8 +1005,8 @@ public:
                 {
                     if (i > _TotalSIDSamples)
                     {
-                        *p++ = (audio_sample)0.0;
-                        *p++ = (audio_sample)0.0;
+                        *p++ = (audio_sample) 0.0;
+                        *p++ = (audio_sample) 0.0;
                     }
                     else
                     {
@@ -1020,17 +1026,17 @@ public:
         return true;
     }
 
-    void decode_seek(double p_seconds, abort_callback & p_abort)
+    void decode_seek(double positionInSeconds, abort_callback & abortHandler)
     {
-        _IsFirstBlock = true;
+        _IsFirstChunk = true;
 
-        unsigned samples = unsigned(audio_math::time_to_samples(p_seconds, _SampleRate));
+        uint32_t PositionInSamples = (uint32_t) audio_math::time_to_samples(positionInSeconds, _SampleRate);
 
-        samples *= 2;
+        PositionInSamples *= 2;
 
-        if (samples < _TotalSIDSamplesRendered)
+        if (PositionInSamples < _TotalSIDSamplesRendered)
         {
-            decode_initialize(_Tune->getInfo()->currentSong(), input_flag_playback | (_TotalSIDSamples ? input_flag_no_looping : 0), p_abort);
+            decode_initialize(_Tune->getInfo()->currentSong(), input_flag_playback | (_TotalSIDSamples ? input_flag_no_looping : 0), abortHandler);
         }
 
         pfc::array_t<t_int16> sample_buffer;
@@ -1043,21 +1049,21 @@ public:
         samples /= 32;
         m_engine->fastForward( 100 * 32 );
 */
-        while (_TotalSIDSamplesRendered < samples)
+        while (_TotalSIDSamplesRendered < PositionInSamples)
         {
-            p_abort.check();
+            abortHandler.check();
 
-            unsigned todo = samples - _TotalSIDSamplesRendered;
+            uint32_t ToDO = PositionInSamples - _TotalSIDSamplesRendered;
 
-            if (todo > MaxSIDSamples * 2)
-                todo = MaxSIDSamples * 2;
+            if (ToDO > MaxSIDSamples * 2)
+                ToDO = MaxSIDSamples * 2;
 
-            unsigned done;
+            uint32_t Done;
             {
-                done = _Engine->play(sample_buffer.get_ptr(), todo);
+                Done = _Engine->play(sample_buffer.get_ptr(), ToDO);
             }
 
-            if (done < todo)
+            if (Done < ToDO)
             {
                 if (_Engine->error())
                     throw exception_io_data(_Engine->error());
@@ -1066,7 +1072,7 @@ public:
                 break;
             }
 
-            _TotalSIDSamplesRendered += todo;
+            _TotalSIDSamplesRendered += ToDO;
         }
 /*
         played *= 32;
@@ -1084,13 +1090,13 @@ public:
 
     bool decode_get_dynamic_info(file_info & fileInfo, double & timestampDelta)
     {
-        if (!_IsFirstBlock)
+        if (!_IsFirstChunk)
             return false;
 
         fileInfo.info_set_int("samplerate", _SampleRate);
 
         timestampDelta = 0.0;
-        _IsFirstBlock = false;
+        _IsFirstChunk = false;
 
         return true;
     }
@@ -1104,7 +1110,7 @@ private:
     uint32_t _TotalSIDSamplesRendered;
     uint32_t _NumSIDSamplesToFade;
 
-    bool _IsFirstBlock;
+    bool _IsFirstChunk;
     bool _IsEOF;
 
     std::unique_ptr<SidTuneMod> _Tune;
@@ -1125,7 +1131,7 @@ const char * parseTime(const char * str, int_least32_t & result); // From "SidDa
 
 static cfg_dropdown_history cfg_history_rate(guid_cfg_history_rate, 16);
 
-static const unsigned int _SampleRates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
+static const uint32_t _SampleRates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
 
 class CMyPreferences : public CDialogImpl<CMyPreferences>, public preferences_page_instance
 {
@@ -1257,13 +1263,13 @@ void CMyPreferences::apply()
     }
 
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-        pfc::string8 DatabaseFilePath;
+        pfc::string DatabaseFilePath;
 
-        SanitizeDatabasePathName(Text, false, DatabaseFilePath);
+        ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
         _CfgDatabaseFilePath = DatabaseFilePath;
 
@@ -1278,14 +1284,14 @@ void CMyPreferences::apply()
             insync(_STILLock);
 
             ::UnloadStil();
-            ::LoadStil();
+            ::LoadSTIL();
         }
 
         UpdateDatabaseStatusText();
     }
 
     {
-        pfc::string8 LengthString;
+        pfc::string LengthString;
 
         ::uGetDlgItemText(m_hWnd, IDC_DLENGTH, LengthString);
 
@@ -1340,7 +1346,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
             for (int n = _countof(_SampleRates); n--;)
             {
-                if (_SampleRates[n] != (unsigned int)CfgSampleRate)
+                if (_SampleRates[n] != (uint32_t) CfgSampleRate)
                 {
                     _itoa_s(_SampleRates[n], temp, _countof(temp), 10);
                     cfg_history_rate.add_item(temp);
@@ -1470,15 +1476,15 @@ void CMyPreferences::OnHScroll(UINT, UINT, CScrollBar pScrollBar)
 
 void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
 {
-    pfc::string8 Text;
+    pfc::string Text;
 
     ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-    pfc::string8 DatabaseFilePath;
+    pfc::string DatabaseFilePath;
 
     ::SanitizeDatabasePathName(Text, true, DatabaseFilePath);
 
-    pfc::string8 DatabaseDirectoryPathName(DatabaseFilePath);
+    pfc::string DatabaseDirectoryPathName(DatabaseFilePath);
 
     DatabaseDirectoryPathName.truncate(DatabaseDirectoryPathName.scan_filename());
 
@@ -1531,11 +1537,11 @@ bool CMyPreferences::HasChanged()
 
     if (!IsChanged)
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         ::uGetDlgItemText(m_hWnd, IDC_DB_PATH, Text);
 
-        pfc::string8 DatabaseFilePath;
+        pfc::string DatabaseFilePath;
 
         ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
@@ -1544,7 +1550,7 @@ bool CMyPreferences::HasChanged()
 
     if (!IsChanged)
     {
-        pfc::string8 Text;
+        pfc::string Text;
 
         uGetDlgItemText(m_hWnd, IDC_DLENGTH, Text);
 

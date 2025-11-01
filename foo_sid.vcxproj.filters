@@ -23,6 +23,7 @@
     <None Include=".gitignore" />
     <None Include=".gitattributes" />
     <None Include="cpp.hint" />
+    <None Include="docs\History.md" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE" />
