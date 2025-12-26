@@ -109,9 +109,9 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.102.1.0, 2025-11-01
+v1.103.0.0, 2025-12-26
 
-* Improved: Handling of foobar2000 file paths.
+* Upgraded libsidplayfp to 2.16.0.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 

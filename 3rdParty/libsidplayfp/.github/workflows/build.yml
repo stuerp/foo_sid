@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-      - libsidplayfp-2.15
+      - libsidplayfp-2.16
   pull_request:
     branches:
       - master
-      - libsidplayfp-2.15
+      - libsidplayfp-2.16
 
 permissions:
   contents: read
@@ -18,7 +18,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        include:
+        - os: ubuntu-latest
+        - os: ubuntu-latest
+          cxxflags: -std=c++11
+        - os: macos-latest
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -30,7 +34,8 @@ jobs:
         sudo apt-get install \
           libgcrypt20-dev \
           xa65 \
-          libftdi1-dev
+          libftdi1-dev \
+          libusb-1.0-0-dev
     - name: deps [macOS]
       if: runner.os == 'macOS'
       run: |
@@ -47,6 +52,7 @@ jobs:
           gnu-sed \
           libgcrypt \
           xa \
+          libusb \
           libftdi
     - uses: actions/checkout@v4
       with:
@@ -57,6 +63,7 @@ jobs:
       run: ./configure
     - name: make distcheck
       run: |
+        [[ -n "${{ matrix.cxxflags }}" ]] && export DISTCHECK_CONFIGURE_FLAGS='CXXFLAGS="${CXXFLAGS} ${{ matrix.cxxflags }}"'
         if [ '${{ runner.os }}' == 'macOS' ]; then
           # Assumes `sed` is GNU sed:
           # sed: illegal option -- r

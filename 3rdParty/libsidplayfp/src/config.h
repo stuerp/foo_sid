@@ -5,7 +5,7 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "2.15.1"
+#define VERSION "2.16.0"
 #endif
 
 #ifndef PACKAGE_URL
