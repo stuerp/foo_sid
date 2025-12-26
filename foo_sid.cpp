@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2025.11.01) **/
+/** $VER: foo_sid.cpp (2025.12.26) **/
 
 #include <pch.h>
 
@@ -843,10 +843,6 @@ public:
         if (!_Engine->load(_Tune.get()))
             throw exception_io_data(_Engine->error());
 
-        const auto & Info = _Engine->info();
-
-        console::print(STR_COMPONENT_BASENAME " is using ", Info.name(), " ", Info.version(), "(Kernal: ", Info.kernalDesc(), ", BASIC: ", Info.basicDesc(), ", CharGen: ", Info.chargenDesc(), ").");
-
         _Builder = nullptr;
 
         switch (cfg_sid_builder)
@@ -921,6 +917,10 @@ public:
             if (!_Engine->config(Config))
                 throw exception_io_data(_Engine->error());
         }
+
+        const auto & Info = _Engine->info();
+
+        console::print(STR_COMPONENT_BASENAME " is using ", Info.name(), " ", Info.version(), " (Kernal: ", Info.kernalDesc(), ", BASIC: ", Info.basicDesc(), ", CharGen: ", Info.chargenDesc(), ").");
 
         _IsEOF = false;
 

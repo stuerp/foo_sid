@@ -1,6 +1,6 @@
 m4_define([lib_major], [2])
-m4_define([lib_minor], [15])
-m4_define([lib_level], [1])
+m4_define([lib_minor], [16])
+m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -110,13 +110,13 @@ dnl libtool-style version-info number
 #
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
-LIBSIDPLAYCUR=12
-LIBSIDPLAYREV=42
-LIBSIDPLAYAGE=6
+LIBSIDPLAYCUR=13
+LIBSIDPLAYREV=44
+LIBSIDPLAYAGE=7
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
-LIBSTILVIEWREV=6
+LIBSTILVIEWREV=7
 LIBSTILVIEWAGE=0
 LIBSTILVIEWVERSION=$LIBSTILVIEWCUR:$LIBSTILVIEWREV:$LIBSTILVIEWAGE
 
@@ -151,15 +151,17 @@ AS_IF([test x"$enable_inline" != "xno"],
 )
 
 dnl define compiler flag to enable SIMD instructions, not required if -march or -mcpu is defined
+AC_MSG_CHECKING([for SIMD instructions])
 AC_ARG_WITH(
     [simd],
-    [AS_HELP_STRING([--with-simd], [Build with SIMD optimizations [@<:@mmx/sse2/sse4/avx2/avx512f/none, default=none@:>@]])],
+    [AS_HELP_STRING([--with-simd=], [Build with SIMD optimizations @<:@runtime/mmx/sse2/sse4/avx2/avx512f/none, default=none@:>@])],
     [],
     [with_simd=none]
 )
 
 AS_IF([test x"$with_simd" != xnone],
     [AS_CASE([$with_simd],
+        [runtime], [AC_DEFINE([RUNTIME_DISPATCH], 1, [Define to 1 to enable runtime SIMD dispatch.])],
         [mmx], [SID_X86_SIMD_SUPPORTS([mmx])],
         [sse2], [SID_X86_SIMD_SUPPORTS([sse2])],
         [sse4], [SID_X86_SIMD_SUPPORTS([sse4])],
@@ -168,6 +170,7 @@ AS_IF([test x"$with_simd" != xnone],
         [AC_MSG_ERROR([Unrecognized SIMD specified])]
     )]
 )
+AC_MSG_RESULT([$with_simd])
 
 dnl gcc needs this flag to enable vectorization
 AX_APPEND_COMPILE_FLAGS([-ftree-loop-vectorize])
@@ -293,6 +296,45 @@ AC_SUBST(NEW_8580_FILTER)
 
 AC_SUBST(LIBSIDPLAYVERSION)
 AC_SUBST(LIBSTILVIEWVERSION)
+
+# USBSID support
+AC_ARG_WITH(
+    [usbsid],
+    [AS_HELP_STRING([--with-usbsid], [Build with usbsid support [@<:@yes/no/check, default=check@:>@]])],
+    [],
+    [with_usbsid=check]
+)
+
+# USBSID support requires libusb
+AS_IF(
+    [test "x$with_usbsid" != "xno"],
+    [PKG_CHECK_MODULES([USBSID],
+        [libusb-1.0],
+        [AC_DEFINE([HAVE_USBSID], 1, [Define to 1 if you have libusb (-libusb-1.0).])
+        build_usbsid_builder=yes
+        build_usbsid_driver=yes],
+        [AC_MSG_WARN([$USBSID_PKG_ERRORS] [- checking for libusb header])
+            AC_MSG_CHECKING([for libusb-1.0])
+            AC_CHECK_HEADERS(libusb-1.0/libusb.h,
+                [AC_DEFINE([HAVE_LIBUSB], 1, [Define to 1 if you have libusb.h])
+                build_usbsid_builder=yes
+                build_usbsid_driver=yes
+                AC_MSG_RESULT([yes])],
+                [AC_MSG_WARN([libsub.h not found, support will not be available])]
+            )]
+
+       )]
+)
+
+AS_IF(
+    [test "x$with_usbsid" = "xyes" -a "x$build_usbsid_builder" != xyes],
+    [AC_MSG_ERROR([libusb not found])]
+)
+
+AC_SUBST([USBSID_CFLAGS])
+
+AM_CONDITIONAL([USBSID_SUPPORT], [ test "x${build_usbsid_builder}" = xyes])
+AM_CONDITIONAL([USBSID_DRIVER], [ test "x${build_usbsid_driver}" = xyes])
 
 # exSID support
 AC_ARG_WITH(
