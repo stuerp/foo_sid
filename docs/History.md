@@ -1,3 +1,7 @@
+v1.103.0.0, 2025-12-26
+
+* Upgraded libsidplayfp to 2.16.0.
+
 v1.102.1.0, 2025-11-01
 
 * Improved: Handling of foobar2000 file paths.

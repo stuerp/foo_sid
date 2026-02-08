@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2025.12.26) **/
+/** $VER: foo_sid.cpp (2026.02.08) **/
 
 #include <pch.h>
 
@@ -93,12 +93,12 @@ static cfg_int CfgLoopForever(guid_cfg_infinite, default_cfg_infinite);
 static cfg_int CfgDefaultLengthInMS(guid_cfg_deflength, default_cfg_deflength);
 static cfg_int CfgFade(guid_cfg_fade, default_cfg_fade);
 static cfg_int CfgSampleRate(guid_cfg_rate, default_cfg_rate);
-static cfg_int cfg_clock_override(guid_cfg_clock_override, default_cfg_clock_override);
-static cfg_int cfg_sid_override(guid_cfg_sid_override, default_cfg_sid_override);
-static cfg_int cfg_sid_filter_6581(guid_cfg_sid_filter_6581, default_cfg_sid_filter_6581);
-static cfg_int cfg_sid_filter_8580(guid_cfg_sid_filter_8580, default_cfg_sid_filter_8580);
-static cfg_int cfg_sid_filter_8580_old(guid_cfg_sid_filter_8580_old, -1);
-static cfg_int cfg_sid_builder(guid_cfg_sid_builder, default_cfg_sid_builder);
+static cfg_int CfgClockOverride(guid_cfg_clock_override, default_cfg_clock_override);
+static cfg_int CfgSIDOverride(guid_cfg_sid_override, default_cfg_sid_override);
+static cfg_int CfgSIDFilter6581(guid_cfg_sid_filter_6581, default_cfg_sid_filter_6581);
+static cfg_int CfgSIDFilter8580(guid_cfg_sid_filter_8580, default_cfg_sid_filter_8580);
+static cfg_int CfgSIDFilter8580Old(guid_cfg_sid_filter_8580_old, -1);
+static cfg_int CfgSIDBuilder(guid_cfg_sid_builder, default_cfg_sid_builder);
 static cfg_int CfgStereoSeparation(guid_cfg_stereo_separation, default_cfg_stereo_separation);
 
 #pragma region InitQuit
@@ -115,23 +115,23 @@ public:
 
     void on_init() override
     {
-        if (cfg_sid_filter_8580_old > 0)
+        if (CfgSIDFilter8580Old > 0)
         {
-            if (cfg_sid_filter_8580_old <= 12500)
+            if (CfgSIDFilter8580Old <= 12500)
             {
-                cfg_sid_filter_8580 = (cfg_sid_filter_8580_old - 150) * 128 / (12500 - 150);
+                CfgSIDFilter8580 = (CfgSIDFilter8580Old - 150) * 128 / (12500 - 150);
             }
             else
-            if (cfg_sid_filter_8580_old <= 22050)
+            if (CfgSIDFilter8580Old <= 22050)
             {
-                cfg_sid_filter_8580 = 128 + ((cfg_sid_filter_8580_old - 12500) / (22050 - 12500));
+                CfgSIDFilter8580 = 128 + ((CfgSIDFilter8580Old - 12500) / (22050 - 12500));
             }
             else
             {
-                cfg_sid_filter_8580 = 128;
+                CfgSIDFilter8580 = 128;
             }
 
-            cfg_sid_filter_8580_old = -1;
+            CfgSIDFilter8580Old = -1;
         }
     }
 
@@ -460,7 +460,6 @@ public:
             throw exception_io_unsupported_format();
 
         _SampleRate = CfgSampleRate;
-    //  _BPS = cfg_BPS;
         _StereoSeparation = CfgStereoSeparation;
     }
 
@@ -471,7 +470,7 @@ public:
 
     static bool g_is_our_path(const char *, const char * p_extension) noexcept
     {
-        return !_stricmp(p_extension, "sid") || !_stricmp(p_extension, "mus");
+        return !::_stricmp(p_extension, "sid") || !::_stricmp(p_extension, "psid") || !::_stricmp(p_extension, "rsid") || !::_stricmp(p_extension, "mus");
     }
 
     static GUID g_get_guid() noexcept
@@ -845,7 +844,7 @@ public:
 
         _Builder = nullptr;
 
-        switch (cfg_sid_builder)
+        switch (CfgSIDBuilder)
         {
             case sid_builder_residfp:
             {
@@ -860,8 +859,8 @@ public:
                     if (NewBuilder->getStatus())
                     {
                         NewBuilder->filter(true);
-                        NewBuilder->filter6581Curve(cfg_sid_filter_6581 / 256.);
-                        NewBuilder->filter8580Curve(cfg_sid_filter_8580 / 256.);
+                        NewBuilder->filter6581Curve(CfgSIDFilter6581 / 256.);
+                        NewBuilder->filter8580Curve(CfgSIDFilter8580 / 256.);
                     }
 
                     if (!NewBuilder->getStatus())
@@ -902,16 +901,16 @@ public:
             Config.playback = SidConfig::STEREO;
             Config.sidEmulation = _Builder.get();
 
-            if (cfg_clock_override)
+            if (CfgClockOverride)
             {
                 Config.forceC64Model = true;
-                Config.defaultC64Model = (cfg_clock_override == 1) ? SidConfig::PAL : SidConfig::NTSC;
+                Config.defaultC64Model = (CfgClockOverride == 1) ? SidConfig::PAL : SidConfig::NTSC;
             }
 
-            if (cfg_sid_override)
+            if (CfgSIDOverride)
             {
                 Config.forceSidModel = true;
-                Config.defaultSidModel = (cfg_sid_override == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
+                Config.defaultSidModel = (CfgSIDOverride == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
             }
 
             if (!_Engine->config(Config))
@@ -1315,11 +1314,11 @@ void CMyPreferences::apply()
 
     CfgFade = GetDlgItemInt(IDC_FADE, NULL, FALSE);
     CfgLoopForever = (t_int32)SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
-    cfg_clock_override = (t_int32)SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
-    cfg_sid_override = (t_int32)SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
-    cfg_sid_builder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
-    cfg_sid_filter_6581 = _Slider6581.GetPos();
-    cfg_sid_filter_8580 = _Slider8580.GetPos();
+    CfgClockOverride = (t_int32)SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
+    CfgSIDOverride = (t_int32)SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
+    CfgSIDBuilder = (t_int32)SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
+    CfgSIDFilter6581 = _Slider6581.GetPos();
+    CfgSIDFilter8580 = _Slider8580.GetPos();
     CfgStereoSeparation = _SliderSsep.GetPos();
 
     OnChanged();
@@ -1367,21 +1366,21 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "ReSID");
         ::uSendMessageText(w, CB_ADDSTRING, 0, "ReSIDfp");
-        ::SendMessage(w, CB_SETCURSEL, cfg_sid_builder, 0);
+        ::SendMessage(w, CB_SETCURSEL, CfgSIDBuilder, 0);
 
         w = GetDlgItem(IDC_CLOCK_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
         ::uSendMessageText(w, CB_ADDSTRING, 0, "Force PAL");
         ::uSendMessageText(w, CB_ADDSTRING, 0, "Force NTSC");
-        ::SendMessage(w, CB_SETCURSEL, cfg_clock_override, 0);
+        ::SendMessage(w, CB_SETCURSEL, CfgClockOverride, 0);
 
         w = GetDlgItem(IDC_SID_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
         ::uSendMessageText(w, CB_ADDSTRING, 0, "Force 6581");
         ::uSendMessageText(w, CB_ADDSTRING, 0, "Force 8580");
-        ::SendMessage(w, CB_SETCURSEL, cfg_sid_override, 0);
+        ::SendMessage(w, CB_SETCURSEL, CfgSIDOverride, 0);
     }
 
     pfc::string8_fast temp;
@@ -1389,25 +1388,25 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     _Slider6581 = GetDlgItem(IDC_SLIDER_6581);
     _Slider6581.SetRangeMin(0);
     _Slider6581.SetRangeMax(256);
-    _Slider6581.SetPos(cfg_sid_filter_6581);
+    _Slider6581.SetPos(CfgSIDFilter6581);
 
-    temp = pfc::format_float(cfg_sid_filter_6581 / 256., 0, 2);
+    temp = pfc::format_float(CfgSIDFilter6581 / 256., 0, 2);
 
     ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, temp);
 
-    if (cfg_sid_builder != sid_builder_residfp)
+    if (CfgSIDBuilder != sid_builder_residfp)
         _Slider6581.EnableWindow(FALSE);
 
     _Slider8580 = GetDlgItem(IDC_SLIDER_8580);
     _Slider8580.SetRangeMin(0);
     _Slider8580.SetRangeMax(256);
-    _Slider8580.SetPos(cfg_sid_filter_8580);
+    _Slider8580.SetPos(CfgSIDFilter8580);
 
-    temp = pfc::format_float(cfg_sid_filter_8580 / 256., 0, 2);
+    temp = pfc::format_float(CfgSIDFilter8580 / 256., 0, 2);
 
     ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, temp);
 
-    if (cfg_sid_builder != sid_builder_residfp)
+    if (CfgSIDBuilder != sid_builder_residfp)
         _Slider8580.EnableWindow(FALSE);
 
     _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
@@ -1517,19 +1516,19 @@ bool CMyPreferences::HasChanged()
     if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != CfgLoopForever)
         IsChanged = true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != cfg_clock_override)
+    if (!IsChanged && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != CfgClockOverride)
         IsChanged = true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != cfg_sid_override)
+    if (!IsChanged && SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != CfgSIDOverride)
         IsChanged = true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != cfg_sid_builder)
+    if (!IsChanged && SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != CfgSIDBuilder)
         IsChanged = true;
 
-    if (!IsChanged && _Slider6581.GetPos() != cfg_sid_filter_6581)
+    if (!IsChanged && _Slider6581.GetPos() != CfgSIDFilter6581)
         IsChanged = true;
 
-    if (!IsChanged && _Slider8580.GetPos() != cfg_sid_filter_8580)
+    if (!IsChanged && _Slider8580.GetPos() != CfgSIDFilter8580)
         IsChanged = true;
 
     if (!IsChanged && _SliderSsep.GetPos() != CfgStereoSeparation)
@@ -1617,7 +1616,7 @@ public:
 
 #pragma endregion
 
-DECLARE_FILE_TYPE("SID files", "*.SID;*.MUS");
+DECLARE_FILE_TYPE("SID files", "*.SID;*.PSID;*.RSID;*.MUS");
 
 static initquit_factory_t<InitQuitHandler> _InitQuitFactory;
 static input_factory_t<InputHandler> _InputFactory;
