@@ -27,12 +27,12 @@ const char* USBSID::getCredits()
 
 USBSID::USBSID(sidbuilder *builder) :
     sidemu(builder),
-    m_status(false),
     Event("USBSID Delay"),
-    m_handle(-1),
     m_sid(*(new USBSID_NS::USBSID_Class)),
-    busValue(0),
-    sidno(0)
+    m_handle(-1),
+    sidno(0),
+    m_status(false),
+    busValue(0)
 {
 
     /* Start the fucker */
@@ -65,7 +65,7 @@ USBSID::~USBSID()
     delete &m_sid;
 }
 
-void USBSID::reset(uint8_t volume)
+void USBSID::reset(uint8_t)
 {
     using namespace std;
 
@@ -93,7 +93,7 @@ event_clock_t USBSID::delay()
     return cycles;
 }
 
-uint8_t USBSID::read(uint_least8_t addr)
+uint8_t USBSID::read(uint_least8_t)
 {
     return busValue;  /* Always return the busValue */
 }

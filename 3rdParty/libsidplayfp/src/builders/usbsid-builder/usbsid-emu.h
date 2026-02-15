@@ -60,12 +60,11 @@ public:
     void reset(uint8_t volume) override;
 
     /* Standard SID functions */
-    // void clock() override;
-    void clock() {};
+    void clock() override {};
 
 
     void sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool);
+        SidConfig::sampling_method_t method, bool) override;
 
     void model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost) override;
 

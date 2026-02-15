@@ -109,9 +109,10 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.104.0.0, 2026-xx-xx
+v1.103.1.0, 2026-02-15
 
 * Added .PSID and .RSID as a recognized file extensions.
+* Upgraded libsidplayfp to 2.16.1.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 

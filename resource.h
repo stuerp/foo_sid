@@ -1,5 +1,5 @@
 
-/** $VER: Resource.h (2026.02.08) **/
+/** $VER: Resource.h (2026.02.15) **/
 
 #pragma once
 
@@ -7,13 +7,13 @@
 #define TOSTRING(x) TOSTRING_IMPL(x)
 
 #define NUM_FILE_MAJOR          1
-#define NUM_FILE_MINOR          104
-#define NUM_FILE_PATCH          0
+#define NUM_FILE_MINOR          103
+#define NUM_FILE_PATCH          1
 #define NUM_FILE_PRERELEASE     0
 
 #define NUM_PRODUCT_MAJOR       1
-#define NUM_PRODUCT_MINOR       104
-#define NUM_PRODUCT_PATCH       0
+#define NUM_PRODUCT_MINOR       103
+#define NUM_PRODUCT_PATCH       1
 #define NUM_PRODUCT_PRERELEASE  0
 
 /** Component specific **/
