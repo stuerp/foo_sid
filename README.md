@@ -7,7 +7,7 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 ## Features
 
-* Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID, .MUS or .MUS+.STR formats.
+* Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID / .PSID, .MUS or .MUS+.STR formats.
 * Supports up to 3SID rips.
 * Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database and SID Tune Information List (STIL).
 * Supports foobar2000 2.0 and later (32-bit and 64-bit version)
@@ -30,7 +30,7 @@ or
 
     Configure the path to the HVSC ([High Voltage SID Collection](https://www.hvsc.c64.org/)) database before adding any .SID files to a playlist to make sure that the song length of any recognised file gets set correctly. If not all unrecognised songs get the same song length (default 3 min.) but will play correctly.
 
-    You can also use the "*Tagging/Reload info from file(s)*" context menu after configuring the database to rescan the files.
+    You can also use the "*Tagging/Reload info from file(s)*" context menu item after configuring the database to rescan the files.
 
 ## Tags
 
@@ -109,9 +109,10 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.103.0.0, 2025-12-26
+v1.103.1.0, 2026-02-15
 
-* Upgraded libsidplayfp to 2.16.0.
+* Added .PSID and .RSID as a recognized file extensions.
+* Upgraded libsidplayfp to 2.16.1.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 
