@@ -1,25 +1,27 @@
 
-/** $VER: Resource.h (2026.02.15) **/
+/** $VER: Resource.h (2026.03.04) **/
 
 #pragma once
 
 #define TOSTRING_IMPL(x) #x
 #define TOSTRING(x) TOSTRING_IMPL(x)
 
-#define NUM_FILE_MAJOR          1
-#define NUM_FILE_MINOR          103
-#define NUM_FILE_PATCH          1
+#define NUM_FILE_MAJOR          2
+#define NUM_FILE_MINOR          0
+#define NUM_FILE_PATCH          0
 #define NUM_FILE_PRERELEASE     0
 
-#define NUM_PRODUCT_MAJOR       1
-#define NUM_PRODUCT_MINOR       103
-#define NUM_PRODUCT_PATCH       1
+#define NUM_PRODUCT_MAJOR       2
+#define NUM_PRODUCT_MINOR       0
+#define NUM_PRODUCT_PATCH       0
 #define NUM_PRODUCT_PRERELEASE  0
+
+#define STR_RELEASE_TAG         "-alpha1"
 
 /** Component specific **/
 
 #define STR_COMPONENT_NAME          "SID Player"
-#define STR_COMPONENT_VERSION       TOSTRING(NUM_FILE_MAJOR) "." TOSTRING(NUM_FILE_MINOR) "." TOSTRING(NUM_FILE_PATCH) "." TOSTRING(NUM_FILE_PRERELEASE)
+#define STR_COMPONENT_VERSION       TOSTRING(NUM_FILE_MAJOR) "." TOSTRING(NUM_FILE_MINOR) "." TOSTRING(NUM_FILE_PATCH) "." TOSTRING(NUM_FILE_PRERELEASE) STR_RELEASE_TAG
 #define STR_COMPONENT_BASENAME      "foo_sid"
 #define STR_COMPONENT_FILENAME      STR_COMPONENT_BASENAME ".dll"
 #define STR_COMPONENT_COMPANY_NAME  "LoSno.co"

@@ -25,6 +25,7 @@
 #include <memory>
 
 #include "sidplayfp/SidTuneInfo.h"
+#include "c64/CPU/opcodes.h"
 
 #include "SmartPtr.h"
 #include "sidendian.h"
@@ -143,7 +144,7 @@ bool MUS::mergeParts(buffer_t& musBuf, buffer_t& strBuf)
 void removeReads(sidmemory& mem, uint_least16_t dest)
 {
     const int sid_read_offset = 0x424 - o65headersize - 2;
-    mem.fillRam(dest + sid_read_offset, 0xea, 12);
+    mem.fillRam(dest + sid_read_offset, NOPn, 12);
 }
 
 void MUS::installPlayer(sidmemory& mem)

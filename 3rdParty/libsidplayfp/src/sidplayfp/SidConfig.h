@@ -23,7 +23,7 @@
 #ifndef SIDCONFIG_H
 #define SIDCONFIG_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "sidplayfp/siddefs.h"
 
@@ -153,16 +153,6 @@ public:
     sidbuilder *sidEmulation;
 
     /**
-     * Left channel volume.
-     */
-    uint_least32_t leftVolume;
-
-    /**
-     * Right channel volume.
-     */
-    uint_least32_t rightVolume;
-
-    /**
      * Power on delay cycles.
      */
     uint_least16_t powerOnDelay;
@@ -171,12 +161,6 @@ public:
      * Sampling method.
      */
     sampling_method_t samplingMethod;
-
-    /**
-     * Faster low-quality emulation,
-     * available only for reSID.
-     */
-    bool fastSampling;
 
     /**
      * Compare two config objects.

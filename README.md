@@ -78,6 +78,7 @@ To build the code:
 The following library is included:
 
 * [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp)
+* [libresidfp](https://github.com/libsidplayfp/residfp)
 
 To create the deployment package:
 
@@ -109,10 +110,10 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.103.1.0, 2026-02-15
+v2.0.0.0-alpha1, 2026-03-xx
 
-* Added .PSID and .RSID as a recognized file extensions.
-* Upgraded libsidplayfp to 2.16.1.
+* Added support for the SIDList core.
+* Upgraded libsidplayfp to 3.0.0a.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 

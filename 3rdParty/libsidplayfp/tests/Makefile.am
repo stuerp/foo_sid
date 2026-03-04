@@ -10,32 +10,12 @@ AM_CPPFLAGS = \
 -I$(top_builddir)/src/builders/residfp-builder/residfp
 
 TESTS = \
-TestEnvelopeGenerator \
-TestWaveformGenerator \
-TestSpline \
-TestDac \
 TestPSID \
 TestMUS \
 TestMos6510 \
-TestResampler
+TestMD5
 
 check_PROGRAMS = $(TESTS)
-
-TestEnvelopeGenerator_SOURCES = \
-Main.cpp \
-TestEnvelopeGenerator.cpp
-
-TestWaveformGenerator_SOURCES = \
-Main.cpp \
-TestWaveformGenerator.cpp
-
-TestSpline_SOURCES = \
-Main.cpp \
-TestSpline.cpp
-
-TestDac_SOURCES = \
-Main.cpp \
-TestDac.cpp
 
 TestPSID_SOURCES = \
 Main.cpp \
@@ -51,8 +31,8 @@ TestMos6510_SOURCES = \
 Main.cpp \
 TestMos6510.cpp
 
-TestResampler_SOURCES = \
+TestMD5_SOURCES = \
 Main.cpp \
-TestResampler.cpp
+TestMD5.cpp
 
 endif

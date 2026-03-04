@@ -2,7 +2,7 @@
 #ifndef USBSID_EMU_H
 #define USBSID_EMU_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "sidplayfp/SidConfig.h"
 #include "sidemu.h"
@@ -64,7 +64,7 @@ public:
 
 
     void sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool) override;
+        SidConfig::sampling_method_t method) override;
 
     void model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost) override;
 

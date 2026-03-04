@@ -1,7 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- *  Copyright 2011-2024 Leandro Nini
+ *  Copyright 2011-2025 Leandro Nini
  *  Copyright 2007-2010 Antti Lankila
  *  Copyright 2000 Simon White
  *
@@ -23,13 +23,11 @@
 #ifndef SIDINFOIMPL_H
 #define SIDINFOIMPL_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 #include <string>
 
 #include "sidplayfp/SidInfo.h"
-
-#include "mixer.h"
 
 #include "sidcxx11.h"
 
@@ -71,8 +69,6 @@ public:
     std::string m_basicDesc;
     std::string m_chargenDesc;
 
-    const unsigned int m_maxsids = libsidplayfp::Mixer::MAX_SIDS;
-
     unsigned int m_channels = 1;
 
     uint_least16_t m_driverAddr = 0;
@@ -93,8 +89,6 @@ public:
 
     unsigned int getNumberOfCredits() const override { return m_credits.size(); }
     const char *getCredits(unsigned int i) const override { return i<m_credits.size()?m_credits[i].c_str():""; }
-
-    unsigned int getMaxsids() const override { return m_maxsids; }
 
     unsigned int getChannels() const override { return m_channels; }
 

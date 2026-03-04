@@ -1,0 +1,59 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Linker files
+*.ilk
+
+# Debugger Files
+*.pdb
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+.deps
+.dirstamp
+.libs
+*.pc
+*.diff
+src/stamp-h1
+tests/*.exe
+tests/*.log
+tests/*.trs
+*build/
+
+aclocal.m4
+autom4te.cache
+build-aux
+configure
+configure~
+config.log
+config.status
+libtool
+Makefile
+Makefile.in
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+src/config.h.in

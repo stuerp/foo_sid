@@ -88,12 +88,13 @@
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src;src/sidplayfp;src/builders/residfp-builder/residfp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\sidplayfp;$(ProjectDir)src\builders\residfp-builder;$(ProjectDir)src\builders\usbsid-builder;$(ProjectDir)..\libresidfp\src;$(ProjectDir)..\libusb\include</AdditionalIncludeDirectories>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -106,8 +107,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src;src/sidplayfp;src/builders/residfp-builder/residfp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\sidplayfp;$(ProjectDir)src\builders\residfp-builder;$(ProjectDir)src\builders\usbsid-builder;$(ProjectDir)..\libresidfp\src;$(ProjectDir)..\libusb\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -117,6 +117,8 @@
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -129,9 +131,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;HAVE_CONFIG_H;HAVE_CXX11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;HAVE_CONFIG_H;HAVE_CXX11;__restrict__=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src;src/sidplayfp;src/builders/residfp-builder/residfp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\sidplayfp;$(ProjectDir)src\builders\residfp-builder;$(ProjectDir)src\builders\usbsid-builder;$(ProjectDir)..\libresidfp\src;$(ProjectDir)..\libusb\include</AdditionalIncludeDirectories>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
@@ -139,6 +141,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -155,13 +158,14 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
-      <AdditionalIncludeDirectories>src;src/sidplayfp;src/builders/residfp-builder/residfp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\sidplayfp;$(ProjectDir)src\builders\residfp-builder;$(ProjectDir)src\builders\usbsid-builder;$(ProjectDir)..\libresidfp\src;$(ProjectDir)..\libusb\include</AdditionalIncludeDirectories>
       <OmitFramePointers>true</OmitFramePointers>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -172,6 +176,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\builders\residfp-builder\residfp-emu.h" />
+    <ClInclude Include="src\builders\residfp-builder\residfp.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite-emu.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\ADSR.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\cw_tables.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\Filter.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\filt_tables.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\SID.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\sl_constants.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\sl_defs.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\sl_settings.h" />
+    <ClInclude Include="src\builders\sidlite-builder\sidlite\WavGen.h" />
     <ClInclude Include="src\c64\Banks\Bank.h" />
     <ClInclude Include="src\c64\Banks\ColorRAMBank.h" />
     <ClInclude Include="src\c64\Banks\DisconnectedBusBank.h" />
@@ -206,8 +223,11 @@
     <ClInclude Include="src\Event.h" />
     <ClInclude Include="src\EventCallback.h" />
     <ClInclude Include="src\EventScheduler.h" />
-    <ClInclude Include="src\mixer.h" />
+    <ClInclude Include="src\libs\hashlib\config.hpp" />
+    <ClInclude Include="src\libs\hashlib\core.hpp" />
+    <ClInclude Include="src\libs\hashlib\md5.hpp" />
     <ClInclude Include="src\player.h" />
+    <ClInclude Include="src\properties.h" />
     <ClInclude Include="src\psiddrv.h" />
     <ClInclude Include="src\reloc65.h" />
     <ClInclude Include="src\romCheck.h" />
@@ -238,18 +258,20 @@
     <ClInclude Include="src\sidtune\SmartPtr.h" />
     <ClInclude Include="src\simpleMixer.h" />
     <ClInclude Include="src\stringutils.h" />
-    <ClInclude Include="src\utils\iMd5.h" />
     <ClInclude Include="src\utils\iniParser.h" />
-    <ClInclude Include="src\utils\md5Factory.h" />
-    <ClInclude Include="src\utils\md5Gcrypt.h" />
-    <ClInclude Include="src\utils\md5Internal.h" />
-    <ClInclude Include="src\utils\MD5\MD5.h" />
-    <ClInclude Include="src\utils\MD5\MD5_Defs.h" />
     <ClInclude Include="src\utils\SidDatabase.h" />
     <ClInclude Include="src\utils\STILview\stil.h" />
     <ClInclude Include="src\utils\STILview\stildefs.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\builders\residfp-builder\residfp-builder.cpp" />
+    <ClCompile Include="src\builders\residfp-builder\residfp-emu.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite-builder.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite-emu.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite\ADSR.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite\Filter.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite\SID.cpp" />
+    <ClCompile Include="src\builders\sidlite-builder\sidlite\WavGen.cpp" />
     <ClCompile Include="src\c64\c64.cpp" />
     <ClCompile Include="src\c64\CIA\interrupt.cpp" />
     <ClCompile Include="src\c64\CIA\mos652x.cpp" />
@@ -261,7 +283,6 @@
     <ClCompile Include="src\c64\mmu.cpp" />
     <ClCompile Include="src\c64\VIC_II\mos656x.cpp" />
     <ClCompile Include="src\EventScheduler.cpp" />
-    <ClCompile Include="src\mixer.cpp" />
     <ClCompile Include="src\player.cpp" />
     <ClCompile Include="src\psiddrv.cpp" />
     <ClCompile Include="src\reloc65.cpp" />
@@ -280,8 +301,6 @@
     <ClCompile Include="src\sidtune\SidTuneTools.cpp" />
     <ClCompile Include="src\simpleMixer.cpp" />
     <ClCompile Include="src\utils\iniParser.cpp" />
-    <ClCompile Include="src\utils\md5Factory.cpp" />
-    <ClCompile Include="src\utils\MD5\MD5.cpp" />
     <ClCompile Include="src\utils\SidDatabase.cpp" />
     <ClCompile Include="src\utils\STILview\stil.cpp" />
   </ItemGroup>

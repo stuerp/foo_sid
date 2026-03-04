@@ -8,26 +8,17 @@
 
 class SID_EXTERN USBSIDBuilder : public sidbuilder
 {
+protected:
+    /**
+     * Create the sid emu.
+     */
+    libsidplayfp::sidemu* create();
+
 public:
     USBSIDBuilder(const char * const name);
     ~USBSIDBuilder();
 
-    /**
-     * Available sids.
-     *
-     * @return the number of available sids, 0 = endless.
-     */
-    unsigned int availDevices() const { return USBSID_MAXSID; }
-
-    /**
-     * Create the sid emu.
-     *
-     * @param sids the number of required sid emu
-     */
-    unsigned int create(unsigned int sids);
-
-    const char *credits() const;
-
+    const char *getCredits() const;
     void flush();
 
     /**

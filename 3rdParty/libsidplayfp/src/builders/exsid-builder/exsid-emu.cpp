@@ -17,7 +17,6 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <sstream>
 #include <unistd.h>
 
 #ifdef HAVE_EXSID
@@ -152,7 +151,7 @@ void exSID::model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost)
 void exSID::flush() {}
 
 void exSID::sampling(float systemclock, MAYBE_UNUSED float freq,
-        MAYBE_UNUSED SidConfig::sampling_method_t method, bool)
+        MAYBE_UNUSED SidConfig::sampling_method_t method)
 {
     exSID_audio_op(exsid, XS_AU_MUTE);
     if (systemclock < 1000000.0F)

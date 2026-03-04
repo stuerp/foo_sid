@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <sstream>
 #include <unistd.h>
 
 #include "driver/src/USBSID.h"
@@ -116,7 +115,7 @@ void USBSID::model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost)
 }
 
 void USBSID::sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool)
+        SidConfig::sampling_method_t method)
 {
     (void)freq; /* Audio frequency is not used for USBSID-Pico */
     (void)method; /* Interpolation method is not used for USBSID-Pico */

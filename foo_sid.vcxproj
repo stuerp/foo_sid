@@ -153,7 +153,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/resid-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdParty/WTL10_10320/Include;$(SolutionDir)sdk;$(SolutionDir)sdk/foobar2000;$(SolutionDir)sdk/foobar2000/sdk;$(SolutionDir)sdk/foobar2000/shared;$(ProjectDir);$(ProjectDir)3rdParty/libsidplayfp/src;$(ProjectDir)3rdParty/libsidplayfp/src/builders/residfp-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/sidlite-builder;$(ProjectDir)3rdParty/libsidplayfp/src/builders/usbsid-builder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>HAVE_CXX11;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;FILTER_CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -318,17 +318,15 @@
     <ProjectReference Include="..\sdk\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
     </ProjectReference>
+    <ProjectReference Include="3rdParty\libresidfp\libresidfp.vcxproj">
+      <Project>{8feb069d-f1f6-4087-85a6-140fc61884f0}</Project>
+    </ProjectReference>
     <ProjectReference Include="3rdParty\libsidplayfp\libsidplayfp.vcxproj">
       <Project>{03edbda0-5e71-4e10-a5e3-bda01fee3861}</Project>
     </ProjectReference>
-    <ProjectReference Include="3rdParty\libsidplayfp\src\builders\resid-builder\resid_builder.vcxproj">
-      <Project>{67a11f10-4a33-4c7c-9777-20d64c2d0acd}</Project>
-    </ProjectReference>
-    <ProjectReference Include="3rdParty\libsidplayfp\src\builders\residfp-builder\residfp_builder.vcxproj">
-      <Project>{8feb069d-f1f6-4087-85a6-140fc61884f0}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".editorconfig" />
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="Build-FB2KComponent.ps1" />
