@@ -1,5 +1,5 @@
 
-/** $VER: pch.h (2024.05.18) P. Stuer **/
+/** $VER: pch.h (2026.03.07) P. Stuer **/
 
 #pragma once
 
@@ -28,9 +28,11 @@
 #include <cassert>
 #include <format>
 #include <functional>
+#include <memory>
+#include <regex>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 #ifndef Assert
 #if defined(DEBUG) || defined(_DEBUG)
