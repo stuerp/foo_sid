@@ -1,7 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- * Copyright 2012-2022 Leandro Nini <drfiemost@users.sourceforge.net>
+ * Copyright 2012-2026 Leandro Nini <drfiemost@users.sourceforge.net>
  * Copyright 2010 Antti Lankila
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,7 +41,7 @@ namespace libsidplayfp
 template <int N>
 class romBank : public Bank
 {
-    static_assert((N != 0) && ((N & (N - 1)) == 0), "N must be a power of two");
+    static_assert((N > 0) && ((N & (N - 1)) == 0), "N must be a power of two");
 
 protected:
     /// The ROM array
@@ -51,17 +51,25 @@ protected:
     /**
      * Set value at memory address.
      */
-    void setVal(uint_least16_t address, uint8_t val) { rom[address & (N-1)]=val; }
+    inline void setVal(uint_least16_t address, uint8_t val) { rom[address & (N-1)] = val; }
+    inline void setVal16(uint_least16_t address, uint_least16_t val)
+    {
+        endian_little16(getPtr(address), val);
+    }
 
     /**
      * Return value from memory address.
      */
-    uint8_t getVal(uint_least16_t address) const { return rom[address & (N-1)]; }
+    inline uint8_t getVal(uint_least16_t address) { return rom[address & (N-1)]; }
+    inline uint_least16_t getVal16(uint_least16_t address)
+    {
+        return endian_little16(getPtr(address));
+    }
 
     /**
      * Return pointer to memory address.
      */
-    void* getPtr(uint_least16_t address) const { return (void*)&rom[address & (N-1)]; }
+    inline uint8_t* getPtr(uint_least16_t address) { return &rom[address & (N-1)]; }
 
 public:
     /**
@@ -88,8 +96,31 @@ public:
 class KernalRomBank final : public romBank<0x2000>
 {
 private:
-    uint8_t resetVectorLo;  // 0xfffc
-    uint8_t resetVectorHi;  // 0xfffd
+    uint_least16_t resetVector;  // 0xfffc-0xfffd
+
+private:
+    uint8_t save_regs[5] =
+    {
+        PHAn,
+        TXAn,
+        PHAn,
+        TYAn,
+        PHAn
+    };
+
+    uint8_t restore_regs[5] =
+    {
+        PLAn,
+        TAYn,
+        PLAn,
+        TAXn,
+        PLAn
+    };
+
+    void fill(uint_least16_t address, uint8_t data[5])
+    {
+        std::memcpy(getPtr(address), data, 5);
+    }
 
 public:
     void set(const uint8_t* kernal)
@@ -98,21 +129,15 @@ public:
 
         if (kernal == nullptr)
         {
-            std::fill(std::begin(rom), std::end(rom), RTSn);
+            std::fill(std::begin(rom), std::end(rom), NOPn);
 
             // IRQ routine
             setVal(0xea31, JMPw);
-            setVal(0xea32, 0x7e);
-            setVal(0xea33, 0xea);
+            setVal16(0xea32, 0xea7e);
 
             setVal(0xea7e, NOPa);  // Clear IRQ
-            setVal(0xea7f, 0x0d);
-            setVal(0xea80, 0xdc);
-            setVal(0xea81, PLAn);  // Restore registers
-            setVal(0xea82, TAYn);
-            setVal(0xea83, PLAn);
-            setVal(0xea84, TAXn);
-            setVal(0xea85, PLAn);
+            setVal16(0xea7f, 0xdc0d);
+            fill(0xea81, restore_regs);
             setVal(0xea86, RTIn); // Return from interrupt
 
             // Reset
@@ -121,41 +146,36 @@ public:
             // NMI entry point
             setVal(0xfe43, SEIn);
             setVal(0xfe44, JMPi); // Jump to NMI routine (Default: $FE47)
-            setVal(0xfe45, 0x18);
-            setVal(0xfe46, 0x03);
+            setVal16(0xfe45, 0x0318);
 
             // NMI routine
-            setVal(0xfe47, RTIn);
+            fill(0xfe47, save_regs);
+
+            fill(0xfebc, restore_regs);
+            setVal(0xfc1, RTIn);
 
             // IRQ entry point
-            setVal(0xff48, PHAn); // Save regs
-            setVal(0xff49, TXAn);
-            setVal(0xff4a, PHAn);
-            setVal(0xff4b, TYAn);
-            setVal(0xff4c, PHAn);
+            fill(0xff48, save_regs);
             setVal(0xff4d, JMPi); // Jump to IRQ routine (Default: $EA31)
-            setVal(0xff4e, 0x14);
-            setVal(0xff4f, 0x03);
+            setVal16(0xff4e, 0x0314);
 
             // Hardware vectors
-            setVal(0xfffa, 0x43); // NMI vector $FE43
-            setVal(0xfffb, 0xfe);
-            setVal(0xfffc, 0xe2); // RESET vector $FCE2
-            setVal(0xfffd, 0xfc);
-            setVal(0xfffe, 0x48); // IRQ/BRK vector $FF48
-            setVal(0xffff, 0xff);
+            setVal16(0xfffa, 0xfe43); // NMI vector
+            setVal16(0xfffc, 0xfce2); // RESET vector
+            setVal16(0xfffe, 0xff48); // IRQ/BRK vector
+
+            // Standard KERNAL functions called by some unclean rips
+            setVal(0xea87, RTSn); // SCNKEY
         }
 
         // Backup Reset Vector
-        resetVectorLo = getVal(0xfffc);
-        resetVectorHi = getVal(0xfffd);
+        resetVector = getVal16(0xfffc);
     }
 
     void reset()
     {
         // Restore original Reset Vector
-        setVal(0xfffc, resetVectorLo);
-        setVal(0xfffd, resetVectorHi);
+        setVal16(0xfffc, resetVector);
     }
 
     /**
@@ -165,8 +185,7 @@ public:
      */
     void installResetHook(uint_least16_t addr)
     {
-        setVal(0xfffc, endian_16lo8(addr));
-        setVal(0xfffd, endian_16hi8(addr));
+        setVal16(0xfffc, addr);
     }
 };
 
@@ -208,8 +227,7 @@ public:
     void installTrap(uint_least16_t addr)
     {
         setVal(0xa7ae, JMPw);
-        setVal(0xa7af, endian_16lo8(addr));
-        setVal(0xa7b0, endian_16hi8(addr));
+        setVal16(0xa7af, addr);
     }
 
     void setSubtune(uint8_t tune)
@@ -217,14 +235,11 @@ public:
         setVal(0xbf53, LDAb);
         setVal(0xbf54, tune);
         setVal(0xbf55, STAa);
-        setVal(0xbf56, 0x0c);
-        setVal(0xbf57, 0x03);
+        setVal16(0xbf56, 0x030c);
         setVal(0xbf58, JSRw);
-        setVal(0xbf59, 0x2c);
-        setVal(0xbf5a, 0xa8);
+        setVal16(0xbf59, 0xa82c);
         setVal(0xbf5b, JMPw);
-        setVal(0xbf5c, 0xb1);
-        setVal(0xbf5d, 0xa7);
+        setVal16(0xbf5c, 0xa7b1);
     }
 };
 

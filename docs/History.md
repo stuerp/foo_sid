@@ -1,6 +1,10 @@
 
 # foo_sid History
 
+v2.0.0.0-alpha2, 2026-03-07
+
+* Fixed: Seeking in a song.
+
 v2.0.0.0-alpha1, 2026-03-06
 
 * Added: Support for the SIDList core.

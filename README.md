@@ -110,9 +110,9 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v2.0.0.0-alpha2, 2026-03-07
+v2.0.0.0-alpha3, 2026-03-xx
 
-* Fixed: Seeking in a song.
+* 
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 
