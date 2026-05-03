@@ -116,7 +116,7 @@ void MUS::placeSidTuneInC64mem(sidmemory& mem)
     installPlayer(mem);
 }
 
-bool MUS::mergeParts(buffer_t& musBuf, buffer_t& strBuf)
+bool MUS::mergeParts(buffer_t& musBuf, buffer_t& strBuf) const
 {
     const uint_least32_t mergeLen = musBuf.size() + strBuf.size();
 
@@ -147,7 +147,7 @@ void removeReads(sidmemory& mem, uint_least16_t dest)
     mem.fillRam(dest + sid_read_offset, NOPn, 12);
 }
 
-void MUS::installPlayer(sidmemory& mem)
+void MUS::installPlayer(sidmemory& mem) const
 {
     // Install MUS player #1.
     uint_least16_t dest = endian_16(player1[1], player1[0]);
@@ -170,10 +170,10 @@ void MUS::installPlayer(sidmemory& mem)
     }
 }
 
-SidTuneBase* MUS::load(buffer_t& musBuf, bool init)
+SidTuneBase* MUS::load(buffer_t& dataBuf, bool init)
 {
     buffer_t empty;
-    return load(musBuf, empty, 0, init);
+    return load(dataBuf, empty, 0, init);
 }
 
 SidTuneBase* MUS::load(buffer_t& musBuf,
@@ -192,8 +192,8 @@ SidTuneBase* MUS::load(buffer_t& musBuf,
     return tune.release();
 }
 
-void MUS::tryLoad(buffer_t& musBuf,
-                    buffer_t& strBuf,
+void MUS::tryLoad(const buffer_t& musBuf,
+                    const buffer_t& strBuf,
                     uint_least32_t fileOffset,
                     uint_least32_t voice3Index,
                     bool init)

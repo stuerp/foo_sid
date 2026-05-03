@@ -102,5 +102,5 @@ jobs:
         export CXXFLAGS="-O2 -march=x86-64 -fomit-frame-pointer -pipe -DUNICODE -D_UNICODE"
         export PKG_CONFIG="pkg-config --static"
         autoreconf -vfi
-        ./configure --disable-shared --enable-static --without-gcrypt --enable-hardsid --with-usbsid --with-exsid --with-simd=runtime
+        ./configure --disable-shared --enable-static --with-usbsid --with-exsid --with-simd=runtime
         make distcheck

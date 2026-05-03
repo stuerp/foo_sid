@@ -29,7 +29,7 @@ namespace SIDLite
 class ADSR
 {
 public:
-    ADSR(unsigned char *regs);
+    explicit ADSR(unsigned char *regs);
     void reset();
     void clock(char cycles);
 

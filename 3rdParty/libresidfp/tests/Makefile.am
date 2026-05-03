@@ -13,8 +13,9 @@ TESTS = \
 TestEnvelopeGenerator \
 TestWaveformGenerator \
 TestSpline \
+TestSID \
 TestDac \
-TestResampler
+TestLimiter
 
 check_PROGRAMS = $(TESTS)
 
@@ -30,12 +31,17 @@ TestSpline_SOURCES = \
 Main.cpp \
 TestSpline.cpp
 
+TestSID_SOURCES = \
+Main.cpp \
+TestSID.cpp
+TestSID_LDADD = $(top_builddir)/src/libresidfp.la
+
 TestDac_SOURCES = \
 Main.cpp \
 TestDac.cpp
 
-TestResampler_SOURCES = \
+TestLimiter_SOURCES = \
 Main.cpp \
-TestResampler.cpp
+TestLimiter.cpp
 
 endif

@@ -38,9 +38,9 @@ const char* SIDLiteEmu::getCredits()
 {
     return
         "SIDLiteEmu V" VERSION " Engine:\n"
-        "\t(C) 2025 Leandro Nini\n"
+        "\t(C) 2025-2026 Leandro Nini\n"
         "MOS6581/CSG8580 (SID) Emulation:\n"
-        "\t(C) 2025 Leandro Nini\n"
+        "\t(C) 2025-2026 Leandro Nini\n"
         "\tBased on cRSID by Hermit (Mihaly Horvath)\n";
 }
 
@@ -83,6 +83,12 @@ void SIDLiteEmu::clock()
     m_accessClk += cycles;
     m_bufferpos += m_sid.clock(cycles, m_buffer+m_bufferpos);
 }
+
+int SIDLiteEmu::getLevel() const
+{
+    return m_sid.getLevel();
+}
+
 /*
 void SIDLiteEmu::filter(bool enable)
 {
@@ -107,16 +113,11 @@ void SIDLiteEmu::sampling(float systemclock, float freq,
         return;
     }
 */
-    //try
+    if (!m_sid.setSamplingParameters(systemclock, freq))
     {
-        m_sid.setSamplingParameters(systemclock, freq);
+        m_status = false;
+        m_error = ERR_UNSUPPORTED_FREQ;
     }
-    //catch (SIDLite::SIDError const &)
-    //{
-    //    m_status = false;
-    //    m_error = ERR_UNSUPPORTED_FREQ;
-    //    return;
-    //}
 
     if (m_buffer)
         delete[] m_buffer;
@@ -130,15 +131,15 @@ void SIDLiteEmu::sampling(float systemclock, float freq,
 // Set the emulated SID model
 void SIDLiteEmu::model(SidConfig::sid_model_t model, bool /*digiboost*/)
 {
-    unsigned short chipModel;
+    SIDLite::SID::model_t chip;
     switch (model)
     {
         case SidConfig::MOS6581:
-            chipModel = 6581;
+            chip = SIDLite::SID::model_t::MOS6581;
             //m_sid.input(0);
             break;
         case SidConfig::MOS8580:
-            chipModel = 8580;
+            chip = SIDLite::SID::model_t::MOS8580;
             //m_sid.input(digiboost ? -32768 : 0);
             break;
         default:
@@ -147,7 +148,7 @@ void SIDLiteEmu::model(SidConfig::sid_model_t model, bool /*digiboost*/)
             return;
     }
 
-    m_sid.setChipModel(chipModel);
+    m_sid.setChipModel(chip);
     m_status = true;
 }
 

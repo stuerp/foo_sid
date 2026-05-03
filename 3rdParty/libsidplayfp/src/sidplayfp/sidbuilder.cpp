@@ -26,12 +26,12 @@
 
 #include "sidcxx11.h"
 
-libsidplayfp::sidemu *sidbuilder::lock(libsidplayfp::EventScheduler *env, SidConfig::sid_model_t model, bool digiboost)
+libsidplayfp::sidemu *sidbuilder::lock(libsidplayfp::EventScheduler *scheduler, SidConfig::sid_model_t model, bool digiboost)
 {
     // create new emu
     if (libsidplayfp::sidemu* sid = create())
     {
-        if (sid->lock(env))
+        if (sid->lock(scheduler))
         {
             sid->model(model, digiboost);
             sidobjs.insert(sid);

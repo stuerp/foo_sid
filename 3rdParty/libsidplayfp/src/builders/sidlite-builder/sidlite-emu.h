@@ -47,7 +47,7 @@ public:
     static const char* getCredits();
 
 public:
-    SIDLiteEmu(sidbuilder *builder);
+    explicit SIDLiteEmu(sidbuilder *builder);
     ~SIDLiteEmu() override;
 
     bool getStatus() const { return m_status; }
@@ -65,6 +65,8 @@ public:
         SidConfig::sampling_method_t method) override;
 
     void model(SidConfig::sid_model_t model, bool digiboost) override;
+
+    int getLevel() const;
 };
 
 }

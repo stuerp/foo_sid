@@ -33,6 +33,7 @@
 #include "WaveformCalculator.h"
 #include "resample/TwoPassSincResampler.h"
 #include "resample/ZeroOrderResampler.h"
+#include "resample/PassThrough.h"
 
 namespace reSIDfp
 {
@@ -176,6 +177,11 @@ void SID::enableFilter(bool enable)
 {
     filter6581->enable(enable);
     filter8580->enable(enable);
+}
+
+void SID::enableOld6581caps(bool enable)
+{
+    filter6581->enableOldCaps(enable);
 }
 
 void SID::voiceSync(bool sync)
@@ -496,6 +502,10 @@ void SID::setSamplingParameters(double clockFrequency, SamplingMethod method, do
         resampler.reset(TwoPassSincResampler::create(clockFrequency, samplingFrequency));
         break;
 
+    case NONE:
+        resampler.reset(new PassThrough());
+        break;
+
     default:
         throw SIDError("Unknown sampling method");
     }
@@ -514,9 +524,7 @@ void SID::clockSilent(unsigned int cycles)
             for (int i = 0; i < delta_t; i++)
             {
                 // clock waveform generators (can affect OSC3)
-                voice[0].wave()->clock();
-                voice[1].wave()->clock();
-                voice[2].wave()->clock();
+                clockWaveGen();
 
                 voice[0].wave()->output();
                 voice[1].wave()->output();

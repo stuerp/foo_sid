@@ -26,7 +26,6 @@
 #define protected public
 #define class struct
 
-#include "../src/EnvelopeGenerator.h"
 #include "../src/EnvelopeGenerator.cpp"
 
 using namespace UnitTest;

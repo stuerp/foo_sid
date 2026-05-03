@@ -36,15 +36,22 @@ namespace SIDLite
 class SID
 {
 public:
+    enum class model_t
+    {
+        MOS6581,
+        MOS8580
+    };
+
+public:
     SID();
     void reset();
     void write(int addr, int value);
-    int read(int addr);
+    int read(int addr) const;
     int clock(unsigned int cycles, short* buf);
 
-    void setChipModel(int model);
+    void setChipModel(model_t model);
     void setRealSIDmode(bool mode);
-    void setSamplingParameters(unsigned int clockFrequency, unsigned short samplingFrequency);
+    bool setSamplingParameters(unsigned int clockFrequency, unsigned short samplingFrequency);
 
     int getLevel() const { return filter.getLevel(); }
 
@@ -59,8 +66,7 @@ private:
     short             SampleCycleCnt;
 
 private:
-    inline signed short generateSample(unsigned int &cycles);
-    inline int emulateC64(unsigned int &cycles);
+    inline bool generateSample(unsigned int &cycles, short &output);
 };
 
 }

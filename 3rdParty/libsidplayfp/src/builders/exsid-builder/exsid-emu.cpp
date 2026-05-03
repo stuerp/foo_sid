@@ -41,7 +41,6 @@ const char* exSID::getCredits()
 
 exSID::exSID(sidbuilder *builder) :
     sidemu(builder),
-    m_status(false),
     readflag(false),
     busValue(0)
 {
@@ -49,16 +48,17 @@ exSID::exSID(sidbuilder *builder) :
     if (!exsid)
     {
         m_error = "out of memory";
+        m_status = false;
         return;
     }
 
     if (exSID_init(exsid) < 0)
     {
         m_error = exSID_error_str(exsid);
+        m_status = false;
         return;
     }
 
-    m_status = true;
     sid++;
 }
 

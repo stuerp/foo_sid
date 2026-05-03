@@ -47,7 +47,7 @@ public:
     static const char* getCredits();
 
 public:
-    reSIDfpEmu(sidbuilder *builder);
+    explicit reSIDfpEmu(sidbuilder *builder);
     ~reSIDfpEmu() override;
 
     bool getStatus() const { return m_status; }
@@ -67,10 +67,16 @@ public:
     void model(SidConfig::sid_model_t model, bool digiboost) override;
 
     // Specific to residfp
-    void filter(bool enable);
-    void filter6581Curve(double filterCurve);
-    void filter6581Range(double adjustment);
-    void filter8580Curve(double filterCurve);
+    void enableFilter(bool enable) { m_sid.enableFilter(enable); }
+
+    void filter6581Curve(double filterCurve) { m_sid.setFilter6581Curve(filterCurve); }
+
+    void filter6581Range(double adjustment) { m_sid.setFilter6581Range(adjustment); }
+
+    void filter8580Curve(double filterCurve) { m_sid.setFilter8580Curve(filterCurve); }
+
+    void enableOld6581caps(bool enable) { m_sid.enableOld6581caps(enable); }
+
     void combinedWaveforms(SidConfig::sid_cw_t cws);
 };
 

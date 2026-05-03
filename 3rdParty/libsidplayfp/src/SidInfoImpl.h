@@ -57,7 +57,7 @@ public:
         PACKAGE_NAME " V" PACKAGE_VERSION " Engine:\n"
             "\tCopyright (C) 2000 Simon White\n"
             "\tCopyright (C) 2007-2010 Antti Lankila\n"
-            "\tCopyright (C) 2010-2025 Leandro Nini\n"
+            "\tCopyright (C) 2010-2026 Leandro Nini\n"
             "\t" PACKAGE_URL "\n"
     };
 
@@ -68,8 +68,6 @@ public:
     std::string m_kernalDesc;
     std::string m_basicDesc;
     std::string m_chargenDesc;
-
-    unsigned int m_channels = 1;
 
     uint_least16_t m_driverAddr = 0;
     uint_least16_t m_driverLength = 0;
@@ -89,8 +87,6 @@ public:
 
     unsigned int getNumberOfCredits() const override { return m_credits.size(); }
     const char *getCredits(unsigned int i) const override { return i<m_credits.size()?m_credits[i].c_str():""; }
-
-    unsigned int getChannels() const override { return m_channels; }
 
     uint_least16_t getDriverAddr() const override { return m_driverAddr; }
     uint_least16_t getDriverLength() const override { return m_driverLength; }

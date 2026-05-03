@@ -14,8 +14,6 @@ Copyright (c) 2000-2011 Dag Lem
 Copyright (c) 2007-2010 Antti Lankila  
 Copyright (c) 2010-2026 Leandro Nini (drfiemost@users.sourceforge.net)
 
-_Warning!_ still experimental and subject to change, use at your own risk
-
 -----------------------------------------------------------------------------
 
 _This program is free software; you can redistribute it and/or modify

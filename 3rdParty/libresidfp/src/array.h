@@ -49,6 +49,9 @@ private:
     counter* count;
     const unsigned int x, y;
 
+private:
+    matrix& operator=(const matrix&) = delete;
+
 public:
     matrix(unsigned int x, unsigned int y) :
         data(new T[x * y]),

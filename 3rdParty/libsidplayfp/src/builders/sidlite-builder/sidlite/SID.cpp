@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <cstdint>
 
 namespace SIDLite
 {
@@ -38,31 +39,26 @@ int SID::clock(unsigned int cycles, short* buf)
     int i = 0;
     while (cycles > 0)
     {
-        buf[i] = generateSample(cycles);
-        i++;
+        short output;
+        if (generateSample(cycles, output))
+        {
+            buf[i] = output;
+            i++;
+        }
     }
     return i;
 }
 
-inline signed short SID::generateSample(unsigned int &cycles)
-{
-    // call this from custom buffer-filler
-    int Output = emulateC64(cycles);
-    // saturation logic on overflow
-    if (Output > 32767)
-        Output = 32767;
-    else if (Output < -32768)
-        Output = -32768;
-    return static_cast<signed short>(Output);
-}
-
-
-inline int SID::emulateC64(unsigned int &cycles)
+inline bool SID::generateSample(unsigned int &cycles, short &output)
 {
     // Cycle-based part of emulations:
 
-    while ((SampleCycleCnt <= s.SampleClockRatio) && cycles)
+    while (SampleCycleCnt <= s.SampleClockRatio)
     {
+        // no more cycles, can't produce output
+        if (cycles == 0)
+            return false;
+
         unsigned char InstructionCycles = std::min(7u, cycles);
         SampleCycleCnt += InstructionCycles << 4;
         cycles -= InstructionCycles;
@@ -74,8 +70,17 @@ inline int SID::emulateC64(unsigned int &cycles)
 
     // Samplerate-based part of emulations:
 
-    wg_output_t output = wavgen.clock(&adsr);
-    return filter.clock(output.first, output.second);
+    wg_output_t wg_out = wavgen.clock(&adsr);
+    int sample = filter.clock(wg_out.first, wg_out.second);
+
+    // saturation logic on overflow
+    if (sample > INT16_MAX)
+        sample = INT16_MAX;
+    else if (sample < INT16_MIN)
+        sample = INT16_MIN;
+    output = static_cast<short>(sample);
+
+    return true;
 }
 
 void SID::write(int addr, int value)
@@ -83,13 +88,17 @@ void SID::write(int addr, int value)
     regs[addr] = value;
 }
 
-int SID::read(int addr)
+int SID::read(int addr) const
 {
-    if (addr == 0x1B)
-        return wavgen.getOsc3();
-    if (addr == 0x1C)
-        return wavgen.getEnv3();
-    return 0;
+    switch (addr)
+    {
+        case 0x1B:
+            return wavgen.getOsc3();
+        case 0x1C:
+            return wavgen.getEnv3();
+        default:
+            return 0;
+    }
 }
 
 SID::SID() :
@@ -97,7 +106,7 @@ SID::SID() :
     filter(&s, regs),
     wavgen(&s, regs)
 {
-    setChipModel(8580);
+    setChipModel(model_t::MOS8580);
     reset();
 }
 
@@ -106,19 +115,27 @@ void SID::reset()
     SampleCycleCnt = 0;
 
     std::fill(std::begin(regs), std::end(regs), 0);
+
+    adsr.reset();
+    filter.reset();
+    wavgen.reset();
 }
 
-void SID::setSamplingParameters(unsigned int clockFrequency, unsigned short samplingFrequency)
+bool SID::setSamplingParameters(unsigned int clockFrequency, unsigned short samplingFrequency)
 {
+    if ((samplingFrequency < 8000) || (samplingFrequency > 48000))
+        return false;
+
     filter.rebuildCutoffTables(samplingFrequency);
 
     // shifting (multiplication) enhances SampleClockRatio precision
-    s.SampleClockRatio = (clockFrequency << 4) / samplingFrequency;
+    s.SampleClockRatio = (clockFrequency << CRSID_CLOCK_FRACTIONAL_BITS) / samplingFrequency;
+    return true;
 }
 
-void SID::setChipModel(int model)
+void SID::setChipModel(model_t model)
 {
-    s.ChipModel = model;
+    s.sid8580 = model == model_t::MOS8580;
 }
 
 void SID::setRealSIDmode(bool mode)

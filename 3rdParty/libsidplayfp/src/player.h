@@ -165,6 +165,8 @@ public:
     unsigned int mix(short *buffer, unsigned int samples);
 
     bool reset();
+
+    int getBufSize(unsigned int cycles);
 };
 
 }

@@ -123,8 +123,8 @@ void c64::reset()
     colorRAMBank.reset();
     mmu.reset();
 
-    for (auto sidBank: extraSidBanks)
-        sidBank.second->reset();
+    for (auto extraSidBank: extraSidBanks)
+        extraSidBank.second->reset();
 
     irqCount = 0;
     oldBAState = true;

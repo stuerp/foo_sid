@@ -107,6 +107,11 @@ int residfp::clock(unsigned int cycles, short* buf)
     return sid.clock(cycles, buf);
 }
 
+int residfp::clock( short* buf, int bufSize)
+{
+    return sid.clock(buf, bufSize);
+}
+
 void residfp::clockSilent(unsigned int cycles)
 {
     sid.clockSilent(cycles);
@@ -130,4 +135,9 @@ void residfp::setFilter8580Curve(double filterCurve)
 void residfp::enableFilter(bool enable)
 {
     sid.enableFilter(enable);
+}
+
+void residfp::enableOld6581caps(bool enable)
+{
+    sid.enableOld6581caps(enable);
 }

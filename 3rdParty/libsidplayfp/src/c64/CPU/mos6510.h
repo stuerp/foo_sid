@@ -87,7 +87,7 @@ private:
     const std::string m_msg;
 
 public:
-    explicit haltInstruction(const std::string msg) :
+    explicit haltInstruction(const std::string &msg) :
         m_msg(msg) {}
 
     std::string message() const { return m_msg; }

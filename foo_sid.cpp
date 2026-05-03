@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.cpp (2026.03.07) **/
+/** $VER: foo_sid.cpp (2026.03.05) **/
 
 #include <pch.h>
 
@@ -123,6 +123,7 @@ public:
 
     void on_init() override
     {
+        // Migrate old settings.
         if (CfgFilter8580CurveOld > 0)
         {
             if (CfgFilter8580CurveOld <= 12500)
@@ -902,22 +903,28 @@ public:
         {
             SidConfig Config = _Engine->config();
 
-            Config.frequency      = (uint_least32_t) _SampleRate;
-            Config.samplingMethod = SidConfig::INTERPOLATE;
-            Config.playback       = SidConfig::STEREO;
-            Config.sidEmulation   = _Builder.get();
-
+            // Intended C64 model when unknown or forced.
             if (CfgClockOverride)
             {
                 Config.forceC64Model = true;
                 Config.defaultC64Model = (CfgClockOverride == 1) ? SidConfig::PAL : SidConfig::NTSC;
             }
 
+            // Intended SID model when unknown or forced.
             if (CfgModelOverride)
             {
                 Config.forceSidModel = true;
                 Config.defaultSidModel = (CfgModelOverride == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
             }
+
+//          Config.digiBoost;                                   // Enable digiboost when 8580 SID model is used
+            Config.ciaModel;                                    // Intended CIA model
+            Config.frequency = (uint_least32_t)_SampleRate;     // Sampling frequency
+//          Config.secondSidAddress;                            // Extra SID chip address
+//          Config.thirdSidAddress;                             // Extra SID chip address
+            Config.sidEmulation   = _Builder.get();
+//          Config.powerOnDelay;                                // In cycles
+            Config.samplingMethod = SidConfig::INTERPOLATE;
 
             if (!_Engine->config(Config))
                 throw exception_io_data(_Engine->error());

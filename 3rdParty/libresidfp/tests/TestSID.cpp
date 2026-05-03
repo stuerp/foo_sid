@@ -1,9 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- *  Copyright (C) 2011-2014 Leandro Nini
- *  Copyright (C) 2009 Antti S. Lankila
- *  Copyright (C) 2001 Simon White
+ *  Copyright (C) 2026 Leandro Nini
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,45 +18,50 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "EventScheduler.h"
+#include "utpp/utpp.h"
 
+#include "../src/residfp/residfp.h"
 
-namespace libsidplayfp
+#include <algorithm>
+
+using namespace UnitTest;
+using namespace reSIDfp;
+
+SUITE(SID)
 {
 
-void EventScheduler::reset()
+#define BUF_SIZE 481
+#define CYCLES 10000
+#define CANARY 0x7fff
+
+struct TestFixture
 {
-    firstEvent = nullptr;
-    currentTime = 0;
+    // Test setup
+    TestFixture()
+    {
+        std::fill_n(buf, BUF_SIZE+1, CANARY);
+        s.setSamplingParameters(1000000., DECIMATE, 48000.);
+    }
+
+    residfp s;
+
+    short buf[BUF_SIZE+1];
+};
+
+TEST_FIXTURE(TestFixture, TestCycles)
+{
+    int c = s.clock(buf, BUF_SIZE);
+    CHECK(c == CYCLES);
+    CHECK(buf[BUF_SIZE-1] != CANARY);
+    CHECK(buf[BUF_SIZE] == CANARY);
 }
 
-void EventScheduler::cancel(const Event &event)
+TEST_FIXTURE(TestFixture, TestBufsize)
 {
-    Event **scan = &firstEvent;
-
-    while (*scan != nullptr)
-    {
-        if (&event == *scan)
-        {
-            *scan = (*scan)->next;
-            break;
-        }
-        scan = &((*scan)->next);
-    }
-}
-
-bool EventScheduler::isPending(const Event &event) const
-{
-    const Event *scan = firstEvent;
-    while (scan != nullptr)
-    {
-        if (&event == scan)
-        {
-            return true;
-        }
-        scan = scan->next;
-    }
-    return false;
+    int b = s.clock(CYCLES, buf);
+    CHECK(b == BUF_SIZE);
+    CHECK(buf[BUF_SIZE-1] != CANARY);
+    CHECK(buf[BUF_SIZE] == CANARY);
 }
 
 }

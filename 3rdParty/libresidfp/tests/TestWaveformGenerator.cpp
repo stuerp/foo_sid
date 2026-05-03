@@ -29,7 +29,6 @@
 #define protected public
 #define class struct
 
-#include "../src/WaveformGenerator.h"
 #include "../src/WaveformGenerator.cpp"
 
 using namespace UnitTest;

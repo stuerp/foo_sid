@@ -1,6 +1,6 @@
-m4_define([lib_major], [0])
-m4_define([lib_minor], [9])
-m4_define([lib_level], [2])
+m4_define([lib_major], [1])
+m4_define([lib_minor], [0])
+m4_define([lib_level], [1])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -58,9 +58,6 @@ dnl enable fast math
 AX_APPEND_COMPILE_FLAGS([-ffast-math -fno-unsafe-math-optimizations], [RESIDFP_CXXFLAGS])
 AC_SUBST([RESIDFP_CXXFLAGS])
 
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_BIGENDIAN
-
 AC_CHECK_SIZEOF([short])
 AC_CHECK_SIZEOF([int])
 
@@ -70,10 +67,6 @@ AS_IF([test $ac_cv_sizeof_short -ne 2],
 
 AS_IF([test $ac_cv_sizeof_int -lt 4],
   [AC_MSG_ERROR([only 32 bit or better CPUs are supported])]
-)
-
-AS_IF([test "x${ac_cv_header_stdint_h}" != "xyes"],
-  [AC_MSG_ERROR([Required header stdint.h not found])]
 )
 
 dnl libtool-style version-info number
@@ -87,7 +80,7 @@ dnl libtool-style version-info number
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
 LIBRESIDFPCUR=0
-LIBRESIDFPREV=0
+LIBRESIDFPREV=2
 LIBRESIDFPAGE=0
 LIBRESIDFPVERSION=$LIBRESIDFPCUR:$LIBRESIDFPREV:$LIBRESIDFPAGE
 
@@ -104,7 +97,7 @@ AS_IF([test "x$enable_debug" = "xno"],
   debug_flags=""
   RESIDFP_INLINE=""
   RESIDFP_INLINING=0
-  AX_APPEND_COMPILE_FLAGS([-Wall -Werror -pedantic])
+  AX_APPEND_COMPILE_FLAGS([-Wall -Wextra -pedantic])
   ]
 )
 

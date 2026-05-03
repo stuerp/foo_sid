@@ -54,7 +54,7 @@ private:
     uint8_t iomap(uint_least16_t addr) const;
 
 public:
-    psiddrv(const SidTuneInfo *tuneInfo) :
+    explicit psiddrv(const SidTuneInfo *tuneInfo) :
         m_tuneInfo(tuneInfo) {}
 
     /**

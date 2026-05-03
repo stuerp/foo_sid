@@ -23,7 +23,6 @@
 #include <limits>
 #include <vector>
 
-#include "../src/Spline.h"
 #include "../src/Spline.cpp"
 
 using namespace UnitTest;

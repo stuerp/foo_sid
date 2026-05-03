@@ -261,7 +261,7 @@ protected:
      /**
       * Timers can appear on the port.
       */
-     uint8_t adjustDataPort(uint8_t data);
+     uint8_t adjustDataPort(uint8_t data) const;
 
     /**
      * Read CIA register.

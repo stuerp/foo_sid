@@ -69,11 +69,6 @@ public:
     unsigned int usedDevices() const { return sidobjs.size(); }
 
     /**
-     * @deprecated does nothing
-     */
-    SID_DEPRECATED unsigned int create(unsigned int sids) { return sids; }
-
-    /**
      * Find a free SID of the required specs
      *
      * @param scheduler the event scheduler

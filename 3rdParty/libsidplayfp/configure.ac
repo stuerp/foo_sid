@@ -1,6 +1,6 @@
 m4_define([lib_major], [3])
 m4_define([lib_minor], [0])
-m4_define([lib_level], [0a2])
+m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -114,7 +114,7 @@ LIBSIDPLAYAGE=7
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
-LIBSTILVIEWREV=7
+LIBSTILVIEWREV=8
 LIBSTILVIEWAGE=0
 LIBSTILVIEWVERSION=$LIBSTILVIEWCUR:$LIBSTILVIEWREV:$LIBSTILVIEWAGE
 
@@ -191,7 +191,7 @@ AC_ARG_ENABLE([tests],
 AM_CONDITIONAL([ENABLE_TEST], [test x$enable_tests = xyes])
 
 PKG_CHECK_MODULES([RESIDFP],
-    [libresidfp >= 0.9.2],
+    [libresidfp >= 1.0.0],
     [AC_DEFINE([HAVE_RESIDFP], 1, [Define to 1 if you have libresidfp (-lresidfp).])],
     [AC_MSG_WARN([$RESIDFP_PKG_ERRORS])]
 )
@@ -302,6 +302,11 @@ AS_IF([test "x$build_exsid_driver" = xyes],
 eval loadable_shrext=$shrext_cmds
 AC_DEFINE_UNQUOTED([SHLIBEXT], ["${loadable_shrext}"], [Shared library extension])
 
+
+# for demo
+DEMO_HEADERS=1
+AC_CHECK_HEADERS([fcntl.h sys/soundcard.h sys/ioctl.h unistd.h], [], [DEMO_HEADERS=0])
+AM_CONDITIONAL([BUILD_DEMO], [test "$DEMO_HEADERS" -eq 1])
 
 AC_CONFIG_FILES([
 Makefile

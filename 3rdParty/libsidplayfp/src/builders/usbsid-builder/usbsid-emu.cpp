@@ -30,7 +30,6 @@ USBSID::USBSID(sidbuilder *builder) :
     m_sid(*(new USBSID_NS::USBSID_Class)),
     m_handle(-1),
     sidno(0),
-    m_status(false),
     busValue(0)
 {
 
@@ -39,6 +38,7 @@ USBSID::USBSID(sidbuilder *builder) :
     if (m_handle < 0)
     {
         m_error = "USBSID init failed";
+        m_status = false;
         return;
     }
 
@@ -140,11 +140,6 @@ void USBSID::event()
         m_sid.USBSID_Flush();
         eventScheduler->schedule(*this, raster_rate, EVENT_CLOCK_PHI1);
     }
-}
-
-void USBSID::filter(bool enable)
-{
- (void) enable;
 }
 
 void USBSID::flush() /* Only gets call on player exit!? */

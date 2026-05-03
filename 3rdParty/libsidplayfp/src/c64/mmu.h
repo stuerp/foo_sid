@@ -96,7 +96,7 @@ private:
     void updateMappingPHI2();
 
 public:
-    MMU(EventScheduler &eventScheduler, IOBank* ioBank);
+    MMU(EventScheduler &scheduler, IOBank* ioBank);
 
     void reset();
 

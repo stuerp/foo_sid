@@ -360,7 +360,20 @@ public:
      * @param adjustment 0 .. 1, where 0 sets center frequency low ("dark"), 1 sets it high ("bright").
      *                   This also affects the range. Default is 0.5
      */
-    void setFilterRange(double adjustment);
+    static void setFilterRange(double adjustment)
+    {
+        FilterModelConfig6581::getInstance()->setFilterRange(adjustment);
+    }
+
+    /**
+     * Enable/disable old caps for 6581 model.
+     *
+     * @param enable true to enable old 2200pF caps, false to use new 470pF caps.
+     */
+    static void enableOldCaps(bool enable)
+    {
+        FilterModelConfig6581::getInstance()->enableOldCaps(enable);
+    }
 };
 
 } // namespace reSIDfp

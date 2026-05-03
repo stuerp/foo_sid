@@ -38,7 +38,7 @@ class WavGen
 public:
     WavGen(settings *s, unsigned char *regs);
     void reset();
-    wg_output_t clock(ADSR *adsr);
+    wg_output_t clock(const ADSR *adsr);
 
     inline unsigned char getOsc3() const { return oscReg; }
     inline unsigned char getEnv3() const { return envReg; }

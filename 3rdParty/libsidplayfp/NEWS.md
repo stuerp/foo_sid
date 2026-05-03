@@ -1,9 +1,11 @@
-3.0.0 2026-xx-xx
+3.0.0 2026-05-02
 * removed deprecated stuff and cleaned up API
 * dropped hardsid support
 * dropped resid emulation
-* add new lightweigth sid emulation based on cRSID by Mihály Horváth
+* added new lightweigth sid emulation based on cRSID by Mihály Horváth
 * moved residfp engine to an external library
+* improved kernal stub compatibility (#224)
+* changed the default sampling freq to 48KHz
 
 
 

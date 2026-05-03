@@ -1507,7 +1507,7 @@ void MOS6510::buildInstructionTable()
     for (unsigned int i = 0; i < 0x100; i++)
     {
 #ifndef NDEBUG
-        printf("Building Command %d[%02x]... ", i, i);
+        printf("Building Command %u[%02x]... ", i, i);
 #endif
 
         /*
@@ -2144,7 +2144,7 @@ void MOS6510::buildInstructionTable()
         instrTable[buildCycle].func = &StaticFuncWrapper<&MOS6510::interruptsAndNextOpcode>;
 
 #ifndef NDEBUG
-        printf("Done [%d Cycles]\n", buildCycle - (i << 3));
+        printf("Done [%u Cycles]\n", buildCycle - (i << 3));
 #endif
     }
 }

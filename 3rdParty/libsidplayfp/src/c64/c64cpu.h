@@ -102,7 +102,7 @@ protected:
     }
 
 public:
-    c64cpubus (MMU &mmu) :
+    explicit c64cpubus (MMU &mmu) :
         m_mmu(mmu) {}
 };
 

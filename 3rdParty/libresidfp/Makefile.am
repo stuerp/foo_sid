@@ -67,7 +67,9 @@ src/WaveformCalculator.cpp \
 src/WaveformCalculator.h \
 src/WaveformGenerator.cpp \
 src/WaveformGenerator.h \
+src/resample/Limiter.h \
 src/resample/Resampler.h \
+src/resample/PassThrough.h \
 src/resample/ZeroOrderResampler.h \
 src/resample/SincResampler.cpp \
 src/resample/SincResampler.h \

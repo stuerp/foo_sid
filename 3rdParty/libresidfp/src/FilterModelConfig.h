@@ -168,7 +168,7 @@ protected:
 
     ~FilterModelConfig();
 
-    void setUCox(double new_uCox);
+    void calcCurrFactorCoeff();
 
     virtual double getVoiceDC(unsigned int env) const = 0;
 

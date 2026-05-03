@@ -78,7 +78,7 @@ public:
     /**
      * 16-bit input (EXT IN). Write 16-bit sample to audio input. NB! The caller
      * is responsible for keeping the value within 16 bits. Note that to mix in
-     * an external audio signal the signal should be resampled to 1MHz first.
+     * an external audio signal the signal should be resampled to ~1MHz first.
      *
      * @param value input level to set
      */
@@ -147,13 +147,30 @@ public:
 
     /**
      * Clock SID forward producing audio
-     * using chosen output sampling algorithm.
+     * using chosen output resampling algorithm.
      *
-     * @param cycles c64 clocks to clock
+     * @note
+     * User must make sure to have enough space
+     * for the buffer.
+     * The number of samples produced can be approximated
+     * with this formula:
+     * std::ceil(cycles/clockFrequency*samplingFrequency)
+     *
+     * @param cycles c64 clocks to run
      * @param buf audio output buffer
      * @return number of samples produced
      */
     int clock(unsigned int cycles, short* buf);
+
+    /**
+     * Clock SID forward producing audio
+     * using chosen output resampling algorithm.
+     *
+     * @param buf audio output buffer
+     * @param bufSize the buffer size
+     * @return number of c64 clocks run
+     */
+    int clock(short* buf, int bufSize);
 
     /**
      * Clock SID forward with no audio production.
@@ -175,7 +192,7 @@ public:
     void setFilter6581Curve(double filterCurve);
 
     /**
-    * Set filter range parameter for 6581 model
+    * Set filter range parameter for 6581 model.
     *
     * @see Filter6581::setFilterRange(double)
     */
@@ -194,6 +211,14 @@ public:
      * @param enable false to turn off filter emulation
      */
     void enableFilter(bool enable);
+
+    /**
+     * Enable/disable old caps for 6581 model.
+     *
+     * @param enable true to enable old 2200pF caps used on ASSY 326298
+     *               false to use the standard 470pF caps.
+     */
+    void enableOld6581caps(bool enable);
 };
 
 }

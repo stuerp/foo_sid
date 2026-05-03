@@ -31,8 +31,6 @@ private:
     int m_handle;
     int sidno;
 
-    bool m_status;
-
     uint8_t busValue;  /* Return value on read */
 
     SidConfig::sid_model_t runmodel;  /* Read model type */
@@ -43,7 +41,7 @@ public:
     static const char* getCredits();
 
 public:
-    USBSID(sidbuilder *builder);
+    explicit USBSID(sidbuilder *builder);
     ~USBSID() override;
 
     /* static variables required due to
@@ -70,7 +68,6 @@ public:
 
     /* USBSID specific */
     void flush(void);
-    void filter(bool enable);
 
     /* ISSUE: Disabled, blocks playing */
     // Must lock the SID before using the standard functions.

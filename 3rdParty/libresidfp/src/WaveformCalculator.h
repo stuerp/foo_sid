@@ -111,7 +111,7 @@ public:
      * @param cws strength of combined waveforms
      * @return Pulldown table
      */
-    matrix_t* buildPulldownTable(ChipModel model, CombinedWaveforms cws);
+    static matrix_t* buildPulldownTable(ChipModel model, CombinedWaveforms cws);
 };
 
 } // namespace reSIDfp

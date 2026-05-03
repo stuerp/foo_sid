@@ -20,7 +20,6 @@
 
 #include "utpp/utpp.h"
 
-#include "../src/Dac.h"
 #include "../src/Dac.cpp"
 
 using namespace UnitTest;

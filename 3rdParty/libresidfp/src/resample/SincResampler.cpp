@@ -42,7 +42,7 @@
 #endif
 
 
-#if __cpp_lib_constexpr_cmath >= 202306L
+#if __cplusplus >= 202306L
 #  define CONSTEXPR_FUNC  constexpr
 #  define CONSTEXPR_VAR   constexpr
 #else
