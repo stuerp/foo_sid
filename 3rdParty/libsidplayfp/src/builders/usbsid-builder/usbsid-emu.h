@@ -2,7 +2,7 @@
 #ifndef USBSID_EMU_H
 #define USBSID_EMU_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "sidplayfp/SidConfig.h"
 #include "sidemu.h"
@@ -31,8 +31,6 @@ private:
     int m_handle;
     int sidno;
 
-    bool m_status;
-
     uint8_t busValue;  /* Return value on read */
 
     SidConfig::sid_model_t runmodel;  /* Read model type */
@@ -43,7 +41,7 @@ public:
     static const char* getCredits();
 
 public:
-    USBSID(sidbuilder *builder);
+    explicit USBSID(sidbuilder *builder);
     ~USBSID() override;
 
     /* static variables required due to
@@ -64,13 +62,12 @@ public:
 
 
     void sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool) override;
+        SidConfig::sampling_method_t method) override;
 
     void model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost) override;
 
     /* USBSID specific */
     void flush(void);
-    void filter(bool enable);
 
     /* ISSUE: Disabled, blocks playing */
     // Must lock the SID before using the standard functions.

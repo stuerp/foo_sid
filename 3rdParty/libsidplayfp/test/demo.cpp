@@ -1,7 +1,7 @@
 /*
  * This file is part of libsidplayfp, a SID player engine.
  *
- * Copyright 2012-2023 Leandro Nini <drfiemost@users.sourceforge.net>
+ * Copyright 2012-2026 Leandro Nini <drfiemost@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <cstring>
 
 #include <fstream>
@@ -31,10 +31,17 @@
 #include <vector>
 #include <iostream>
 
-#include <sidplayfp/sidplayfp.h>
-#include <sidplayfp/SidTune.h>
-#include <sidplayfp/SidInfo.h>
-#include <sidplayfp/builders/residfp.h>
+#ifdef BUILD_INTERNAL
+#  include "sidplayfp/sidplayfp.h"
+#  include "sidplayfp/SidTune.h"
+#  include "sidplayfp/SidInfo.h"
+#  include "builders/sidlite-builder/sidlite.h"
+#else
+#  include <sidplayfp/sidplayfp.h>
+#  include <sidplayfp/SidTune.h>
+#  include <sidplayfp/SidInfo.h>
+#  include <sidplayfp/builders/sidlite.h>
+#endif
 
 /**
  * Works on UNIX using OSS
@@ -78,8 +85,14 @@ char* loadRom(const char* path, size_t romSize)
  * to play a SID tune from a file.
  * It uses OSS for audio output.
  */
-int main(int, char* argv[])
+int main(int argc, char* argv[])
 {
+    if (argc<2)
+    {
+        std::cerr << "Argument required" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     sidplayfp m_engine;
 
     { // Load ROM files
@@ -95,21 +108,15 @@ int main(int, char* argv[])
     }
 
     // Set up a SID builder
-    std::unique_ptr<ReSIDfpBuilder> rs(new ReSIDfpBuilder("Demo"));
-
-    // Get the number of SIDs supported by the engine
-    unsigned int maxsids = (m_engine.info ()).maxsids();
-
-    // Create SID emulators
-    rs->create(maxsids);
-
+    std::unique_ptr<SIDLiteBuilder> rs(new SIDLiteBuilder("Demo"));
+/*
     // Check if builder is ok
     if (!rs->getStatus())
     {
         std::cerr << rs->error() << std::endl;
         return -1;
     }
-
+*/
     // Load tune from file
     std::unique_ptr<SidTune> tune(new SidTune(argv[1]));
 
@@ -127,8 +134,6 @@ int main(int, char* argv[])
     SidConfig cfg;
     cfg.frequency = SAMPLERATE;
     cfg.samplingMethod = SidConfig::INTERPOLATE;
-    cfg.fastSampling = false;
-    cfg.playback = SidConfig::MONO;
     cfg.sidEmulation = rs.get();
     if (!m_engine.config(cfg))
     {
@@ -154,20 +159,24 @@ int main(int, char* argv[])
     int bufferSize;
     ioctl(handle, SNDCTL_DSP_GETBLKSIZE, &bufferSize);
 
-    // 48000/~1000000 * 5000 * 2
-    short buffer[512];
-    // Play for ~5 seconds
+    //uint_least32_t bufferSamples = static_cast<uint_least32_t>(bufferSize) / sizeof(short);
+
+    constexpr int CYCLES = 5000;
+
     m_engine.initMixer(true);
+    int bufSize = m_engine.getBufSize(CYCLES);
+    std::vector<short> buffer(bufSize);
+    // Play for ~5 seconds
     for (int i=0; i<1000; i++)
     {
-        int res = m_engine.play(5000);
+        int res = m_engine.play(CYCLES);
         if (res < 0)
         {
             std::cerr << m_engine.error() << std::endl;
             break;
         }
-        unsigned int s = m_engine.mix(buffer, res);
-        ::write(handle, buffer, s*sizeof(short));
+        unsigned int s = m_engine.mix(buffer.data(), res);
+        ::write(handle, buffer.data(), s*sizeof(short));
     }
 
     ::close(handle);

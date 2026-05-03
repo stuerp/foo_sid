@@ -50,11 +50,11 @@ function Install-Component
         Copy-Item "$PackagePath64/*" -Destination $ProfilePath -Force;
     }
 
-    if (Test-Path -Path "../bin/x86")
+    if (Test-Path -Path "../bin.x86")
     {
         Write-Host "Installing component in foobar2000 32-bit...";
 
-        $ProfilePath = "../bin/x86/profile/user-components/$TargetName";
+        $ProfilePath = "../bin.x86/profile/user-components/$TargetName";
 
         if (!(Test-Path -Path $ProfilePath))
         {

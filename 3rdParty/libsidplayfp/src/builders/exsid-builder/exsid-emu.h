@@ -42,8 +42,6 @@ private:
     static unsigned int sid;
     void * exsid;
 
-    bool m_status;
-
     bool readflag;
 
     uint8_t busValue;
@@ -57,7 +55,7 @@ public:
     static const char* getCredits();
 
 public:
-    exSID(sidbuilder *builder);
+    explicit exSID(sidbuilder *builder);
     ~exSID() override;
 
     bool getStatus() const { return m_status; }
@@ -73,10 +71,8 @@ public:
 
     void model(SidConfig::sid_model_t model, bool digiboost) override;
 
-    void filter(bool) {}
-
     void sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool) override;
+        SidConfig::sampling_method_t method) override;
 
     // exSID specific
     void flush();

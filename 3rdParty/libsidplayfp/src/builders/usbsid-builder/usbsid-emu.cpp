@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <sstream>
 #include <unistd.h>
 
 #include "driver/src/USBSID.h"
@@ -31,7 +30,6 @@ USBSID::USBSID(sidbuilder *builder) :
     m_sid(*(new USBSID_NS::USBSID_Class)),
     m_handle(-1),
     sidno(0),
-    m_status(false),
     busValue(0)
 {
 
@@ -40,6 +38,7 @@ USBSID::USBSID(sidbuilder *builder) :
     if (m_handle < 0)
     {
         m_error = "USBSID init failed";
+        m_status = false;
         return;
     }
 
@@ -116,7 +115,7 @@ void USBSID::model(SidConfig::sid_model_t model, MAYBE_UNUSED bool digiboost)
 }
 
 void USBSID::sampling(float systemclock, float freq,
-        SidConfig::sampling_method_t method, bool)
+        SidConfig::sampling_method_t method)
 {
     (void)freq; /* Audio frequency is not used for USBSID-Pico */
     (void)method; /* Interpolation method is not used for USBSID-Pico */
@@ -141,11 +140,6 @@ void USBSID::event()
         m_sid.USBSID_Flush();
         eventScheduler->schedule(*this, raster_rate, EVENT_CLOCK_PHI1);
     }
-}
-
-void USBSID::filter(bool enable)
-{
- (void) enable;
 }
 
 void USBSID::flush() /* Only gets call on player exit!? */

@@ -22,20 +22,22 @@
 
 #include <vector>
 
-class SID_EXTERN SidTuneMod : public SidTune
+class SID_EXTERN sid_tune_t : public SidTune
 {
 public:
-    SidTuneMod(file::ptr inFile, std::string fileName, const char ** fileNameExt = 0, const bool separatorIsSlash = false);
-    SidTuneMod(const SidTuneMod&) = delete;
-    SidTuneMod(const SidTuneMod&&) = delete;
-    SidTuneMod& operator=(const SidTuneMod&) = delete;
-    SidTuneMod& operator=(SidTuneMod&&) = delete;
-    ~SidTuneMod();
+    sid_tune_t(file::ptr inFile, std::string fileName, const char ** fileNameExt = 0, const bool separatorIsSlash = false);
+
+    sid_tune_t(const sid_tune_t &) = delete;
+    sid_tune_t(const sid_tune_t &&) = delete;
+    sid_tune_t& operator=(const sid_tune_t &) = delete;
+    sid_tune_t& operator=(sid_tune_t &&) = delete;
+
+    ~sid_tune_t();
 
     void createMD5(hasher_md5_result &);
 
 private:
-    std::string _fileName;
+    std::string _FileName;
 
     static void MyLoaderFunc(const char * fileName, std::vector<uint8_t> & bufferRef);
 };

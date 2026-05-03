@@ -7,24 +7,24 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 
 ## Features
 
-* Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID / .PSID, .MUS or .MUS+.STR formats.
-* Supports up to 3SID rips.
-* Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database and SID Tune Information List (STIL).
-* Supports foobar2000 2.0 and later (32-bit and 64-bit version)
-* Supports dark mode.
+- Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID / .PSID, .MUS or .MUS+.STR formats.
+- Supports up to 3SID rips.
+- Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database and SID Tune Information List (STIL).
+- Supports foobar2000 2.0 and later (32-bit and 64-bit version)
+- Supports dark mode.
 
 ## Requirements
 
-* [foobar2000](https://www.foobar2000.org/download) v1.6.16 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
-* Tested on Microsoft Windows 10 and later.
+- [foobar2000](https://www.foobar2000.org/download) v1.6.16 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
+- Tested on Microsoft Windows 10 and later.
 
 ## Getting started
 
-* Double-click `foo_sid.fbk2-component`.
+- Double-click `foo_sid.fbk2-component`.
 
 or
 
-* Import `foo_sid.fbk2-component` into foobar2000 using the "*File / Preferences / Components / Install...*" menu item.
+- Import `foo_sid.fbk2-component` into foobar2000 using the "*File / Preferences / Components / Install...*" menu item.
 
     **Important**
 
@@ -72,16 +72,17 @@ The code builds out-of-the box with Visual Studio.
 
 To build the code:
 
-* [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
-* [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-09-23
+- [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
+- [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-09-23
 
 The following library is included:
 
-* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp)
+- [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp)
+- [libresidfp](https://github.com/libsidplayfp/residfp)
 
 To create the deployment package:
 
-* [PowerShell 7.2](https://github.com/PowerShell/PowerShell) or later
+- [PowerShell 7.2](https://github.com/PowerShell/PowerShell) or later
 
 ### Setup
 
@@ -93,11 +94,11 @@ Create the following directory structure:
     out
     sdk
 
-* `bin` contains a portable version of foobar2000 64-bit for debugging purposes.
-* `bin.x86` contains a portable version of foobar2000 32-bit for debugging purposes.
-* `foo_sid` contains the [Git](https://github.com/stuerp/foo_sid) repository.
-* `out` receives a deployable version of the component.
-* `sdk` contains the foobar2000 SDK.
+- `bin` contains a portable version of foobar2000 64-bit for debugging purposes.
+- `bin.x86` contains a portable version of foobar2000 32-bit for debugging purposes.
+- `foo_sid` contains the [Git](https://github.com/stuerp/foo_sid) repository.
+- `out` receives a deployable version of the component.
+- `sdk` contains the foobar2000 SDK.
 
 ### Building
 
@@ -109,25 +110,26 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v1.103.1.0, 2026-02-15
+v2.0.0.0, 2026-05-03
 
-* Added .PSID and .RSID as a recognized file extensions.
-* Upgraded libsidplayfp to 2.16.1.
+- Added: Support for the SIDList core.
+- Upgraded libsidplayfp to 3.0.0.
+- Upgraded libresidfp to 1.0.1.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 
 ## Acknowledgements / Credits
 
-* Peter Pawlowski for the [foobar2000](https://www.foobar2000.org/) audio player. ![foobar2000](https://www.foobar2000.org/button-small.png)
-* [kode54](https://gitlab.com/kode54) for the original [foo_sid](https://gitlab.com/kode54/foo_sid) component.
-* [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) for a library to play Commodore 64 music.
+- Peter Pawlowski for the [foobar2000](https://www.foobar2000.org/) audio player. ![foobar2000](https://www.foobar2000.org/button-small.png)
+- [kode54](https://gitlab.com/kode54) for the original [foo_sid](https://gitlab.com/kode54/foo_sid) component.
+- [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) for a library to play Commodore 64 music.
 
 ## Links
 
-* Home page: [https://github.com/stuerp/foo_sid](https://github.com/stuerp/foo_sid)
-* Repository: [https://github.com/stuerp/foo_sid.git](https://github.com/stuerp/foo_sid.git)
-* Issue tracker: [https://github.com/stuerp/foo_sid/issues](https://github.com/stuerp/foo_sid.git)
-* Support: [https://hydrogenaudio.org/index.php/topic,128639.0.html](https://hydrogenaudio.org/index.php/topic,128639.0.html).
+- Home page: [https://github.com/stuerp/foo_sid](https://github.com/stuerp/foo_sid)
+- Repository: [https://github.com/stuerp/foo_sid.git](https://github.com/stuerp/foo_sid.git)
+- Issue tracker: [https://github.com/stuerp/foo_sid/issues](https://github.com/stuerp/foo_sid.git)
+- Support: [https://hydrogenaudio.org/index.php/topic,128639.0.html](https://hydrogenaudio.org/index.php/topic,128639.0.html).
 
 ## License
 

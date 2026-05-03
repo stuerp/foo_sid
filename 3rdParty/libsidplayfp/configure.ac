@@ -1,6 +1,6 @@
-m4_define([lib_major], [2])
-m4_define([lib_minor], [16])
-m4_define([lib_level], [1])
+m4_define([lib_major], [3])
+m4_define([lib_minor], [0])
+m4_define([lib_level], [0])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
 AC_PREREQ([2.62])
@@ -55,10 +55,6 @@ AS_IF([test $ax_cv_cxx_compile_cxx23__std_cpp23 != "yes"], [
 dnl check for hidden visibility support
 AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden -fvisibility-inlines-hidden])
 
-dnl enable fast math
-AX_APPEND_COMPILE_FLAGS([-ffast-math -fno-unsafe-math-optimizations], [RESIDFP_CXXFLAGS])
-AC_SUBST([RESIDFP_CXXFLAGS])
-
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_BIGENDIAN
 
@@ -73,8 +69,10 @@ AS_IF([test $ac_cv_sizeof_int -lt 4],
   [AC_MSG_ERROR([only 32 bit or better CPUs are supported])]
 )
 
-AS_IF([test "x${ac_cv_header_stdint_h}" != "xyes"],
-  [AC_MSG_ERROR([Required header stdint.h not found])]
+AC_CHECK_TYPES([int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t],
+    [],
+    [AC_MSG_ERROR([missing fixed width integer types])],
+    [[#include <cstdint>]]
 )
 
 dnl Checks for non-standard functions.
@@ -110,119 +108,44 @@ dnl libtool-style version-info number
 #
 # Increase the age value only if the changes made to the ABI are backward compatible.
 
-LIBSIDPLAYCUR=13
-LIBSIDPLAYREV=45
+LIBSIDPLAYCUR=14
+LIBSIDPLAYREV=46
 LIBSIDPLAYAGE=7
 LIBSIDPLAYVERSION=$LIBSIDPLAYCUR:$LIBSIDPLAYREV:$LIBSIDPLAYAGE
 
 LIBSTILVIEWCUR=0
-LIBSTILVIEWREV=7
+LIBSTILVIEWREV=8
 LIBSTILVIEWAGE=0
 LIBSTILVIEWVERSION=$LIBSTILVIEWCUR:$LIBSTILVIEWREV:$LIBSTILVIEWAGE
 
 AC_MSG_CHECKING([for debugging])
-AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug], [compile for debugging @<:@no/yes/full, default=no@:>@])],
+AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug], [compile for debugging @<:@no/yes, default=no@:>@])],
  [], [enable_debug=no])
 
 AS_IF([test "x$enable_debug" = "xno"],
   [AC_MSG_RESULT([Build without debugging messages]); debug_flags=-DNDEBUG],
-  [AS_IF([test "x$enable_debug" = "xyes"],
-    [AC_MSG_RESULT([Build with debugging messages]); debug_flags=-DDEBUG=1],
-    [AC_MSG_RESULT([Build with all debugging messages]); debug_flags=-DDEBUG=10]
-  )]
+  [AC_MSG_RESULT([Build with debugging messages]); debug_flags=""]
 )
 
 AC_SUBST([debug_flags])
 
-AC_ARG_ENABLE([hardsid],
-  AS_HELP_STRING([--enable-hardsid],[enable hardsid builder [default=no]])
-)
-
-AM_CONDITIONAL([HARDSID], [test "x$enable_hardsid" = "xyes"])
-
-
-AC_ARG_ENABLE([inline],
-  AS_HELP_STRING([--enable-inline],[enable inlining of functions [default=yes]])
-)
-
-AS_IF([test x"$enable_inline" != "xno"],
-  [RESID_INLINE=inline; RESID_INLINING=1],
-  [RESID_INLINE=""; RESID_INLINING=0]
-)
-
-dnl define compiler flag to enable SIMD instructions, not required if -march or -mcpu is defined
-AC_MSG_CHECKING([for SIMD instructions])
-AC_ARG_WITH(
-    [simd],
-    [AS_HELP_STRING([--with-simd=], [Build with SIMD optimizations @<:@runtime/mmx/sse2/sse4/avx2/avx512f/none, default=none@:>@])],
-    [],
-    [with_simd=none]
-)
-
-AS_IF([test x"$with_simd" != xnone],
-    [AS_CASE([$with_simd],
-        [runtime], [AC_DEFINE([RUNTIME_DISPATCH], 1, [Define to 1 to enable runtime SIMD dispatch.])],
-        [mmx], [SID_X86_SIMD_SUPPORTS([mmx])],
-        [sse2], [SID_X86_SIMD_SUPPORTS([sse2])],
-        [sse4], [SID_X86_SIMD_SUPPORTS([sse4])],
-        [avx2], [SID_X86_SIMD_SUPPORTS([avx2])],
-        [avx512f], [SID_X86_SIMD_SUPPORTS([avx512f])],
-        [AC_MSG_ERROR([Unrecognized SIMD specified])]
-    )]
-)
-AC_MSG_RESULT([$with_simd])
-
-dnl gcc needs this flag to enable vectorization
-AX_APPEND_COMPILE_FLAGS([-ftree-loop-vectorize])
-
-AC_CACHE_CHECK([for working bool], ac_cv_cxx_bool,
-[AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM([],
-    [[bool flag;]])],
-  [ac_cv_cxx_bool=yes],
-  [ac_cv_cxx_bool=no])]
-)
-
-AS_IF([test "x$ac_cv_cxx_bool" = "xno"],
-  [HAVE_BOOL=0],
-  [HAVE_BOOL=1]
-)
-
-dnl Enable branch prediction hints.
-AC_ARG_ENABLE([branch-hints],
-  [AS_HELP_STRING([--enable-branch-hints],
-    [enable static branch prediction hints [default=yes]])],
-  [],
-  [enable_branch_hints=yes]
-)
-
-AS_IF([test "$enable_branch_hints" != no],
-  [RESID_BRANCH_HINTS=1],
-  [RESID_BRANCH_HINTS=0]
-)
-
-AC_CACHE_CHECK([for log1p], [resid_cv_log1p],
-  [AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [ #include <math.h> ], [ log1p(1); ]
-    )],
-    [resid_cv_log1p=yes], [resid_cv_log1p=no]
-  )]
-)
-
-AS_IF([test "$resid_cv_log1p" = no],
-  [HAVE_LOG1P=0],
-  [HAVE_LOG1P=1]
-)
-
-AC_CACHE_CHECK([for __builtin_expect], [resid_cv_builtin_expect],
+AC_CACHE_CHECK([for __builtin_expect], [sid_cv_builtin_expect],
   [AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() { __builtin_expect(0, 0); }])],
-    [resid_cv_builtin_expect=yes], [resid_cv_builtin_expect=no])]
+    [sid_cv_builtin_expect=yes], [sid_cv_builtin_expect=no])]
 )
 
-AS_IF([test "$resid_cv_builtin_expect" = no],
+AS_IF([test "$sid_cv_builtin_expect" = no],
   [HAVE_BUILTIN_EXPECT=0],
   [HAVE_BUILTIN_EXPECT=1]
+)
+
+AC_ARG_ENABLE([lto],
+  [AS_HELP_STRING([--enable-lto],
+    [enable link time optimization [default=no]])]
+)
+
+AS_IF([test "x$enable_lto" = "xyes"],
+  [AX_APPEND_COMPILE_FLAGS([-flto])]
 )
 
 
@@ -246,11 +169,10 @@ AC_ARG_ENABLE([testsuite],
 )
 
 AS_IF([test "x$enable_testsuite" != xno],
-  [AC_DEFINE_UNQUOTED([VICE_TESTSUITE],
+  AC_DEFINE_UNQUOTED([VICE_TESTSUITE],
     ["$enable_testsuite"],
     [Path to VICE testsuite.]
   )
-  AC_CONFIG_LINKS([test/testsuite.sh:test/testsuite.sh test/testlist:test/testlist])]
 )
 
 AM_CONDITIONAL([TESTSUITE], [test "x$enable_testsuite" != xno])
@@ -268,31 +190,15 @@ AC_ARG_ENABLE([tests],
 
 AM_CONDITIONAL([ENABLE_TEST], [test x$enable_tests = xyes])
 
-
-AC_ARG_WITH([gcrypt], AS_HELP_STRING([--with-gcrypt], [Build with the gcrypt library]))
-AS_IF([test "x$with_gcrypt" != "xno"],
-  [PKG_CHECK_MODULES(LIBGCRYPT,
-    [libgcrypt >= 1.8],
-    [USE_LIBGCRYPT=yes
-    AC_DEFINE([HAVE_LIBGCRYPT], 1, [Define to 1 if you have libgcrypt (-lgcrypt).])],
-    [AS_IF([test "x$with_gcrypt" = "xyes"],
-      [AC_MSG_ERROR([gcrypt requested but not found])]
-    )]
-  )]
+PKG_CHECK_MODULES([RESIDFP],
+    [libresidfp >= 1.0.0],
+    [AC_DEFINE([HAVE_RESIDFP], 1, [Define to 1 if you have libresidfp (-lresidfp).])],
+    [AC_MSG_WARN([$RESIDFP_PKG_ERRORS])]
 )
-AM_CONDITIONAL([LIBGCRYPT], [test x$USE_LIBGCRYPT = xyes])
 
+AM_CONDITIONAL([RESIDFP_SUPPORT], [ test "x$pkg_cv_RESIDFP_LIBS" != x ])
 
-NEW_8580_FILTER=1
-AM_CONDITIONAL([NEW_8580_FILTER], [test $NEW_8580_FILTER != 0])
-
-AC_SUBST(HAVE_BOOL)
-AC_SUBST(HAVE_LOG1P)
 AC_SUBST(HAVE_BUILTIN_EXPECT)
-AC_SUBST(RESID_INLINING)
-AC_SUBST(RESID_INLINE)
-AC_SUBST(RESID_BRANCH_HINTS)
-AC_SUBST(NEW_8580_FILTER)
 
 AC_SUBST(LIBSIDPLAYVERSION)
 AC_SUBST(LIBSTILVIEWVERSION)
@@ -396,13 +302,18 @@ AS_IF([test "x$build_exsid_driver" = xyes],
 eval loadable_shrext=$shrext_cmds
 AC_DEFINE_UNQUOTED([SHLIBEXT], ["${loadable_shrext}"], [Shared library extension])
 
+
+# for demo
+DEMO_HEADERS=1
+AC_CHECK_HEADERS([fcntl.h sys/soundcard.h sys/ioctl.h unistd.h], [], [DEMO_HEADERS=0])
+AM_CONDITIONAL([BUILD_DEMO], [test "$DEMO_HEADERS" -eq 1])
+
 AC_CONFIG_FILES([
 Makefile
 libsidplayfp.pc
 libstilview.pc
 src/sidplayfp/sidversion.h
-src/builders/residfp-builder/residfp/siddefs-fp.h
-src/builders/resid-builder/resid/siddefs.h
+src/builders/sidlite-builder/sidlite/sl_defs.h
 tests/Makefile
 ])
 

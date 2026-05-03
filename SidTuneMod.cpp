@@ -34,27 +34,34 @@
 #pragma warning(disable: 4100 4625 4626 4710 4711 4738 5045 ALL_CPPCORECHECK_WARNINGS)
 
 const char ERR_CANT_OPEN_FILE[] = "SIDTUNE ERROR: Could not open file for binary input";
-const char ERR_EMPTY[] = "SIDTUNE ERROR: No data to load";
-const char ERR_CANT_LOAD_FILE[] = "SIDTUNE ERROR: Could not load input file";
 
-struct CacheItem
+struct cache_item_t
 {
     size_t _ReferenceCount;
     std::vector<uint8_t> _Data;
 
-    CacheItem() noexcept : _ReferenceCount(0)
+    cache_item_t() noexcept : _ReferenceCount()
     {
     }
 };
 
-static class FileCache
+static class file_cache_t
 {
 public:
+    file_cache_t() noexcept { };
+
+    file_cache_t(const file_cache_t &) = delete;
+    file_cache_t(const file_cache_t &&) = delete;
+    file_cache_t& operator=(const file_cache_t &) = delete;
+    file_cache_t& operator=(file_cache_t &&) = delete;
+
+    virtual ~file_cache_t() noexcept { }
+
     std::string Add(const std::string& filePath, const file::ptr file)
     {
         std::lock_guard<std::mutex> Guard(_Lock);
 
-        CacheItem & Item = _Items[filePath];
+        cache_item_t & Item = _Items[filePath];
 
         if (Item._ReferenceCount == 0)
         {
@@ -89,7 +96,7 @@ public:
     {
         std::lock_guard<std::mutex> Guard(_Lock);
 
-        CacheItem& Item = _Items[filePath];
+        cache_item_t& Item = _Items[filePath];
 
         if (Item._ReferenceCount <= 1)
         {
@@ -115,7 +122,7 @@ public:
     {
         std::lock_guard<std::mutex> Guard(_Lock);
 
-        const CacheItem& Item = _Items[filePath];
+        const cache_item_t& Item = _Items[filePath];
 
         if (Item._ReferenceCount == 0)
             return false;
@@ -127,10 +134,25 @@ public:
 
 private:
     std::mutex _Lock;
-    std::map<std::string, CacheItem> _Items;
+    std::map<std::string, cache_item_t> _Items;
 } _FileCache;
 
-void SidTuneMod::MyLoaderFunc(const char * filePath, std::vector<uint8_t>& bufferRef)
+sid_tune_t::sid_tune_t(file::ptr file, std::string fileName, const char ** fileNameExt, const bool separatorIsSlash) : SidTune(MyLoaderFunc, _FileCache.Add(fileName, file).c_str(), fileNameExt, separatorIsSlash), _FileName(fileName)
+{
+}
+
+sid_tune_t::~sid_tune_t()
+{
+    try
+    {
+        _FileCache.Remove(_FileName);
+    }
+    catch (...)
+    {
+    }
+}
+
+void sid_tune_t::MyLoaderFunc(const char * filePath, std::vector<uint8_t>& bufferRef)
 {
     std::string FilePath = filePath;
 
@@ -161,22 +183,6 @@ void SidTuneMod::MyLoaderFunc(const char * filePath, std::vector<uint8_t>& buffe
     }
 }
 
-SidTuneMod::SidTuneMod(file::ptr file, std::string fileName, const char ** fileNameExt, const bool separatorIsSlash)
-    : _fileName(fileName), SidTune(MyLoaderFunc, _FileCache.Add(fileName, file).c_str(), fileNameExt, separatorIsSlash)
-{
-}
-
-SidTuneMod::~SidTuneMod()
-{
-    try
-    {
-        _FileCache.Remove(_fileName);
-    }
-    catch (...)
-    {
-    }
-}
-
 static unsigned char htoi(const char * src) noexcept
 {
     if (src == nullptr)
@@ -185,13 +191,13 @@ static unsigned char htoi(const char * src) noexcept
     unsigned char byte;
 
     if (src[0] >= '0' && src[0] <= '9')
-        byte = (src[0] - '0') << 4;
+        byte = (unsigned char) ((src[0] - '0') << 4);
     else
     if (src[0] >= 'A' && src[0] <= 'F')
-        byte = (src[0] - 'A' + 10) << 4;
+        byte = (unsigned char) ((src[0] - 'A' + 10) << 4);
     else
     if (src[0] >= 'a' && src[0] <= 'f')
-        byte = (src[0] - 'a' + 10) << 4;
+        byte = (unsigned char) ((src[0] - 'a' + 10) << 4);
     else
         return 0;
 
@@ -209,7 +215,7 @@ static unsigned char htoi(const char * src) noexcept
     return byte;
 }
 
-void SidTuneMod::createMD5(hasher_md5_result& digest)
+void sid_tune_t::createMD5(hasher_md5_result& digest)
 {
     char Hash[33];
 
@@ -218,6 +224,6 @@ void SidTuneMod::createMD5(hasher_md5_result& digest)
     if (HashPtr)
     {
         for (unsigned int i = 0; i < 16; ++i, HashPtr += 2)
-            digest.m_data[i] = htoi(HashPtr);
+            digest.m_data[i] = (char) htoi(HashPtr);
     }
 }
