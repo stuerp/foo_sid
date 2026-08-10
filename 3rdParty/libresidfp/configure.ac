@@ -1,5 +1,5 @@
 m4_define([lib_major], [1])
-m4_define([lib_minor], [0])
+m4_define([lib_minor], [2])
 m4_define([lib_level], [1])
 m4_define([lib_version], [lib_major.lib_minor.lib_level])
 
@@ -8,7 +8,9 @@ AC_INIT([libresidfp],[lib_version],[],[],[https://github.com/libsidplayfp/libres
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([src/SID.cpp])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.11])
+
+AM_SILENT_RULES([yes])
 
 LIB_MAJOR=lib_major
 LIB_MINOR=lib_minor
@@ -58,6 +60,8 @@ dnl enable fast math
 AX_APPEND_COMPILE_FLAGS([-ffast-math -fno-unsafe-math-optimizations], [RESIDFP_CXXFLAGS])
 AC_SUBST([RESIDFP_CXXFLAGS])
 
+AX_PTHREAD([], [AC_MSG_ERROR("pthreads not found")])
+
 AC_CHECK_SIZEOF([short])
 AC_CHECK_SIZEOF([int])
 
@@ -69,19 +73,29 @@ AS_IF([test $ac_cv_sizeof_int -lt 4],
   [AC_MSG_ERROR([only 32 bit or better CPUs are supported])]
 )
 
+AC_CHECK_TYPES([int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t],
+    [],
+    [AC_MSG_ERROR([missing fixed width integer types])],
+    [[#include <cstdint>]]
+)
+
 dnl libtool-style version-info number
 #
-# https://autotools.io/libtool/version.html
+# https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 #
-# Always increase the revision value.
+# Update the version information only immediately before a public release of your software.
 #
-# Increase the current value whenever an interface has been added, removed or changed.
+# If the library source code has changed at all since the last update, then increment revision.
 #
-# Increase the age value only if the changes made to the ABI are backward compatible.
+# If any interfaces have been added, removed, or changed since the last update, increment current, and set revision to 0.
+#
+# If any interfaces have been added since the last public release, then increment age.
+#
+# If any interfaces have been removed or changed since the last public release, then set age to 0.
 
-LIBRESIDFPCUR=0
-LIBRESIDFPREV=2
-LIBRESIDFPAGE=0
+LIBRESIDFPCUR=2
+LIBRESIDFPREV=1
+LIBRESIDFPAGE=2
 LIBRESIDFPVERSION=$LIBRESIDFPCUR:$LIBRESIDFPREV:$LIBRESIDFPAGE
 
 AC_MSG_CHECKING([for debugging])

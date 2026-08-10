@@ -1,20 +1,18 @@
 
-/** $VER: foo_sid.cpp (2026.03.05) **/
+/** $VER: foo_sid.cpp (2026.08.10) **/
 
 #include <pch.h>
 
-#include <foobar2000.h>
-#include <coreDarkMode.h>
+#include <sdk/foobar2000.h>
+#include <sdk/coreDarkMode.h>
 
 #include <atlbase.h>
-
 #include <atlapp.h>
 
 #include <atlcrack.h>
 #include <atlctrls.h>
 #include <atlmisc.h>
 
-#include <libPPUI/wtl-pp.h>
 #include <foobar2000/helpers/atl-misc.h>
 #include <foobar2000/helpers/dropdown_helper.h>
 
@@ -29,7 +27,7 @@
 #include <utils/SidDatabase.h>
 #include <utils/STILview/stil.h>
 
-#include "resource.h"
+#include "Resource.h"
 
 #include "SidTuneMod.h"
 #include "ROMs.hpp"
@@ -876,10 +874,20 @@ public:
 
                     if (NewBuilder)
                     {
+                        // Old MOS6581
                         NewBuilder->filter6581Curve(CfgFilter6581Curve / 256.);
                         NewBuilder->filter6581Range(CfgFilter6581Range / 256.);
 
+                        // New CSG8580
                         NewBuilder->filter8580Curve(CfgFilter8580Curve / 256.);
+
+                        NewBuilder->combinedWaveformsStrength(SidConfig::sid_cw_t::AVERAGE);
+                        NewBuilder->enableOld6581caps(false);
+
+                        // Since libresidfp 3.1
+                        NewBuilder->dacLeakage(1.0); // Between 0 (no leakage) and 1 (standard leakage) (default 1.0)
+                        NewBuilder->offset6581(1.0); // Between 0 (average digis) and 1 (loud digis) (default 1.0)
+                        NewBuilder->dcbRes(0.0);     // Between 0 (10KOhm => ~1.6Hz) and 1 (1KOhm => ~16Hz) (default 0.0)
 
                         _Builder = std::move(NewBuilder);
                     }
@@ -901,7 +909,7 @@ public:
         }
 
         {
-            SidConfig Config = _Engine->config();
+            auto Config = _Engine->config();
 
             // Intended C64 model when unknown or forced.
             if (CfgClockOverride)
@@ -917,14 +925,14 @@ public:
                 Config.defaultSidModel = (CfgModelOverride == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
             }
 
-//          Config.digiBoost;                                   // Enable digiboost when 8580 SID model is used
-            Config.ciaModel;                                    // Intended CIA model
-            Config.frequency = (uint_least32_t)_SampleRate;     // Sampling frequency
-//          Config.secondSidAddress;                            // Extra SID chip address
-//          Config.thirdSidAddress;                             // Extra SID chip address
-            Config.sidEmulation   = _Builder.get();
-//          Config.powerOnDelay;                                // In cycles
-            Config.samplingMethod = SidConfig::INTERPOLATE;
+//          Config.digiBoost;                                           // Enable digiboost when 8580 SID model is used
+//          Config.ciaModel;                                            // Intended CIA model
+            Config.frequency            = (uint_least32_t)_SampleRate;  // Sampling frequency
+//          Config.secondSidAddress;                                    // Extra SID chip address
+//          Config.thirdSidAddress;                                     // Extra SID chip address
+            Config.sidEmulation         = _Builder.get();               // Selected emulation: reSIDfp, reSID, hardSID or exSID.
+//          Config.powerOnDelay;                                        // In cycles
+            Config.samplingMethod       = SidConfig::INTERPOLATE;       // Sampling method
 
             if (!_Engine->config(Config))
                 throw exception_io_data(_Engine->error());
@@ -945,12 +953,12 @@ public:
         }
         else
         {
-            _Length = 0;
+            _Length     = 0;
             _FadeLength = 0;
         }
 
-        _Position = 0;
-        _IsEOF = false;
+        _Position         = 0;
+        _IsEOF            = false;
         _IsDynamicInfoSet = false;
     }
 
@@ -1344,7 +1352,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         CWindow w;
 
         {
-            char temp[16];
+            char Temp[16] = { };
 
             SetDlgItemInt(IDC_FADE, (UINT) CfgFadeLength, FALSE);
 
@@ -1354,14 +1362,14 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
             {
                 if (_SampleRates[n] != (uint32_t) CfgSampleRate)
                 {
-                    _itoa_s((int) _SampleRates[n], temp, _countof(temp), 10);
-                    CfgSampleRateHistory.add_item(temp);
+                    _itoa_s((int) _SampleRates[n], Temp, _countof(Temp), 10);
+                    CfgSampleRateHistory.add_item(Temp);
                 }
             }
 
-            _itoa_s(CfgSampleRate, temp, _countof(temp), 10);
+            _itoa_s(CfgSampleRate, Temp, _countof(Temp), 10);
 
-            CfgSampleRateHistory.add_item(temp);
+            CfgSampleRateHistory.add_item(Temp);
 
             w = GetDlgItem(IDC_SAMPLERATE);
 
@@ -1376,6 +1384,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
         ::SendMessage(w, CB_SETCURSEL, (WPARAM) CfgCore, 0);
 
+        // Clock speed
         w = GetDlgItem(IDC_CLOCK_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
@@ -1384,6 +1393,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
         ::SendMessage(w, CB_SETCURSEL, (WPARAM) CfgClockOverride, 0);
 
+        // Clock model
         w = GetDlgItem(IDC_SID_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
@@ -1395,6 +1405,21 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
     pfc::string Value;
 
+    // Stereo Separation
+    {
+        _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
+
+        _SliderSsep.SetRangeMin(0);
+        _SliderSsep.SetRangeMax(150);
+        _SliderSsep.SetPos(CfgStereoSeparation);
+
+        Value = pfc::format_int(CfgStereoSeparation);
+        Value += "%";
+
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Value);
+    }
+
+    // Old SID (MOS 6581) filter curve
     {
         _Slider6581 = GetDlgItem(IDC_SLIDER_6581);
 
@@ -1409,6 +1434,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         _Slider6581.EnableWindow((CfgCore == CoreReSIDfp) ? TRUE : FALSE);
     }
 
+    // New SID (CSG 8580/MOS 6582) filter curve
     {
         _Slider8580 = GetDlgItem(IDC_SLIDER_8580);
 
@@ -1421,19 +1447,6 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, Value);
 
         _Slider8580.EnableWindow((CfgCore == CoreReSIDfp) ? TRUE : FALSE);
-    }
-
-    {
-        _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
-
-        _SliderSsep.SetRangeMin(0);
-        _SliderSsep.SetRangeMax(150);
-        _SliderSsep.SetPos(CfgStereoSeparation);
-
-        Value = pfc::format_int(CfgStereoSeparation);
-        Value += "%";
-
-        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Value);
     }
 
     _DarkModeHooks.AddDialogWithControls(*this);

@@ -163,6 +163,8 @@ namespace reSIDfp
  */
 class Integrator6581 : public Integrator
 {
+    friend class State;
+
 private:
     const double wlSnake;
 
@@ -173,29 +175,29 @@ private:
     mutable double n;
 #endif
 
-    unsigned int nVddt_Vw_2;
+    uint32_t nVddt_Vw_2;
 
-    const unsigned short nVddt;
-    const unsigned short nVt;
-    const unsigned short nVmin;
+    const uint16_t nVddt;
+    const uint16_t nVt;
+    const uint16_t nVmin;
 
     FilterModelConfig6581& fmc;
 
 public:
-    explicit Integrator6581(FilterModelConfig6581& fmc) :
-        wlSnake(fmc.getWL_snake()),
+    explicit Integrator6581(FilterModelConfig6581& new_fmc) :
+        wlSnake(new_fmc.getWL_snake()),
 #ifdef SLOPE_FACTOR
         n(1.4),
 #endif
         nVddt_Vw_2(0),
-        nVddt(fmc.getNormalizedValue(fmc.getVddt())),
-        nVt(fmc.getNormalizedValue(fmc.getVth())),
-        nVmin(fmc.getNVmin()),
-        fmc(fmc) {}
+        nVddt(new_fmc.getNormalizedValue(new_fmc.getVddt())),
+        nVt(new_fmc.getNormalizedValue(new_fmc.getVth())),
+        nVmin(new_fmc.getNVmin()),
+        fmc(new_fmc) {}
 
-    void setVw(unsigned short Vw) { nVddt_Vw_2 = ((nVddt - Vw) * (nVddt - Vw)) >> 1; }
+    void setVw(uint16_t Vw) { nVddt_Vw_2 = ((nVddt - Vw) * (nVddt - Vw)) >> 1; }
 
-    int solve(int vi) const override;
+    int32_t solve(int32_t vi) const override;
 };
 
 } // namespace reSIDfp

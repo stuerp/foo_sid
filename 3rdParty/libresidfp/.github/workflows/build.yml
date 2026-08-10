@@ -40,7 +40,7 @@ jobs:
           pkgconf \
           coreutils \
           gnu-sed
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: true
     - name: bootstrap
@@ -76,7 +76,7 @@ jobs:
         pacboy: >-
           toolchain:p
           autotools:p
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: true
     - name: build

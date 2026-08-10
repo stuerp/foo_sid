@@ -58,9 +58,9 @@ static const unsigned char ADSRexponentPeriods[256] =
 
 void ADSR::clock(char cycles)
 {
-    for (int Channel=0; Channel<SID_CHANNEL_COUNT; Channel++)
+    for (int Channel=0, ChBase=0; Channel<SID_CHANNEL_COUNT; Channel++, ChBase+=7)
     {
-        const unsigned char *ChannelPtr = &regs[Channel*7];
+        const unsigned char *ChannelPtr = &m_regs[ChBase];
         unsigned char AD = ChannelPtr[5];
         unsigned char SR = ChannelPtr[6];
         unsigned char *ADSRstatePtr = &(ADSRstate[Channel]);
@@ -121,7 +121,7 @@ void ADSR::clock(char cycles)
 }
 
 ADSR::ADSR(unsigned char *regs) :
-    regs(regs)
+    m_regs(regs)
 {
     reset();
 }
