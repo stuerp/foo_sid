@@ -27,7 +27,7 @@
 
 #include <sidtune/SidTuneBase.h>
 
-#include <foobar2000.h>
+#include <sdk/foobar2000.h>
 
 #include <CppCoreCheck/Warnings.h>
 

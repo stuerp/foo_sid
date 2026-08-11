@@ -10,12 +10,12 @@ It is based on [foo_sid](https://gitlab.com/kode54/foo_sid/-/commits/main) by [k
 - Decodes music files for the Commodore 64 or 128 computers, ripped in the .SID / .PSID, .MUS or .MUS+.STR formats.
 - Supports up to 3SID rips.
 - Supports the latest [High Voltage SID Collection](https://www.hvsc.c64.org/) song length database and SID Tune Information List (STIL).
-- Supports foobar2000 2.0 and later (32-bit and 64-bit version)
+- Supports foobar2000 2.0 and later (Intel 32-bit/64-bit and ARM64EC version).
 - Supports dark mode.
 
 ## Requirements
 
-- [foobar2000](https://www.foobar2000.org/download) v1.6.16 or later (32 or 64-bit). ![foobar2000](https://www.foobar2000.org/button-small.png)
+- [foobar2000](https://www.foobar2000.org/download) v2.0 or later. ![foobar2000](https://www.foobar2000.org/button-small.png)
 - Tested on Microsoft Windows 10 and later.
 
 ## Getting started
@@ -36,20 +36,20 @@ or
 
 The following info tags are available:
 
-| Name           | Value |
-| -------------- | ----- |
-| channels       | 2 |
-| encoding       | synthesized|
+| Name           | Value                                |
+| -------------- | ------------------------------------ |
+| channels       | 2                                    |
+| encoding       | synthesized                          |
 | sid_chip_count | Number of SID chips used by the song |
-| clock_speed    | NTSC or PAL|
-| sid_model      | 8580 or 6581|
+| clock_speed    | NTSC or PAL                          |
+| sid_model      | 8580 or 6581                         |
 
 The following meta data tags are available:
 
-| Name                 | Value |
-| -------------------- | ----- |
-| tracknumber          ||
-| title                | In case the track only contains 1 song |
+| Name                 | Value                                     |
+| -------------------- | ----------------------------------------- |
+| tracknumber          |                                           |
+| title                | In case the track only contains 1 song    |
 | album                | In case the track contains multiple songs |
 | album artist         ||
 | artist               ||
@@ -72,13 +72,13 @@ The code builds out-of-the box with Visual Studio.
 
 To build the code:
 
-- [Microsoft Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
-- [foobar2000 SDK](https://www.foobar2000.org/SDK) 2023-09-23
+- [Microsoft Visual Studio 2026 Community Edition](https://visualstudio.microsoft.com/downloads/) or later
+- [foobar2000 SDK](https://www.foobar2000.org/SDK) 2025-03-07
 
-The following library is included:
+The following libraries are included:
 
 - [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp)
-- [libresidfp](https://github.com/libsidplayfp/residfp)
+- [libresidfp](https://github.com/libsidplayfp/libresidfp)
 
 To create the deployment package:
 
@@ -110,11 +110,12 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v2.0.0.0, 2026-05-03
+v2.1.0.0, 2026-08-11
 
-- Added: Support for the SIDList core.
-- Upgraded libsidplayfp to 3.0.0.
-- Upgraded libresidfp to 1.0.1.
+- New: ARM64EC version.
+- New: Upgraded libsidplayfp to 3.1.0.
+- New: Upgraded libresidfp to 1.2.1.
+- New: Added new libresidfp parameters to the preferences page.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 
@@ -123,6 +124,7 @@ You can read the full history [here](docs/History.md) and [here](History.h).
 - Peter Pawlowski for the [foobar2000](https://www.foobar2000.org/) audio player. ![foobar2000](https://www.foobar2000.org/button-small.png)
 - [kode54](https://gitlab.com/kode54) for the original [foo_sid](https://gitlab.com/kode54/foo_sid) component.
 - [libsidplayfp](https://github.com/libsidplayfp/libsidplayfp) for a library to play Commodore 64 music.
+- [libresidfp](https://github.com/libsidplayfp/libresidfp) for a library to emulate a SID cycle exact.
 
 ## Links
 

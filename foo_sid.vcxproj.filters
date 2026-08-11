@@ -13,6 +13,7 @@
     <ClInclude Include="Patrons.h" />
     <ClInclude Include="History.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Layout.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="foo_sid.rc" />

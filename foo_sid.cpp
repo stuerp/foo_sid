@@ -1,20 +1,18 @@
 
-/** $VER: foo_sid.cpp (2026.03.05) **/
+/** $VER: foo_sid.cpp (2026.08.11) **/
 
 #include <pch.h>
 
-#include <foobar2000.h>
-#include <coreDarkMode.h>
+#include <sdk/foobar2000.h>
+#include <sdk/coreDarkMode.h>
 
 #include <atlbase.h>
-
 #include <atlapp.h>
 
 #include <atlcrack.h>
 #include <atlctrls.h>
 #include <atlmisc.h>
 
-#include <libPPUI/wtl-pp.h>
 #include <foobar2000/helpers/atl-misc.h>
 #include <foobar2000/helpers/dropdown_helper.h>
 
@@ -29,21 +27,21 @@
 #include <utils/SidDatabase.h>
 #include <utils/STILview/stil.h>
 
-#include "resource.h"
+#include "Resource.h"
 
 #include "SidTuneMod.h"
 #include "ROMs.hpp"
 
 #pragma region GUIDs
 
-/* Quality */
+// Quality
 
 static const GUID CfgCoreGUIDOld            = { 0xc9e01956, 0x6eab, 0x46e3, { 0xae, 0xa1, 0x2a, 0x8a, 0x3a, 0x34, 0x38, 0x2d } };
 static const GUID CfgCoreGUID               = { 0x2d465c6e, 0xcf78, 0x4f80, { 0x8d, 0x30, 0x46, 0x22, 0x12, 0xe4, 0x27, 0x2f } };
 static const GUID CfgSampleRateGUID         = { 0x9033ceab, 0x97e6, 0x451f, { 0xb3, 0xdd, 0xf7, 0xa8, 0x75, 0x65, 0x7e, 0x67 } };
 static const GUID CfgStereoSeparationGUID   = { 0x0278879d, 0x7c46, 0x41a4, { 0x9f, 0x42, 0x27, 0x86, 0xd3, 0x2b, 0x5b, 0xbe } };
 
-/* Length */
+// Length
 
 static const GUID CfgLoopForeverGUID        = { 0x7aba4483, 0x9480, 0x4f9b, { 0xad, 0xb5, 0xba, 0x2a, 0x49, 0x5e, 0xab, 0x22 } };
 static const GUID CfgDefaultLengthInMSGUID  = { 0x6228be43, 0xcbb1, 0x48e4, { 0x94, 0x88, 0x0f, 0x42, 0x42, 0x09, 0x1b, 0xb7 } };
@@ -51,16 +49,25 @@ static const GUID CfgFadeLengthGUID         = { 0x4143484b, 0x5a86, 0x40f6, { 0x
 static const GUID CfgDatabasePathGUID       = { 0xdf4f3ee1, 0xe765, 0x4bcb, { 0x87, 0x57, 0x4b, 0x3a, 0x27, 0xbb, 0x0c, 0x8c } };
 static const GUID CfgHistoryRateGUID        = { 0x6ecf3074, 0xfa4d, 0x4717, { 0xb0, 0xb1, 0xc3, 0x11, 0xc3, 0xae, 0xba, 0x80 } };
 
-/* Overrides */
+// Overrides
 
 static const GUID CfgClockOverrideGUID      = { 0xd0fc838c, 0x9433, 0x409a, { 0x93, 0xe4, 0x0b, 0x89, 0xd3, 0xb4, 0xfb, 0x15 } };
 static const GUID CfgModelOverrideGUID      = { 0x9df20a98, 0xdfa4, 0x461c, { 0x8f, 0x67, 0x60, 0x09, 0xfd, 0x93, 0x45, 0x90 } };
+
+// ReSIDfp
 
 static const GUID CfgFilter6581CurveGUID    = { 0x8dca8173, 0xc912, 0x4c79, { 0xbb, 0xcf, 0x1a, 0xc0, 0x05, 0xdc, 0xe6, 0xd3 } };
 static const GUID CfgFilter6581RangeGUID    = { 0xb77131d0, 0x4cab, 0x434a, { 0xb5, 0x02, 0xb4, 0x15, 0xc2, 0x64, 0xe2, 0xd1 } };
 
 static const GUID CfgFilter8580CurveGUIDOld = { 0x58ed05bf, 0xa672, 0x43d1, { 0xa8, 0x7d, 0xbd, 0x4d, 0x8b, 0xfc, 0xe7, 0xb3 } };
 static const GUID CfgFilter8580CurveGUID    = { 0x69abcef1, 0xf460, 0x45a4, { 0x85, 0x83, 0xdf, 0xf0, 0x50, 0x1a, 0xda, 0xc7 } };
+
+static const GUID CfgCWSGUID                = { 0x0e5df7c6, 0x6aa9, 0x41ba, { 0x95, 0xbe, 0xc2, 0x17, 0x1b, 0xc8, 0xf5, 0xab } };
+static const GUID CfgOld6581CapsGUID        = { 0x70510afd, 0x7df0, 0x4bc8, { 0x82, 0xee, 0xe1, 0xf9, 0x56, 0xe8, 0x6a, 0x61 } };
+
+static const GUID CfgDACLeakageGUID         = { 0x20dcf3ac, 0x2d16, 0x4142, { 0x94, 0xd9, 0xa8, 0xec, 0xc0, 0xdf, 0xcf, 0x88 } };
+static const GUID CfgWaveOffsetGUID         = { 0x05935782, 0x0371, 0x49e6, { 0xba, 0x27, 0x8b, 0x91, 0xa5, 0xd3, 0xd0, 0xc8 } };
+static const GUID CfgDCBResGUID             = { 0x23d2eb9d, 0x2dbe, 0x49d9, { 0x9c, 0xb5, 0x19, 0x5e, 0x21, 0x74, 0x34, 0xd2 } };
 
 #pragma endregion
 
@@ -77,7 +84,7 @@ enum
     CfgStereoSeparationDefault = 50,
 
     CfgLoopForeverDefault = 0,
-    CfgDefaultLengthInMSDefault = 180000,
+    CfgDefaultLengthInMSDefault = 180'000,
     CfgFadeLengthDefault = 200,
 
     CfgClockOverrideDefault = 0,
@@ -86,7 +93,14 @@ enum
     CfgFilter6581CurveDefault = 128,
     CfgFilter6581RangeDefault = 128,
 
-    CfgFilter8580CurveDefault = 128
+    CfgFilter8580CurveDefault = 128,
+
+    CfgCWSDefault = 0, // Average
+    CfgOld6581CapsDefault = false,
+
+    CfgDACLeakageDefault = 256,
+    CfgWaveOffsetDefault = 256,
+    CfgDCBResDefault = 0,
 };
 
 static cfg_int CfgSampleRate        (CfgSampleRateGUID,         CfgSampleRateDefault);
@@ -101,11 +115,17 @@ static cfg_int CfgFadeLength        (CfgFadeLengthGUID,         CfgFadeLengthDef
 static cfg_int CfgClockOverride     (CfgClockOverrideGUID,      CfgClockOverrideDefault);
 static cfg_int CfgModelOverride     (CfgModelOverrideGUID,      CfgModelOverrideDefault);
 
-static cfg_int CfgFilter8580CurveOld(CfgFilter8580CurveGUIDOld, -1);
 static cfg_int CfgFilter6581Curve   (CfgFilter6581CurveGUID,    CfgFilter6581CurveDefault);
 static cfg_int CfgFilter6581Range   (CfgFilter6581RangeGUID,    CfgFilter6581RangeDefault);
 
+static cfg_int CfgFilter8580CurveOld(CfgFilter8580CurveGUIDOld, -1);
 static cfg_int CfgFilter8580Curve   (CfgFilter8580CurveGUID,    CfgFilter8580CurveDefault);
+
+static cfg_int CfgCWS               (CfgCWSGUID,                CfgCWSDefault);
+static cfg_bool CfgOld6581Caps      (CfgOld6581CapsGUID,        CfgOld6581CapsDefault);
+static cfg_int CfgDACLeakage        (CfgDACLeakageGUID,         CfgDACLeakageDefault);
+static cfg_int CfgWaveOffset        (CfgWaveOffsetGUID,         CfgWaveOffsetDefault);
+static cfg_int CfgDCBRes            (CfgDCBResGUID,             CfgDCBResDefault);
 
 #pragma region InitQuit
 
@@ -114,10 +134,10 @@ class InitQuitHandler : public initquit
 public:
     InitQuitHandler() noexcept { };
 
-    InitQuitHandler(const InitQuitHandler&) = delete;
-    InitQuitHandler(const InitQuitHandler&&) = delete;
-    InitQuitHandler& operator=(const InitQuitHandler&) = delete;
-    InitQuitHandler& operator=(InitQuitHandler&&) = delete;
+    InitQuitHandler(const InitQuitHandler &) = delete;
+    InitQuitHandler(const InitQuitHandler &&) = delete;
+    InitQuitHandler& operator=(const InitQuitHandler &) = delete;
+    InitQuitHandler& operator=(InitQuitHandler &&) = delete;
 
     virtual ~InitQuitHandler() noexcept { };
 
@@ -553,7 +573,7 @@ public:
                     Length = (uint32_t) LengthFromDatabase;
             }
 
-            fileInfo.set_length(double(Length) / 1000.0);
+            fileInfo.set_length(double(Length) / 1'000.0);
         }
 
         // General info
@@ -876,10 +896,20 @@ public:
 
                     if (NewBuilder)
                     {
+                        // Old MOS6581
                         NewBuilder->filter6581Curve(CfgFilter6581Curve / 256.);
                         NewBuilder->filter6581Range(CfgFilter6581Range / 256.);
 
+                        // New CSG8580
                         NewBuilder->filter8580Curve(CfgFilter8580Curve / 256.);
+
+                        NewBuilder->combinedWaveformsStrength((SidConfig::sid_cw_t) (int) CfgCWS);
+                        NewBuilder->enableOld6581caps(CfgOld6581Caps);
+
+                        // Since libresidfp 3.1
+                        NewBuilder->dacLeakage(CfgDACLeakage / 256.);   // Between 0 (no leakage) and 1 (standard leakage) (default 1.0)
+                        NewBuilder->offset6581(CfgWaveOffset / 256.);   // Between 0 (average digis) and 1 (loud digis) (default 1.0)
+                        NewBuilder->dcbRes(CfgDCBRes / 256.);           // Between 0 (10KOhm => ~1.6Hz) and 1 (1KOhm => ~16Hz) (default 0.0)
 
                         _Builder = std::move(NewBuilder);
                     }
@@ -901,7 +931,7 @@ public:
         }
 
         {
-            SidConfig Config = _Engine->config();
+            auto Config = _Engine->config();
 
             // Intended C64 model when unknown or forced.
             if (CfgClockOverride)
@@ -917,14 +947,14 @@ public:
                 Config.defaultSidModel = (CfgModelOverride == 1) ? SidConfig::MOS6581 : SidConfig::MOS8580;
             }
 
-//          Config.digiBoost;                                   // Enable digiboost when 8580 SID model is used
-            Config.ciaModel;                                    // Intended CIA model
-            Config.frequency = (uint_least32_t)_SampleRate;     // Sampling frequency
-//          Config.secondSidAddress;                            // Extra SID chip address
-//          Config.thirdSidAddress;                             // Extra SID chip address
-            Config.sidEmulation   = _Builder.get();
-//          Config.powerOnDelay;                                // In cycles
-            Config.samplingMethod = SidConfig::INTERPOLATE;
+//          Config.digiBoost;                                           // Enable digiboost when 8580 SID model is used
+//          Config.ciaModel;                                            // Intended CIA model
+            Config.frequency            = (uint_least32_t)_SampleRate;  // Sampling frequency
+//          Config.secondSidAddress;                                    // Extra SID chip address
+//          Config.thirdSidAddress;                                     // Extra SID chip address
+            Config.sidEmulation         = _Builder.get();               // Selected emulation: reSIDfp, reSID, hardSID or exSID.
+//          Config.powerOnDelay;                                        // In cycles
+            Config.samplingMethod       = SidConfig::INTERPOLATE;       // Sampling method
 
             if (!_Engine->config(Config))
                 throw exception_io_data(_Engine->error());
@@ -940,17 +970,17 @@ public:
 
         if (!CfgLoopForever || (flags & input_flag_no_looping))
         {
-            _Length     = (uint32_t)((__int64) LengthInMS    * _SampleRate / 1000) * 2;
-            _FadeLength = (uint32_t)(          CfgFadeLength * _SampleRate / 1000) * 2;
+            _Length     = (uint32_t)((__int64) LengthInMS    * _SampleRate / 1'000) * 2;
+            _FadeLength = (uint32_t)(          CfgFadeLength * _SampleRate / 1'000) * 2;
         }
         else
         {
-            _Length = 0;
+            _Length     = 0;
             _FadeLength = 0;
         }
 
-        _Position = 0;
-        _IsEOF = false;
+        _Position         = 0;
+        _IsEOF            = false;
         _IsDynamicInfoSet = false;
     }
 
@@ -965,7 +995,7 @@ public:
             return false;
 
         // Render the frames.
-        const int FrameCount = _Engine->play(20000);
+        const int FrameCount = _Engine->play(20'000);
 
         if (FrameCount < 0)
         {
@@ -1067,7 +1097,7 @@ public:
             abortHandler.check();
 
             // Render the frames.
-            const int FrameCount = _Engine->play(20000);
+            const int FrameCount = _Engine->play(20'000);
 
             if (FrameCount < 0)
             {
@@ -1143,60 +1173,80 @@ const char * parseTime(const char * str, int_least32_t & result); // From "SidDa
 
 static cfg_dropdown_history CfgSampleRateHistory(CfgHistoryRateGUID, 16);
 
-static const uint32_t _SampleRates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
+static const uint32_t _SampleRates[] = { 8'000, 11'025, 16'000, 22'050, 24'000, 32'000, 44'100, 48'000, 64'000, 88'200, 96'000 };
 
-class CMyPreferences : public CDialogImpl<CMyPreferences>, public preferences_page_instance
+class preferences_t : public CDialogImpl<preferences_t>, public preferences_page_instance
 {
 public:
-    CMyPreferences(preferences_page_callback::ptr callback) : _PageCallback(callback) { }
+    preferences_t(preferences_page_callback::ptr callback) : _PageCallback(callback) { }
 
-    CMyPreferences(const CMyPreferences &) = delete;
-    CMyPreferences(const CMyPreferences &&) = delete;
-    CMyPreferences& operator=(const CMyPreferences &) = delete;
-    CMyPreferences& operator=(CMyPreferences &&) = delete;
+    preferences_t(const preferences_t &) = delete;
+    preferences_t(const preferences_t &&) = delete;
+    preferences_t& operator=(const preferences_t &) = delete;
+    preferences_t& operator=(preferences_t &&) = delete;
 
-    virtual ~CMyPreferences() noexcept { };
+    virtual ~preferences_t() noexcept { };
 
-    //Note that we don't bother doing anything regarding destruction of our class.
-    //The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
+    // Note that we don't bother doing anything regarding destruction of our class.
+    // The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
 
-    //dialog resource ID
+    // Dialog resource ID
     enum
     {
         IDD = IDD_CONFIG
     };
 
-    // preferences_page_instance methods (not all of them - get_wnd() is supplied by preferences_page_impl helpers)
     t_uint32 get_state() override;
     void apply() override;
     void reset() override;
 
-    BEGIN_MSG_MAP(CMyPreferences)
+    BEGIN_MSG_MAP(preferences_t)
         MSG_WM_INITDIALOG(OnInitDialog)
-        COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
+
+        MSG_WM_CTLCOLORDLG(OnCtlColorDlg)
+
+        COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_EDITCHANGE, OnEditChange)
+        COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_SELCHANGE, OnSelectionChange)
+
+        COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
+
+        COMMAND_HANDLER_EX(IDC_LOOP_FOREVER, BN_CLICKED, OnButtonClick)
+
+        COMMAND_HANDLER_EX(IDC_FADE, EN_CHANGE, OnEditChange)
+
         COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnSetDatabasePath)
         COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnClearDatabasePath)
         COMMAND_HANDLER_EX(IDC_DLENGTH, EN_CHANGE, OnEditChange)
-        COMMAND_HANDLER_EX(IDC_FADE, EN_CHANGE, OnEditChange)
-        COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_EDITCHANGE, OnEditChange)
-        COMMAND_HANDLER_EX(IDC_SAMPLERATE, CBN_SELCHANGE, OnSelectionChange)
+
         COMMAND_HANDLER_EX(IDC_SID_BUILDER, CBN_SELCHANGE, OnSelectionChange)
         COMMAND_HANDLER_EX(IDC_CLOCK_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
-        COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
+
+        COMMAND_HANDLER_EX(IDC_CWS, CBN_SELCHANGE, OnSelectionChange)
+
+        COMMAND_HANDLER_EX(IDC_OLD_CAPS, BN_CLICKED, OnButtonClick)
+
         MSG_WM_HSCROLL(OnHScroll);
+
         DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, CfgSampleRateHistory)
     END_MSG_MAP()
 
 private:
-    BOOL OnInitDialog(CWindow, LPARAM);
-    void OnEditChange(UINT, int, CWindow);
-    void OnSelectionChange(UINT, int, CWindow);
-    void OnButtonClick(UINT, int, CWindow);
-    void OnSetDatabasePath(UINT, int, CWindow);
-    void OnClearDatabasePath(UINT, int, CWindow);
-    void OnHScroll(int nSBCode, short nPos, CScrollBar pScrollBar);
-    bool HasChanged();
-    void OnChanged();
+    BOOL OnInitDialog(CWindow, LPARAM) noexcept;
+
+    CTrackBarCtrl InitSlider(int sliderId, int textId, int32_t value) const noexcept;
+    void ResetSlider(CTrackBarCtrl & slider, int textId, int32_t value) noexcept;
+
+    HBRUSH OnCtlColorDlg(HDC, HWND) const noexcept;
+
+    void OnEditChange(UINT, int, CWindow) noexcept;
+    void OnSelectionChange(UINT, int, CWindow) noexcept;
+    void OnButtonClick(UINT, int, CWindow) noexcept;
+
+    void OnSetDatabasePath(UINT, int, CWindow) noexcept;
+    void OnClearDatabasePath(UINT, int, CWindow) noexcept;
+    void OnHScroll(int, short, CScrollBar scrollBar) noexcept;
+    bool HasChanged() noexcept;
+    void OnChanged() noexcept;
 
     void UpdateDatabaseStatusText() const noexcept;
 
@@ -1205,12 +1255,19 @@ private:
 
     fb2k::CCoreDarkModeHooks _DarkModeHooks;
 
+    CTrackBarCtrl _SliderStereoSeparation;
     CTrackBarCtrl _Slider6581;
     CTrackBarCtrl _Slider8580;
-    CTrackBarCtrl _SliderSsep;
+
+    CTrackBarCtrl _SliderDACLeakage;
+    CTrackBarCtrl _SliderWaveOffset;
+    CTrackBarCtrl _SliderDCBRes;
 };
 
-t_uint32 CMyPreferences::get_state()
+/// <summary>
+/// 
+/// </summary>
+t_uint32 preferences_t::get_state()
 {
     t_uint32 state = preferences_state::resettable | preferences_state::dark_mode_supported;
 
@@ -1220,42 +1277,54 @@ t_uint32 CMyPreferences::get_state()
     return state;
 }
 
-void CMyPreferences::reset()
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::reset()
 {
-    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, CfgLoopForeverDefault);
+    SendDlgItemMessage(IDC_LOOP_FOREVER, BM_SETCHECK, CfgLoopForeverDefault);
+
     SendDlgItemMessage(IDC_SID_BUILDER, CB_SETCURSEL, CfgCoreDefault);
     SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_SETCURSEL, CfgClockOverrideDefault);
     SendDlgItemMessage(IDC_SID_OVERRIDE, CB_SETCURSEL, CfgModelOverrideDefault);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMSDefault / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMSDefault / 1'000.0));
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
 
     SetDlgItemInt(IDC_SAMPLERATE, CfgSampleRateDefault, FALSE);
     SetDlgItemInt(IDC_FADE, CfgFadeLengthDefault, FALSE);
 
-    _Slider6581.SetPos(CfgFilter6581CurveDefault);
+    {
+        _SliderStereoSeparation.SetPos(CfgStereoSeparationDefault);
 
-    pfc::string Text = pfc::format_float((double) CfgFilter6581CurveDefault / 256., 0, 2);
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, Text);
+        pfc::string Text = pfc::format_int(CfgStereoSeparationDefault).c_str();
 
-    _Slider8580.SetPos(CfgFilter8580CurveDefault);
+        Text += "%";
 
-    Text = pfc::format_float((double) CfgFilter8580CurveDefault / 256., 0, 2);
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, Text);
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Text);
+    }
 
-    _SliderSsep.SetPos(CfgStereoSeparationDefault);
+    ResetSlider(_Slider6581, IDC_TEXT_6581, CfgFilter6581CurveDefault);
+    ResetSlider(_Slider8580, IDC_TEXT_8580, CfgFilter8580CurveDefault);
 
-    Text = pfc::format_int(CfgStereoSeparationDefault);
-    Text += "%";
-    ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Text);
+    ResetSlider(_SliderDACLeakage, IDC_DAC_LEAKAGE_TEXT, CfgDACLeakageDefault);
+    ResetSlider(_SliderWaveOffset, IDC_WAVE_OFFSET_TEXT, CfgWaveOffsetDefault);
+    ResetSlider(_SliderDCBRes,     IDC_DCB_RES_TEXT,     CfgDCBResDefault);
+
+    SendDlgItemMessage(IDC_CWS, CB_SETCURSEL, (WPARAM) CfgCWSDefault);
+
+    SendDlgItemMessage(IDC_OLD_CAPS, BM_SETCHECK, CfgOld6581CapsDefault);
 
     OnChanged();
 }
 
-void CMyPreferences::apply()
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::apply()
 {
     {
-        const UINT SampleRate = std::clamp(GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE), 6000u, 192000u);
+        const UINT SampleRate = std::clamp(GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE), 6'000u, 192'000u);
 
         SetDlgItemInt(IDC_SAMPLERATE, SampleRate, FALSE);
 
@@ -1316,26 +1385,41 @@ void CMyPreferences::apply()
         if (Timestamp)
             CfgDefaultLengthInMS = Timestamp;
         else
-            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1000.0));
+            ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1'000.0));
     }
 
+    CfgStereoSeparation = _SliderStereoSeparation.GetPos();
+
+    CfgCore             = (t_int32) SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
+
     CfgFadeLength       = (t_int32) GetDlgItemInt(IDC_FADE, NULL, FALSE);
-    CfgLoopForever      = (t_int32) SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK);
+    CfgLoopForever      = (t_int32) SendDlgItemMessage(IDC_LOOP_FOREVER, BM_GETCHECK);
+
     CfgClockOverride    = (t_int32) SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL);
     CfgModelOverride    = (t_int32) SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL);
-    CfgCore             = (t_int32) SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL);
+
     CfgFilter6581Curve  = _Slider6581.GetPos();
     CfgFilter8580Curve  = _Slider8580.GetPos();
-    CfgStereoSeparation = _SliderSsep.GetPos();
+
+    CfgCWS              = (t_int32) SendDlgItemMessage(IDC_CWS, CB_GETCURSEL);
+
+    CfgOld6581Caps      = (bool) SendDlgItemMessage(IDC_OLD_CAPS, BM_GETCHECK);
+
+    CfgDACLeakage       = _SliderDACLeakage.GetPos();
+    CfgWaveOffset       = _SliderWaveOffset.GetPos();
+    CfgDCBRes           = _SliderDCBRes.GetPos();
 
     OnChanged();
 }
 
-BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
+/// <summary>
+/// 
+/// </summary>
+BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
 {
-    SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, (WPARAM) CfgLoopForever);
+    SendDlgItemMessage(IDC_LOOP_FOREVER, BM_SETCHECK, (WPARAM) CfgLoopForever);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1000.0));
+    ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1'000.0));
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath);
 
     UpdateDatabaseStatusText();
@@ -1344,7 +1428,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         CWindow w;
 
         {
-            char temp[16];
+            char Temp[16] = { };
 
             SetDlgItemInt(IDC_FADE, (UINT) CfgFadeLength, FALSE);
 
@@ -1354,18 +1438,19 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
             {
                 if (_SampleRates[n] != (uint32_t) CfgSampleRate)
                 {
-                    _itoa_s((int) _SampleRates[n], temp, _countof(temp), 10);
-                    CfgSampleRateHistory.add_item(temp);
+                    _itoa_s((int) _SampleRates[n], Temp, _countof(Temp), 10);
+                    CfgSampleRateHistory.add_item(Temp);
                 }
             }
 
-            _itoa_s(CfgSampleRate, temp, _countof(temp), 10);
+            _itoa_s(CfgSampleRate, Temp, _countof(Temp), 10);
 
-            CfgSampleRateHistory.add_item(temp);
+            CfgSampleRateHistory.add_item(Temp);
 
             w = GetDlgItem(IDC_SAMPLERATE);
 
             CfgSampleRateHistory.setup_dropdown(w);
+
             ::SendMessage(w, CB_SETCURSEL, 0, 0);
         }
 
@@ -1376,6 +1461,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
         ::SendMessage(w, CB_SETCURSEL, (WPARAM) CfgCore, 0);
 
+        // Clock speed
         w = GetDlgItem(IDC_CLOCK_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
@@ -1384,6 +1470,7 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
         ::SendMessage(w, CB_SETCURSEL, (WPARAM) CfgClockOverride, 0);
 
+        // Clock model
         w = GetDlgItem(IDC_SID_OVERRIDE);
 
         ::uSendMessageText(w, CB_ADDSTRING, 0, "As input file specifies");
@@ -1395,40 +1482,13 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
 
     pfc::string Value;
 
+    // Stereo Separation
     {
-        _Slider6581 = GetDlgItem(IDC_SLIDER_6581);
+        _SliderStereoSeparation = GetDlgItem(IDC_SLIDER_SSEP);
 
-        _Slider6581.SetRangeMin(0);
-        _Slider6581.SetRangeMax(256);
-        _Slider6581.SetPos(CfgFilter6581Curve);
-
-        Value = pfc::format_float(CfgFilter6581Curve / 256., 0, 2);
-
-        ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, Value);
-
-        _Slider6581.EnableWindow((CfgCore == CoreReSIDfp) ? TRUE : FALSE);
-    }
-
-    {
-        _Slider8580 = GetDlgItem(IDC_SLIDER_8580);
-
-        _Slider8580.SetRangeMin(0);
-        _Slider8580.SetRangeMax(256);
-        _Slider8580.SetPos(CfgFilter8580Curve);
-
-        Value = pfc::format_float(CfgFilter8580Curve / 256., 0, 2);
-
-        ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, Value);
-
-        _Slider8580.EnableWindow((CfgCore == CoreReSIDfp) ? TRUE : FALSE);
-    }
-
-    {
-        _SliderSsep = GetDlgItem(IDC_SLIDER_SSEP);
-
-        _SliderSsep.SetRangeMin(0);
-        _SliderSsep.SetRangeMax(150);
-        _SliderSsep.SetPos(CfgStereoSeparation);
+        _SliderStereoSeparation.SetRangeMin(0);
+        _SliderStereoSeparation.SetRangeMax(150);
+        _SliderStereoSeparation.SetPos(CfgStereoSeparation);
 
         Value = pfc::format_int(CfgStereoSeparation);
         Value += "%";
@@ -1436,64 +1496,180 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
         ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Value);
     }
 
+    // Old SID (MOS 6581) filter curve
+    _Slider6581 = InitSlider(IDC_SLIDER_6581, IDC_TEXT_6581, CfgFilter6581Curve);
+
+    // New SID (CSG 8580/MOS 6582) filter curve
+    _Slider8580 = InitSlider(IDC_SLIDER_8580, IDC_TEXT_8580, CfgFilter8580Curve);
+
+    // Combined waveforms strength
+    {
+        auto w = (CComboBox) GetDlgItem(IDC_CWS);
+
+        w.AddString(L"Average");
+        w.AddString(L"Weak");
+        w.AddString(L"Strong");
+
+        w.SetCurSel(0);
+    }
+
+    // Old 6581 Caps
+    SendDlgItemMessage(IDC_OLD_CAPS, BM_SETCHECK, (WPARAM) CfgOld6581Caps);
+
+    // Wave offset
+    _SliderWaveOffset = InitSlider(IDC_WAVE_OFFSET, IDC_WAVE_OFFSET_TEXT, CfgWaveOffset);
+
+    // DAC Leakage
+    _SliderDACLeakage = InitSlider(IDC_DAC_LEAKAGE, IDC_DAC_LEAKAGE_TEXT, CfgDACLeakage);
+
+    // DC-Blocker Resolution
+    _SliderDCBRes = InitSlider(IDC_DCB_RES, IDC_DCB_RES_TEXT, CfgDCBRes);
+
     _DarkModeHooks.AddDialogWithControls(*this);
 
     return FALSE;
 }
 
-void CMyPreferences::OnEditChange(UINT, int, CWindow)
+/// <summary>
+/// 
+/// </summary>
+CTrackBarCtrl preferences_t::InitSlider(int sliderId, int textId, int32_t value) const noexcept
+{
+    auto Slider = (CTrackBarCtrl) GetDlgItem(sliderId);
+
+    Slider.SetRangeMin(0);
+    Slider.SetRangeMax(256);
+    Slider.SetPos(value);
+
+    pfc::string Value = pfc::format_float(value / 256., 0, 2);
+
+    ::uSetDlgItemText(m_hWnd, (UINT) textId, Value);
+
+    Slider.EnableWindow((CfgCore == CoreReSIDfp) ? TRUE : FALSE);
+
+    return Slider;
+}
+
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::ResetSlider(CTrackBarCtrl & slider, int textId, int32_t value) noexcept
+{
+    slider.SetPos(value);
+
+    pfc::string Text = pfc::format_float((double) value / 256., 0, 2);
+
+    ::uSetDlgItemText(m_hWnd, (UINT) textId, Text);
+}
+
+/// <summary>
+/// Returns a brush that the system uses to draw the dialog background. For layout debugging purposes.
+/// </summary>
+HBRUSH preferences_t::OnCtlColorDlg(HDC, HWND) const noexcept
+{
+#ifdef _DEBUG
+    return ::CreateSolidBrush(0xE8E8E8);
+#else
+    return FALSE;
+#endif
+}
+
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnEditChange(UINT, int, CWindow) noexcept
 {
     OnChanged();
 }
 
-void CMyPreferences::OnSelectionChange(UINT, int, CWindow wnd)
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnSelectionChange(UINT, int, CWindow wnd) noexcept
 {
     if (wnd == GetDlgItem(IDC_SID_BUILDER))
     {
-        const BOOL Enable = wnd.SendMessage(CB_GETCURSEL) == CoreReSIDfp;
+        const BOOL Enable = (wnd.SendMessage(CB_GETCURSEL) == CoreReSIDfp);
 
         _Slider6581.EnableWindow(Enable);
         _Slider8580.EnableWindow(Enable);
+
+        ::EnableWindow(GetDlgItem(IDC_CWS), Enable);
+        ::EnableWindow(GetDlgItem(IDC_OLD_CAPS), Enable);
+
+        _SliderDACLeakage.EnableWindow(Enable);
+        _SliderWaveOffset.EnableWindow(Enable);
+        _SliderDCBRes.EnableWindow(Enable);
     }
 
     OnChanged();
 }
 
-void CMyPreferences::OnButtonClick(UINT, int, CWindow)
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnButtonClick(UINT, int, CWindow) noexcept
 {
     OnChanged();
 }
 
-void CMyPreferences::OnHScroll(int, short, CScrollBar pScrollBar)
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnHScroll(int, short, CScrollBar scrollBar) noexcept
 {
     pfc::string Value;
 
-    if (pScrollBar.m_hWnd == _Slider6581.m_hWnd)
+    if (scrollBar.m_hWnd == _SliderStereoSeparation.m_hWnd)
+    {
+        Value = pfc::format_int(_SliderStereoSeparation.GetPos());
+        Value += "%";
+
+        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Value);
+    }
+    else
+    if (scrollBar.m_hWnd == _Slider6581.m_hWnd)
     {
         Value = pfc::format_float(_Slider6581.GetPos() / 256., 0, 2);
 
         ::uSetDlgItemText(m_hWnd, IDC_TEXT_6581, Value);
     }
     else
-    if (pScrollBar.m_hWnd == _Slider8580.m_hWnd)
+    if (scrollBar.m_hWnd == _Slider8580.m_hWnd)
     {
         Value = pfc::format_float(_Slider8580.GetPos() / 256., 0, 2);
 
         ::uSetDlgItemText(m_hWnd, IDC_TEXT_8580, Value);
     }
     else
-    if (pScrollBar.m_hWnd == _SliderSsep.m_hWnd)
+    if (scrollBar.m_hWnd == _SliderWaveOffset.m_hWnd)
     {
-        Value = pfc::format_int(_SliderSsep.GetPos());
-        Value += "%";
+        Value = pfc::format_float(_SliderWaveOffset.GetPos() / 256., 0, 2);
 
-        ::uSetDlgItemText(m_hWnd, IDC_TEXT_SSEP, Value);
+        ::uSetDlgItemText(m_hWnd, IDC_WAVE_OFFSET_TEXT, Value);
+    }
+    else
+    if (scrollBar.m_hWnd == _SliderDACLeakage.m_hWnd)
+    {
+        Value = pfc::format_float(_SliderDACLeakage.GetPos() / 256., 0, 2);
+
+        ::uSetDlgItemText(m_hWnd, IDC_DAC_LEAKAGE_TEXT, Value);
+    }
+    else
+    if (scrollBar.m_hWnd == _SliderDCBRes.m_hWnd)
+    {
+        Value = pfc::format_float(_SliderDCBRes.GetPos() / 256., 0, 2);
+
+        ::uSetDlgItemText(m_hWnd, IDC_DCB_RES_TEXT, Value);
     }
 
     OnChanged();
 }
 
-void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnSetDatabasePath(UINT, int, CWindow) noexcept
 {
     pfc::string Text;
 
@@ -1517,44 +1693,63 @@ void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
     }
 }
 
-void CMyPreferences::OnClearDatabasePath(UINT, int, CWindow)
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnClearDatabasePath(UINT, int, CWindow) noexcept
 {
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
+
     OnChanged();
 }
 
-bool CMyPreferences::HasChanged()
+/// <summary>
+/// 
+/// </summary>
+bool preferences_t::HasChanged() noexcept
 {
-    bool IsChanged = false;
+    if (GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != (UINT) CfgSampleRate)
+        return true;
 
-    if (!IsChanged && GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE) != (UINT) CfgSampleRate)
-        IsChanged = true;
+    if (GetDlgItemInt(IDC_FADE, NULL, FALSE) != (UINT) CfgFadeLength)
+        return true;
 
-    if (!IsChanged && GetDlgItemInt(IDC_FADE, NULL, FALSE) != (UINT) CfgFadeLength)
-        IsChanged = true;
+    if (SendDlgItemMessage(IDC_LOOP_FOREVER, BM_GETCHECK) != CfgLoopForever)
+        return true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_INFINITE, BM_GETCHECK) != CfgLoopForever)
-        IsChanged = true;
+    if (SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != CfgClockOverride)
+        return true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_CLOCK_OVERRIDE, CB_GETCURSEL) != CfgClockOverride)
-        IsChanged = true;
+    if (SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != CfgModelOverride)
+        return true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_SID_OVERRIDE, CB_GETCURSEL) != CfgModelOverride)
-        IsChanged = true;
+    if (SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != CfgCore)
+        return true;
 
-    if (!IsChanged && SendDlgItemMessage(IDC_SID_BUILDER, CB_GETCURSEL) != CfgCore)
-        IsChanged = true;
+    if (_SliderStereoSeparation.GetPos() != CfgStereoSeparation)
+        return true;
 
-    if (!IsChanged && _Slider6581.GetPos() != CfgFilter6581Curve)
-        IsChanged = true;
+    if (_Slider6581.GetPos() != CfgFilter6581Curve)
+        return true;
 
-    if (!IsChanged && _Slider8580.GetPos() != CfgFilter8580Curve)
-        IsChanged = true;
+    if (_Slider8580.GetPos() != CfgFilter8580Curve)
+        return true;
 
-    if (!IsChanged && _SliderSsep.GetPos() != CfgStereoSeparation)
-        IsChanged = true;
+    if (SendDlgItemMessage(IDC_CWS, CB_GETCURSEL) != CfgCWS)
+        return true;
 
-    if (!IsChanged)
+    if (SendDlgItemMessage(IDC_OLD_CAPS, BM_GETCHECK) != CfgOld6581Caps)
+        return true;
+
+    if (_SliderDACLeakage.GetPos() != CfgDACLeakage)
+        return true;
+
+    if (_SliderWaveOffset.GetPos() != CfgWaveOffset)
+        return true;
+
+    if (_SliderDCBRes.GetPos() != CfgDCBRes)
+        return true;
+
     {
         pfc::string Text;
 
@@ -1564,51 +1759,56 @@ bool CMyPreferences::HasChanged()
 
         ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
-        IsChanged = (::stricmp_utf8(DatabaseFilePath, _CfgDatabaseFilePath) != 0);
+        if (::stricmp_utf8(DatabaseFilePath, _CfgDatabaseFilePath) != 0)
+            return true;
     }
 
-    if (!IsChanged)
     {
         pfc::string Text;
 
-        uGetDlgItemText(m_hWnd, IDC_DLENGTH, Text);
+        ::uGetDlgItemText(m_hWnd, IDC_DLENGTH, Text);
 
         int_least32_t Timestamp = 0;
 
         try
         {
-            const char * bar = Text.get_ptr();
-
-            std::ignore = ::parseTime(bar, Timestamp);
+            std::ignore = ::parseTime(Text.get_ptr(), Timestamp);
         }
         catch (...)
         {
         }
 
-        IsChanged = (Timestamp && Timestamp != CfgDefaultLengthInMS);
+        if ((Timestamp != 0) && Timestamp != CfgDefaultLengthInMS)
+            return true;
     }
 
-    return IsChanged;
+    return false;
 }
 
-void CMyPreferences::OnChanged()
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::OnChanged() noexcept
 {
     //tell the host that our state has changed to enable/disable the apply button appropriately.
     _PageCallback->on_state_changed();
 }
 
-void CMyPreferences::UpdateDatabaseStatusText() const noexcept
+/// <summary>
+/// 
+/// </summary>
+void preferences_t::UpdateDatabaseStatusText() const noexcept
 {
     insync(_HVSCLock);
 
-    ::uSetDlgItemText(m_hWnd, IDC_DB_STATUS, _IsHVSCLoaded ? "Database loaded.": "Database not loaded.");
+    ::uSetDlgItemText(m_hWnd, IDC_DB_STATUS, _IsHVSCLoaded ? "Loaded": "Not loaded");
 }
 
 #pragma endregion
 
 #pragma region Preferences Page
 
-class PreferencePage : public preferences_page_impl<CMyPreferences>
+class PreferencePage : public preferences_page_impl<preferences_t>
 {
 public:
     PreferencePage() noexcept { };

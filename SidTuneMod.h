@@ -18,7 +18,7 @@
 
 #include <sidplayfp/SidTune.h>
 
-#include <foobar2000.h>
+#include <sdk/foobar2000.h>
 
 #include <vector>
 

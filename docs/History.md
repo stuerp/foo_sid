@@ -1,6 +1,12 @@
 
 # foo_sid History
 
+v2.0.0.0, 2026-05-03
+
+- Added: Support for the SIDList core.
+- Upgraded libsidplayfp to 3.0.0.
+- Upgraded libresidfp to 1.0.1.
+
 v2.0.0.0-alpha2, 2026-03-07
 
 * Fixed: Seeking in a song.
