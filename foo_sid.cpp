@@ -1153,22 +1153,22 @@ static cfg_dropdown_history CfgSampleRateHistory(CfgHistoryRateGUID, 16);
 
 static const uint32_t _SampleRates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000 };
 
-class CMyPreferences : public CDialogImpl<CMyPreferences>, public preferences_page_instance
+class preferences_t : public CDialogImpl<preferences_t>, public preferences_page_instance
 {
 public:
-    CMyPreferences(preferences_page_callback::ptr callback) : _PageCallback(callback) { }
+    preferences_t(preferences_page_callback::ptr callback) : _PageCallback(callback) { }
 
-    CMyPreferences(const CMyPreferences &) = delete;
-    CMyPreferences(const CMyPreferences &&) = delete;
-    CMyPreferences& operator=(const CMyPreferences &) = delete;
-    CMyPreferences& operator=(CMyPreferences &&) = delete;
+    preferences_t(const preferences_t &) = delete;
+    preferences_t(const preferences_t &&) = delete;
+    preferences_t& operator=(const preferences_t &) = delete;
+    preferences_t& operator=(preferences_t &&) = delete;
 
-    virtual ~CMyPreferences() noexcept { };
+    virtual ~preferences_t() noexcept { };
 
-    //Note that we don't bother doing anything regarding destruction of our class.
-    //The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
+    // Note that we don't bother doing anything regarding destruction of our class.
+    // The host ensures that our dialog is destroyed first, then the last reference to our preferences_page_instance object is released, causing our object to be deleted.
 
-    //dialog resource ID
+    // Dialog resource ID
     enum
     {
         IDD = IDD_CONFIG
@@ -1179,8 +1179,9 @@ public:
     void apply() override;
     void reset() override;
 
-    BEGIN_MSG_MAP(CMyPreferences)
+    BEGIN_MSG_MAP(preferences_t)
         MSG_WM_INITDIALOG(OnInitDialog)
+
         COMMAND_HANDLER_EX(IDC_INFINITE, BN_CLICKED, OnButtonClick)
         COMMAND_HANDLER_EX(IDC_DB_PATH_SET, BN_CLICKED, OnSetDatabasePath)
         COMMAND_HANDLER_EX(IDC_DB_PATH_CLEAR, BN_CLICKED, OnClearDatabasePath)
@@ -1191,7 +1192,9 @@ public:
         COMMAND_HANDLER_EX(IDC_SID_BUILDER, CBN_SELCHANGE, OnSelectionChange)
         COMMAND_HANDLER_EX(IDC_CLOCK_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
         COMMAND_HANDLER_EX(IDC_SID_OVERRIDE, CBN_SELCHANGE, OnSelectionChange)
+
         MSG_WM_HSCROLL(OnHScroll);
+
         DROPDOWN_HISTORY_HANDLER(IDC_SAMPLERATE, CfgSampleRateHistory)
     END_MSG_MAP()
 
@@ -1218,7 +1221,7 @@ private:
     CTrackBarCtrl _SliderSsep;
 };
 
-t_uint32 CMyPreferences::get_state()
+t_uint32 preferences_t::get_state()
 {
     t_uint32 state = preferences_state::resettable | preferences_state::dark_mode_supported;
 
@@ -1228,7 +1231,7 @@ t_uint32 CMyPreferences::get_state()
     return state;
 }
 
-void CMyPreferences::reset()
+void preferences_t::reset()
 {
     SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, CfgLoopForeverDefault);
     SendDlgItemMessage(IDC_SID_BUILDER, CB_SETCURSEL, CfgCoreDefault);
@@ -1260,7 +1263,7 @@ void CMyPreferences::reset()
     OnChanged();
 }
 
-void CMyPreferences::apply()
+void preferences_t::apply()
 {
     {
         const UINT SampleRate = std::clamp(GetDlgItemInt(IDC_SAMPLERATE, NULL, FALSE), 6000u, 192000u);
@@ -1339,7 +1342,7 @@ void CMyPreferences::apply()
     OnChanged();
 }
 
-BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
+BOOL preferences_t::OnInitDialog(CWindow, LPARAM)
 {
     SendDlgItemMessage(IDC_INFINITE, BM_SETCHECK, (WPARAM) CfgLoopForever);
 
@@ -1454,12 +1457,12 @@ BOOL CMyPreferences::OnInitDialog(CWindow, LPARAM)
     return FALSE;
 }
 
-void CMyPreferences::OnEditChange(UINT, int, CWindow)
+void preferences_t::OnEditChange(UINT, int, CWindow)
 {
     OnChanged();
 }
 
-void CMyPreferences::OnSelectionChange(UINT, int, CWindow wnd)
+void preferences_t::OnSelectionChange(UINT, int, CWindow wnd)
 {
     if (wnd == GetDlgItem(IDC_SID_BUILDER))
     {
@@ -1472,12 +1475,12 @@ void CMyPreferences::OnSelectionChange(UINT, int, CWindow wnd)
     OnChanged();
 }
 
-void CMyPreferences::OnButtonClick(UINT, int, CWindow)
+void preferences_t::OnButtonClick(UINT, int, CWindow)
 {
     OnChanged();
 }
 
-void CMyPreferences::OnHScroll(int, short, CScrollBar pScrollBar)
+void preferences_t::OnHScroll(int, short, CScrollBar pScrollBar)
 {
     pfc::string Value;
 
@@ -1506,7 +1509,7 @@ void CMyPreferences::OnHScroll(int, short, CScrollBar pScrollBar)
     OnChanged();
 }
 
-void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
+void preferences_t::OnSetDatabasePath(UINT, int, CWindow)
 {
     pfc::string Text;
 
@@ -1530,13 +1533,13 @@ void CMyPreferences::OnSetDatabasePath(UINT, int, CWindow)
     }
 }
 
-void CMyPreferences::OnClearDatabasePath(UINT, int, CWindow)
+void preferences_t::OnClearDatabasePath(UINT, int, CWindow)
 {
     ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, "");
     OnChanged();
 }
 
-bool CMyPreferences::HasChanged()
+bool preferences_t::HasChanged()
 {
     bool IsChanged = false;
 
@@ -1604,13 +1607,13 @@ bool CMyPreferences::HasChanged()
     return IsChanged;
 }
 
-void CMyPreferences::OnChanged()
+void preferences_t::OnChanged()
 {
     //tell the host that our state has changed to enable/disable the apply button appropriately.
     _PageCallback->on_state_changed();
 }
 
-void CMyPreferences::UpdateDatabaseStatusText() const noexcept
+void preferences_t::UpdateDatabaseStatusText() const noexcept
 {
     insync(_HVSCLock);
 
@@ -1621,7 +1624,7 @@ void CMyPreferences::UpdateDatabaseStatusText() const noexcept
 
 #pragma region Preferences Page
 
-class PreferencePage : public preferences_page_impl<CMyPreferences>
+class PreferencePage : public preferences_page_impl<preferences_t>
 {
 public:
     PreferencePage() noexcept { };
