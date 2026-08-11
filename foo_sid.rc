@@ -1,5 +1,5 @@
 
-/** $VER: foo_sid.rc (2025.05.14) **/
+/** $VER: foo_sid.rc (2026.08.11) **/
 
 #include "Resource.h"
 
@@ -46,56 +46,75 @@ filesubtype     VFT2_UNKNOWN
     }
 }
 
+#include "Layout.h"
+
 IDD_CONFIG dialogex 0, 0, 255, 229
 style DS_SHELLFONT | WS_CHILD
 font 8, "MS Shell Dlg", 400, 0, 1
 {
-    GROUPBOX "Quality", IDC_STATIC, 0, 0, 244, 40
-        RTEXT           "Sample rate:",         IDC_STATIC,                                                                 23, 15, 48,   8
-        COMBOBOX                                IDC_SAMPLERATE,                                                             72, 13, 47, 130, CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-        LTEXT           "Hz",                   IDC_STATIC,                                                                122, 15, 10,   8
+    GROUPBOX "Quality", IDC_STATIC, X_A01, Y_A01, W_A01, H_A01
 
-        RTEXT           "Core:",                IDC_STATIC,                                                                137, 15, 37,   8
-        COMBOBOX                                IDC_SID_BUILDER,                                                           178, 13, 47, 130, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+        RTEXT           "Sample rate:",                 IDC_STATIC,                                                                 X_A02, Y_A02 + 2, W_A02, H_A02
+        COMBOBOX                                        IDC_SAMPLERATE,                                                             X_A03, Y_A03,     W_A03, H_A03, CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+        LTEXT           "Hz",                           IDC_STATIC,                                                                 X_A04, Y_A04 + 2, W_A04, H_A04
 
-        RTEXT           "Stereo separation:",   IDC_STATIC,                                                                  5, 29, 66,   8
-        CONTROL         "",                     IDC_SLIDER_SSEP, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  72, 29, 51,  10
-        LTEXT           "%",                    IDC_TEXT_SSEP,                                                             122, 29, 37,   8
+        RTEXT           "Core:",                        IDC_STATIC,                                                                 X_A05, Y_A05 + 2, W_A05, H_A05
+        COMBOBOX                                        IDC_SID_BUILDER,                                                            X_A06, Y_A06,     W_A06, H_A06, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 
-    GROUPBOX "Length", IDC_STATIC, 0, 44, 244, 93
-        CONTROL         "Force all songs to play indefinitely", IDC_INFINITE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 13, 59, 130, 10
+        RTEXT           "Stereo separation:",           IDC_STATIC,                                                                 X_A07, Y_A07 + 1, W_A07, H_A07
+        CONTROL         "",                             IDC_SLIDER_SSEP, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  X_A08, Y_A08,     W_A08, H_A08
+        LTEXT           "%",                            IDC_TEXT_SSEP,                                                              X_A09, Y_A09 + 1, W_A09, H_A09
 
-        RTEXT           "Default length:",                      IDC_STATIC,   9, 87, 58,  8
-        EDITTEXT                                                IDC_DLENGTH, 71, 85, 47, 12, ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
-        LTEXT           "m:s.ms",                               IDC_STATIC, 120, 87, 24,  8
+    GROUPBOX "Length", IDC_STATIC, X_B01, Y_B01, W_B01, H_B01
 
-        RTEXT           "Fade for:",                            IDC_STATIC, 143, 87, 31,  8
-        EDITTEXT                                                IDC_FADE,   178, 85, 47, 12, ES_AUTOHSCROLL | ES_WANTRETURN | ES_NUMBER | WS_GROUP
-        LTEXT           "ms",                                   IDC_STATIC, 227, 87, 10,  8
+        CONTROL         "Loop forever",                 IDC_LOOP_FOREVER, "Button", BS_AUTOCHECKBOX | WS_TABSTOP,                   X_B02, Y_B02,     W_B02, H_B02
 
-        GROUPBOX "Database", IDC_STATIC, 5, 73, 235, 62
-            RTEXT           "Path:",    IDC_STATIC,          19, 105,  18,  8
+        RTEXT           "Default length:",              IDC_STATIC,                                                                 X_B03, Y_B03 + 2, W_B03, H_B03
+        EDITTEXT                                        IDC_DLENGTH,                                                                X_B04, Y_B04,     W_B04, H_B04, ES_AUTOHSCROLL | ES_WANTRETURN | WS_GROUP
+        LTEXT           "m:s.ms",                       IDC_STATIC,                                                                 X_B05, Y_B05 + 2, W_B05, H_B05
 
-            RTEXT           "Status:",  IDC_STATIC,          13, 121,  24,  8
+        RTEXT           "Fade for:",                    IDC_STATIC,                                                                 X_B06, Y_B06 + 2, W_B06, H_B06
+        EDITTEXT                                        IDC_FADE,                                                                   X_B07, Y_B07,     W_B07, H_B07, ES_AUTOHSCROLL | ES_WANTRETURN | ES_NUMBER | WS_GROUP
+        LTEXT           "ms",                           IDC_STATIC,                                                                 X_B08, Y_B08 + 2, W_B08, H_B08
 
-            EDITTEXT                    IDC_DB_PATH,         41, 103, 160, 12, ES_AUTOHSCROLL | ES_READONLY
-            PUSHBUTTON      "...",      IDC_DB_PATH_SET,    202, 103,  13, 12, WS_GROUP
-            PUSHBUTTON      "Clear",    IDC_DB_PATH_CLEAR,  215, 103,  23, 12, WS_GROUP
-            LTEXT           "",         IDC_DB_STATUS,       41, 121, 114,  8, NOT WS_GROUP
+        RTEXT           "Database path:",               IDC_STATIC,                                                                 X_C02, Y_C02 + 2, W_C02, H_C02
+        EDITTEXT                                        IDC_DB_PATH,                                                                X_C03, Y_C03,     W_C03, H_C03, ES_AUTOHSCROLL | ES_READONLY
+        PUSHBUTTON      "...",                          IDC_DB_PATH_SET,                                                            X_C04, Y_C04,     W_C04, H_C04, WS_GROUP
+        PUSHBUTTON      "Clear",                        IDC_DB_PATH_CLEAR,                                                          X_C05, Y_C05,     W_C05, H_C05, WS_GROUP
+        LTEXT           "",                             IDC_DB_STATUS,                                                              X_C06, Y_C06 + 2, W_C06, H_C06, NOT WS_GROUP
 
-    GROUPBOX "Overrides", IDC_STATIC, 0, 146, 244, 47
-        RTEXT           "Clock speed:",         IDC_STATIC,         13, 158,  54,  8
-        COMBOBOX                                IDC_CLOCK_OVERRIDE, 71, 156, 126, 12, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX "Overrides", IDC_STATIC, X_D01, Y_D01, W_D01, H_D01
 
-        RTEXT           "SID model:",           IDC_STATIC,         13, 175,  54,  8
-        COMBOBOX                                IDC_SID_OVERRIDE,   71, 173, 126, 12, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+        RTEXT           "Clock speed:",                 IDC_STATIC,                                                                 X_D02, Y_D02 + 2, W_D02, H_D02
+        COMBOBOX                                        IDC_CLOCK_OVERRIDE,                                                         X_D03, Y_D03,     W_D03, H_D03, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 
-    GROUPBOX "ReSIDfp", IDC_STATIC, 0, 196, 244, 40
-        RTEXT           "6581 filter curve:",   IDC_STATIC,                                                                  7, 200,  60, 10
-        CONTROL         "",                     IDC_SLIDER_6581, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  71, 200, 126, 10
-        RTEXT           "Static",               IDC_TEXT_6581,                                                             202, 200,  36, 10
+        RTEXT           "SID model:",                   IDC_STATIC,                                                                 X_D04, Y_D04 + 2, W_D04, H_D04
+        COMBOBOX                                        IDC_SID_OVERRIDE,                                                           X_D05, Y_D05,     W_D05, H_D05, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 
-        RTEXT           "8580 filter curve:",   IDC_STATIC,                                                                  7, 209,  60, 10
-        CONTROL         "",                     IDC_SLIDER_8580, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  71, 209, 126, 10
-        RTEXT           "Static",               IDC_TEXT_8580,                                                             202, 209,  36, 10
+    GROUPBOX "ReSIDfp", IDC_STATIC, X_E01, Y_E01, W_E01, H_E01
+
+        RTEXT           "6581 filter curve:",           IDC_STATIC,                                                                 X_E02, Y_E02 + 1, W_E02, H_E02
+        CONTROL         "",                             IDC_SLIDER_6581, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  X_E03, Y_E03,     W_E03, H_E03
+        RTEXT           "",                             IDC_TEXT_6581,                                                              X_E04, Y_E04 + 1, W_E04, H_E04
+
+        CONTROL         "Use old caps",                 IDC_OLD_CAPS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP,                       X_E05, Y_E05,     W_E05, H_E05
+
+        RTEXT           "Wave offset:",                 IDC_STATIC,                                                                 X_E06, Y_E06 + 1, W_E06, H_B06
+        CONTROL         "",                             IDC_WAVE_OFFSET, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  X_E07, Y_E07,     W_E07, H_E07
+        RTEXT           "",                             IDC_WAVE_OFFSET_TEXT,                                                       X_E08, Y_E08 + 1, W_E08, H_E08
+
+        RTEXT           "8580 filter curve:",           IDC_STATIC,                                                                 X_E09, Y_E09 + 1, W_E09, H_E09
+        CONTROL         "",                             IDC_SLIDER_8580, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  X_E10, Y_E10,     W_E10, H_E10
+        RTEXT           "",                             IDC_TEXT_8580,                                                              X_E11, Y_E11 + 1, W_E11, H_E11
+
+        RTEXT           "DAC leakage:",                 IDC_STATIC,                                                                 X_E12, Y_E12 + 1, W_E12, H_E12
+        CONTROL         "",                             IDC_DAC_LEAKAGE, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,  X_E13, Y_E13,     W_E13, H_E13
+        RTEXT           "",                             IDC_DAC_LEAKAGE_TEXT                                                        X_E14, Y_E14 + 1, W_E14, H_E14
+
+        RTEXT           "DC-Blocker resistance:",       IDC_STATIC,                                                                 X_E15, Y_E15 + 1, W_E15, H_E15
+        CONTROL         "",                             IDC_DCB_RES, "msctls_trackbar32", TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,      X_E16, Y_E16,     W_E16, H_E16
+        RTEXT           "",                             IDC_DCB_RES_TEXT                                                            X_E17, Y_E17 + 1, W_E17, H_E17
+
+        RTEXT           "Combined waveforms strength:", IDC_STATIC,                                                                 X_E18, Y_E18 + 2, W_E18, H_E18
+        COMBOBOX                                        IDC_CWS,                                                                    X_E19, Y_E19,     W_E19, H_E19, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 }

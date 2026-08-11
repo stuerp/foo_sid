@@ -1,5 +1,5 @@
 
-/** $VER: Resource.h (2026.08.10) P. Stuer **/
+/** $VER: Resource.h (2026.08.11) P. Stuer **/
 
 #pragma once
 
@@ -52,30 +52,40 @@
 #define STR_ABOUT_WEB               TEXT(STR_COMPONENT_URL)
 #define STR_ABOUT_EMAIL             TEXT("mailto:peter.stuer@outlook.com")
 
-#define IDD_CONFIG                      101
-#define IDC_SAMPLERATE                  1000
-#define IDC_INFINITE                    1001
-#define IDC_DLENGTH                     1002
-#define IDC_FADE                        1003
-#define IDC_DB_PATH                     1004
-#define IDC_DB_PATH_SET                 1005
-#define IDC_DB_PATH_CLEAR               1006
-#define IDC_DB_LOAD                     1007
-#define IDC_SAMPLERATE2                 1007
-#define IDC_SID_BUILDER                 1007
-#define IDC_DB_UNLOAD                   1008
-#define IDC_DB_STATUS                   1009
-#define IDC_DATABASE_SEP                1010
-#define IDC_LENGTH_SEP                  1011
-#define IDC_QUALITY_SEP                 1012
-#define IDC_CLOCK_OVERRIDE              1013
-#define IDC_OVERRIDE_SID                1014
-#define IDC_SID_OVERRIDE                1014
-#define IDC_SLIDER_6581                 1015
-#define IDC_SLIDER2                     1016
-#define IDC_SLIDER_8580                 1016
-#define IDC_TEXT_6581                   1017
-#define IDC_TEXT_8580                   1018
-#define IDC_SLIDER_6582                 1019
-#define IDC_SLIDER_SSEP                 1019
-#define IDC_TEXT_SSEP                   1020
+#define IDD_CONFIG              101
+
+#define IDC_SAMPLERATE          1000
+#define IDC_SID_BUILDER         1001
+#define IDC_SLIDER_SSEP         1002
+#define IDC_TEXT_SSEP           1003
+
+#define IDC_LOOP_FOREVER            1010
+#define IDC_DLENGTH             1011
+#define IDC_FADE                1012
+
+#define IDC_DB_PATH             1020
+#define IDC_DB_PATH_SET         1021
+#define IDC_DB_PATH_CLEAR       1022
+#define IDC_DB_STATUS           1023
+
+#define IDC_CLOCK_OVERRIDE      1030
+#define IDC_SID_OVERRIDE        1031
+
+#define IDC_SLIDER_6581         1040
+#define IDC_TEXT_6581           1041
+
+#define IDC_OLD_CAPS            1042
+
+#define IDC_WAVE_OFFSET         1043
+#define IDC_WAVE_OFFSET_TEXT    1044
+
+#define IDC_SLIDER_8580         1050
+#define IDC_TEXT_8580           1051
+
+#define IDC_DAC_LEAKAGE         1060
+#define IDC_DAC_LEAKAGE_TEXT    1061
+
+#define IDC_DCB_RES             1070
+#define IDC_DCB_RES_TEXT        1071
+
+#define IDC_CWS                 1080

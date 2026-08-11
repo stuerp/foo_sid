@@ -36,20 +36,20 @@ or
 
 The following info tags are available:
 
-| Name           | Value |
-| -------------- | ----- |
-| channels       | 2 |
-| encoding       | synthesized|
+| Name           | Value                                |
+| -------------- | ------------------------------------ |
+| channels       | 2                                    |
+| encoding       | synthesized                          |
 | sid_chip_count | Number of SID chips used by the song |
-| clock_speed    | NTSC or PAL|
-| sid_model      | 8580 or 6581|
+| clock_speed    | NTSC or PAL                          |
+| sid_model      | 8580 or 6581                         |
 
 The following meta data tags are available:
 
-| Name                 | Value |
-| -------------------- | ----- |
-| tracknumber          ||
-| title                | In case the track only contains 1 song |
+| Name                 | Value                                     |
+| -------------------- | ----------------------------------------- |
+| tracknumber          |                                           |
+| title                | In case the track only contains 1 song    |
 | album                | In case the track contains multiple songs |
 | album artist         ||
 | artist               ||
@@ -115,6 +115,7 @@ v2.1.0.0, 2026-08-11
 - New: ARM64EC version.
 - New: Upgraded libsidplayfp to 3.1.0.
 - New: Upgraded libresidfp to 1.2.1.
+- New: Added new libresidfp parameters to the preferences page.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 
