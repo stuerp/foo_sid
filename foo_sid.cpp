@@ -296,7 +296,7 @@ static void LoadHVSC() noexcept
 {
     pfc::string FilePath;
 
-    ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
+    ::SanitizeDatabasePathName(_CfgDatabaseFilePath.get_value(), true, FilePath);
 
     if (FilePath.length() == 0)
         return;
@@ -344,7 +344,7 @@ static void LoadSTIL() noexcept
 {
     pfc::string FilePath;
 
-    ::SanitizeDatabasePathName(_CfgDatabaseFilePath, true, FilePath);
+    ::SanitizeDatabasePathName(_CfgDatabaseFilePath.get_value(), true, FilePath);
 
     if (FilePath.length() == 0)
         return;
@@ -499,7 +499,7 @@ public:
             throw exception_io_unsupported_format(_Tune->statusString());
 
         _SampleRate       = (uint32_t) CfgSampleRate;
-        _StereoSeparation = CfgStereoSeparation;
+        _StereoSeparation = (int) CfgStereoSeparation;
     }
 
     static bool g_is_our_content_type(const char *) noexcept
@@ -897,19 +897,19 @@ public:
                     if (NewBuilder)
                     {
                         // Old MOS6581
-                        NewBuilder->filter6581Curve(CfgFilter6581Curve / 256.);
-                        NewBuilder->filter6581Range(CfgFilter6581Range / 256.);
+                        NewBuilder->filter6581Curve((double) CfgFilter6581Curve / 256.);
+                        NewBuilder->filter6581Range((double) CfgFilter6581Range / 256.);
 
                         // New CSG8580
-                        NewBuilder->filter8580Curve(CfgFilter8580Curve / 256.);
+                        NewBuilder->filter8580Curve((double) CfgFilter8580Curve / 256.);
 
                         NewBuilder->combinedWaveformsStrength((SidConfig::sid_cw_t) (int) CfgCWS);
                         NewBuilder->enableOld6581caps(CfgOld6581Caps);
 
                         // Since libresidfp 3.1
-                        NewBuilder->dacLeakage(CfgDACLeakage / 256.);   // Between 0 (no leakage) and 1 (standard leakage) (default 1.0)
-                        NewBuilder->offset6581(CfgWaveOffset / 256.);   // Between 0 (average digis) and 1 (loud digis) (default 1.0)
-                        NewBuilder->dcbRes(CfgDCBRes / 256.);           // Between 0 (10KOhm => ~1.6Hz) and 1 (1KOhm => ~16Hz) (default 0.0)
+                        NewBuilder->dacLeakage((double) CfgDACLeakage / 256.);   // Between 0 (no leakage) and 1 (standard leakage) (default 1.0)
+                        NewBuilder->offset6581((double) CfgWaveOffset / 256.);   // Between 0 (average digis) and 1 (loud digis) (default 1.0)
+                        NewBuilder->dcbRes((double) CfgDCBRes / 256.);           // Between 0 (10KOhm => ~1.6Hz) and 1 (1KOhm => ~16Hz) (default 0.0)
 
                         _Builder = std::move(NewBuilder);
                     }
@@ -1420,7 +1420,7 @@ BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
     SendDlgItemMessage(IDC_LOOP_FOREVER, BM_SETCHECK, (WPARAM) CfgLoopForever);
 
     ::uSetDlgItemText(m_hWnd, IDC_DLENGTH, pfc::format_time_ex((double) CfgDefaultLengthInMS / 1'000.0));
-    ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath);
+    ::uSetDlgItemText(m_hWnd, IDC_DB_PATH, _CfgDatabaseFilePath.get_value());
 
     UpdateDatabaseStatusText();
 
@@ -1443,7 +1443,7 @@ BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
                 }
             }
 
-            _itoa_s(CfgSampleRate, Temp, _countof(Temp), 10);
+            _itoa_s((int) CfgSampleRate, Temp, _countof(Temp), 10);
 
             CfgSampleRateHistory.add_item(Temp);
 
@@ -1488,7 +1488,7 @@ BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
 
         _SliderStereoSeparation.SetRangeMin(0);
         _SliderStereoSeparation.SetRangeMax(150);
-        _SliderStereoSeparation.SetPos(CfgStereoSeparation);
+        _SliderStereoSeparation.SetPos((int) CfgStereoSeparation);
 
         Value = pfc::format_int(CfgStereoSeparation);
         Value += "%";
@@ -1497,10 +1497,10 @@ BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
     }
 
     // Old SID (MOS 6581) filter curve
-    _Slider6581 = InitSlider(IDC_SLIDER_6581, IDC_TEXT_6581, CfgFilter6581Curve);
+    _Slider6581 = InitSlider(IDC_SLIDER_6581, IDC_TEXT_6581, (int32_t) CfgFilter6581Curve);
 
     // New SID (CSG 8580/MOS 6582) filter curve
-    _Slider8580 = InitSlider(IDC_SLIDER_8580, IDC_TEXT_8580, CfgFilter8580Curve);
+    _Slider8580 = InitSlider(IDC_SLIDER_8580, IDC_TEXT_8580, (int32_t) CfgFilter8580Curve);
 
     // Combined waveforms strength
     {
@@ -1517,13 +1517,13 @@ BOOL preferences_t::OnInitDialog(CWindow, LPARAM) noexcept
     SendDlgItemMessage(IDC_OLD_CAPS, BM_SETCHECK, (WPARAM) CfgOld6581Caps);
 
     // Wave offset
-    _SliderWaveOffset = InitSlider(IDC_WAVE_OFFSET, IDC_WAVE_OFFSET_TEXT, CfgWaveOffset);
+    _SliderWaveOffset = InitSlider(IDC_WAVE_OFFSET, IDC_WAVE_OFFSET_TEXT, (int32_t) CfgWaveOffset);
 
     // DAC Leakage
-    _SliderDACLeakage = InitSlider(IDC_DAC_LEAKAGE, IDC_DAC_LEAKAGE_TEXT, CfgDACLeakage);
+    _SliderDACLeakage = InitSlider(IDC_DAC_LEAKAGE, IDC_DAC_LEAKAGE_TEXT, (int32_t) CfgDACLeakage);
 
     // DC-Blocker Resolution
-    _SliderDCBRes = InitSlider(IDC_DCB_RES, IDC_DCB_RES_TEXT, CfgDCBRes);
+    _SliderDCBRes = InitSlider(IDC_DCB_RES, IDC_DCB_RES_TEXT, (int32_t) CfgDCBRes);
 
     _DarkModeHooks.AddDialogWithControls(*this);
 
@@ -1759,7 +1759,7 @@ bool preferences_t::HasChanged() noexcept
 
         ::SanitizeDatabasePathName(Text, false, DatabaseFilePath);
 
-        if (::stricmp_utf8(DatabaseFilePath, _CfgDatabaseFilePath) != 0)
+        if (::stricmp_utf8(DatabaseFilePath, _CfgDatabaseFilePath.get_value()) != 0)
             return true;
     }
 
