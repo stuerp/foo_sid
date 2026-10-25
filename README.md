@@ -110,12 +110,9 @@ To create the component first build the x86 configuration and next the x64 confi
 
 ## Change Log
 
-v2.1.0.0, 2026-08-11
+v2.1.1.0, 2026-10-25
 
-- New: ARM64EC version.
-- New: Upgraded libsidplayfp to 3.1.0.
-- New: Upgraded libresidfp to 1.2.1.
-- New: Added new libresidfp parameters to the preferences page.
+- New: Upgraded libsidplayfp to 3.1.2.
 
 You can read the full history [here](docs/History.md) and [here](History.h).
 

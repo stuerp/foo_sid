@@ -1,6 +1,13 @@
 
 # foo_sid History
 
+v2.1.0.0, 2026-08-11
+
+- New: ARM64EC version.
+- New: Upgraded libsidplayfp to 3.1.0.
+- New: Upgraded libresidfp to 1.2.1.
+- New: Added new libresidfp parameters to the preferences page.
+
 v2.0.0.0, 2026-05-03
 
 - Added: Support for the SIDList core.

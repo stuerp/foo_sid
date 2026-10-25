@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-      - libsidplayfp-2.16
+      - stable/**
   pull_request:
     branches:
       - master
-      - libsidplayfp-2.16
+      - stable/**
 
 permissions:
   contents: read
@@ -31,6 +31,7 @@ jobs:
     - name: deps [Linux]
       if: runner.os == 'Linux'
       run: |
+        sudo apt-get update
         sudo apt-get install \
           libgcrypt20-dev \
           xa65 \
